@@ -1,0 +1,122 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 80px);
+    padding: 2rem 1rem;
+}
+
+.formCard {
+    background: var(--card-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--card-border);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.5s ease-out;
+}
+
+.title {
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0.7));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.95rem;
+}
+
+.inputGroup {
+    margin-bottom: 1.5rem;
+}
+
+.label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+.input {
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(17, 34, 78, 0.5) !important;
+    color: white !important;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.input option {
+    background: #11224E;
+    color: white;
+}
+
+/* Fix for date input and placeholder visibility */
+.input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+.input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(17, 34, 78, 0.6) !important;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+}
+
+.error {
+    background: rgba(244, 63, 94, 0.1);
+    color: #f43f5e;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 0.25rem;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

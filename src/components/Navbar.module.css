@@ -1,0 +1,149 @@
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background: rgba(15, 15, 19, 0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.navContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--foreground);
+}
+
+.highlight {
+    color: var(--primary);
+}
+
+.desktopMenu {
+    display: none;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.langSwitcher {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--primary);
+}
+
+.langSelect {
+    background: none;
+    border: none;
+    color: var(--foreground);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    padding-right: 4px;
+}
+
+.langSelect option {
+    background: #11224E;
+    color: white;
+}
+
+.navLink {
+    color: rgba(237, 237, 237, 0.7);
+    font-weight: 500;
+    transition: color 0.2s;
+    font-size: 0.95rem;
+}
+
+.navLink:hover {
+    color: var(--primary);
+}
+
+.authBtn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    display: none;
+    /* Hidden on mobile by default, shown in menu */
+}
+
+.mobileToggle {
+    background: none;
+    border: none;
+    color: var(--foreground);
+    cursor: pointer;
+}
+
+/* Mobile Menu */
+.mobileMenu {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 80px);
+    background: var(--background);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    z-index: 999;
+}
+
+.mobileMenu.open {
+    transform: translateX(0);
+}
+
+.mobileLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.mobileAuth {
+    margin-top: 1rem;
+    color: var(--primary);
+}
+
+/* Desktop Breakpoint */
+@media (min-width: 768px) {
+    .desktopMenu {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+    }
+
+    .authBtn {
+        display: inline-flex;
+    }
+
+    .mobileToggle {
+        display: none;
+    }
+
+    .mobileMenu {
+        display: none;
+    }
+}
