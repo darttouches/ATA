@@ -16,11 +16,18 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const user = await getUser();
+  let user = await getUser();
+  // Ensure user is truly authenticated (guard against { error: ... } objects)
+  if (user && user.error) user = null;
 
-  await dbConnect();
-  const logoData = await Settings.findOne({ key: 'site_logo' });
-  const logo = logoData?.value || null;
+  let logo = null;
+  try {
+    await dbConnect();
+    const logoData = await Settings.findOne({ key: 'site_logo' });
+    logo = logoData?.value || null;
+  } catch (dbError) {
+    console.error('Database connection failed in RootLayout:', dbError.message);
+  }
 
   return (
     <html lang="fr" suppressHydrationWarning>
