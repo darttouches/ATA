@@ -26,5 +26,12 @@ export const sendEmail = async ({ to, subject, html, attachments = [] }) => {
         attachments,
     };
 
-    return await transporter.sendMail(mailOptions);
+    try {
+        const result = await transporter.sendMail(mailOptions);
+        console.log('Email sent successfully:', result.messageId);
+        return result;
+    } catch (error) {
+        console.error('Nodemailer Error Details:', error);
+        throw error;
+    }
 };

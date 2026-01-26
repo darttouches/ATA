@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Search, BadgeCheck, ShieldAlert, MessageCircle } from 'lucide-react';
+import { Send, Search, BadgeCheck, ShieldAlert, MessageCircle, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function ChatPage() {
@@ -13,6 +13,7 @@ export default function ChatPage() {
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showUserList, setShowUserList] = useState(true);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -22,7 +23,7 @@ export default function ChatPage() {
     useEffect(() => {
         if (selectedUser) {
             fetchMessages(selectedUser._id);
-            // Poll for new messages every 5 seconds
+            // Poll for new messages every 5 seconds (pass true for isPolling)
             const interval = setInterval(() => fetchMessages(selectedUser._id, true), 5000);
             return () => clearInterval(interval);
         }
@@ -34,12 +35,8 @@ export default function ChatPage() {
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (behavior = "smooth") => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
     };
 
     const fetchChatUsers = async (isPolling = false) => {
@@ -64,6 +61,10 @@ export default function ChatPage() {
             if (res.ok) {
                 const data = await res.json();
                 setMessages(data);
+                // Only scroll to bottom on initial load, not during polling
+                if (!isPolling) {
+                    setTimeout(() => scrollToBottom("auto"), 100);
+                }
             }
         } catch (error) {
             console.error('Failed to fetch messages:', error);
@@ -71,6 +72,13 @@ export default function ChatPage() {
             if (!isPolling) setLoadingMessages(false);
         }
     };
+
+    useEffect(() => {
+        // Mobile behavior: hide list when user selected
+        if (selectedUser && window.innerWidth <= 768) {
+            setShowUserList(false);
+        }
+    }, [selectedUser]);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
@@ -91,6 +99,8 @@ export default function ChatPage() {
             if (res.ok) {
                 const data = await res.json();
                 setMessages(prev => [...prev, data]);
+                // Scroll to bottom manually when sending a message
+                setTimeout(() => scrollToBottom("smooth"), 100);
             }
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -100,7 +110,7 @@ export default function ChatPage() {
 
     const filteredUsers = users.filter(u =>
         u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (u.club?.name || u.preferredClub?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const getRoleBadgeColor = (role) => {
@@ -120,18 +130,20 @@ export default function ChatPage() {
     return (
         <div style={{
             display: 'flex',
-            height: 'calc(100vh - 180px)',
+            height: 'calc(100vh - 200px)',
             background: 'var(--card-bg)',
             borderRadius: '12px',
             border: '1px solid var(--card-border)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            position: 'relative'
         }}>
             {/* User List Sidebar */}
             <div style={{
-                width: '300px',
-                borderRight: '1px solid var(--card-border)',
-                display: 'flex',
-                flexDirection: 'column'
+                width: showUserList ? (window.innerWidth <= 768 ? '100%' : '300px') : '0',
+                borderRight: showUserList && window.innerWidth > 768 ? '1px solid var(--card-border)' : 'none',
+                display: showUserList ? 'flex' : 'none',
+                flexDirection: 'column',
+                transition: 'width 0.3s ease'
             }}>
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)' }}>
                     <div style={{ position: 'relative' }}>
@@ -226,9 +238,7 @@ export default function ChatPage() {
                                         )}
                                     </div>
                                     <div style={{ fontSize: '0.75rem', opacity: 0.5, textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        {user.role === 'admin' && <ShieldAlert size={12} />}
-                                        {user.role === 'president' && <BadgeCheck size={12} />}
-                                        {user.role === 'president' ? t('president') : user.role}
+                                        {user.club?.name || user.preferredClub?.name || (user.role === 'president' ? t('president') : user.role)}
                                     </div>
                                 </div>
                             </div>
@@ -238,21 +248,34 @@ export default function ChatPage() {
             </div>
 
             {/* Chat Area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'rgba(17, 34, 78, 0.1)' }}>
+            <div style={{
+                flex: 1,
+                display: !showUserList || window.innerWidth > 768 ? 'flex' : 'none',
+                flexDirection: 'column',
+                background: 'rgba(17, 34, 78, 0.1)'
+            }}>
                 {selectedUser ? (
                     <>
-                        <div style={{ padding: '1rem 2rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ padding: '1rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <button
+                                className="mobile-only"
+                                onClick={() => setShowUserList(true)}
+                                style={{ background: 'none', border: 'none', color: 'white', padding: '5px' }}
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
                             <div style={{ position: 'relative' }}>
                                 <div style={{
-                                    width: '40px',
-                                    height: '40px',
+                                    width: '35px',
+                                    height: '35px',
                                     borderRadius: '50%',
                                     background: getRoleBadgeColor(selectedUser.role),
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     fontWeight: 700,
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    fontSize: '0.8rem'
                                 }}>
                                     {selectedUser.profileImage ? (
                                         <img src={selectedUser.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -265,8 +288,8 @@ export default function ChatPage() {
                                         position: 'absolute',
                                         bottom: '0',
                                         right: '0',
-                                        width: '10px',
-                                        height: '10px',
+                                        width: '8px',
+                                        height: '8px',
                                         borderRadius: '50%',
                                         background: '#10b981',
                                         border: '2px solid var(--card-bg)'
@@ -274,18 +297,18 @@ export default function ChatPage() {
                                 )}
                             </div>
                             <div>
-                                <div style={{ fontWeight: 700 }}>{selectedUser.name}</div>
-                                <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{selectedUser.email}</div>
+                                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{selectedUser.name}</div>
+                                <div style={{ fontSize: '0.65rem', opacity: 0.6 }}>{selectedUser.club?.name || selectedUser.preferredClub?.name || selectedUser.role}</div>
                             </div>
                         </div>
 
-                        <div style={{ flex: 1, padding: '2rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {loadingMessages ? (
                                 <p style={{ textAlign: 'center', opacity: 0.5 }}>{t('loading')}</p>
                             ) : messages.length === 0 ? (
                                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', opacity: 0.3, gap: '10px' }}>
-                                    <MessageCircle size={48} />
-                                    <p>{t('startConversation')} {selectedUser.name}</p>
+                                    <MessageCircle size={40} />
+                                    <p style={{ fontSize: '0.9rem' }}>{t('startConversation')} {selectedUser.name}</p>
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => {
@@ -296,19 +319,20 @@ export default function ChatPage() {
                                             key={msg._id}
                                             style={{
                                                 alignSelf: msgIsFromTarget ? 'flex-start' : 'flex-end',
-                                                maxWidth: '70%',
+                                                maxWidth: '85%',
                                                 background: msgIsFromTarget ? 'rgba(255,255,255,0.05)' : 'var(--primary)',
-                                                padding: '10px 15px',
+                                                padding: '10px 14px',
                                                 borderRadius: msgIsFromTarget ? '12px 12px 12px 0' : '12px 12px 0 12px',
                                                 color: 'white',
-                                                position: 'relative'
+                                                position: 'relative',
+                                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                                             }}
                                         >
-                                            <div style={{ fontSize: '0.95rem' }}>{msg.message}</div>
-                                            <div style={{ fontSize: '0.65rem', opacity: 0.6, textAlign: 'right', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                                            <div style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>{msg.message}</div>
+                                            <div style={{ fontSize: '0.6rem', opacity: 0.5, textAlign: 'right', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                                                 {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 {!msgIsFromTarget && (
-                                                    <span style={{ fontWeight: 'bold', fontSize: '0.7rem' }}>
+                                                    <span style={{ fontWeight: 'bold' }}>
                                                         {msg.isRead ? `• ${t('seen')}` : `• ${t('sent')}`}
                                                     </span>
                                                 )}
@@ -320,33 +344,34 @@ export default function ChatPage() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <form onSubmit={handleSendMessage} style={{ padding: '1.5rem', background: 'var(--card-bg)', borderTop: '1px solid var(--card-border)', display: 'flex', gap: '10px' }}>
+                        <form onSubmit={handleSendMessage} style={{ padding: '1rem', background: 'var(--card-bg)', borderTop: '1px solid var(--card-border)', display: 'flex', gap: '8px' }}>
                             <input
                                 placeholder={t('typeMessage')}
                                 value={newMessage}
                                 onChange={e => setNewMessage(e.target.value)}
                                 style={{
                                     flex: 1,
-                                    padding: '12px 15px',
+                                    padding: '10px 15px',
                                     background: 'rgba(255,255,255,0.02)',
                                     border: '1px solid var(--card-border)',
                                     borderRadius: '8px',
-                                    color: 'white'
+                                    color: 'white',
+                                    fontSize: '0.9rem'
                                 }}
                             />
-                            <button type="submit" className="btn btn-primary" style={{ padding: '0 20px' }}>
+                            <button type="submit" className="btn btn-primary" style={{ padding: '0 15px' }}>
                                 <Send size={18} />
                             </button>
                         </form>
                     </>
                 ) : (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', opacity: 0.5, gap: '15px' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', opacity: 0.5, gap: '15px', padding: '2rem' }}>
                         <div style={{ padding: '2rem', borderRadius: '50%', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--card-border)' }}>
-                            <MessageCircle size={64} />
+                            <MessageCircle size={48} />
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <h3>{t('internalMessaging')}</h3>
-                            <p>{t('selectMemberToChat')}</p>
+                            <h3 style={{ fontSize: '1.1rem' }}>{t('internalMessaging')}</h3>
+                            <p style={{ fontSize: '0.9rem' }}>{t('selectMemberToChat')}</p>
                         </div>
                     </div>
                 )}

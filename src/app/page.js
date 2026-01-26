@@ -63,7 +63,7 @@ export default function Home() {
           <Link href="/clubs" className="btn btn-primary">
             {t('discoverClubs')} <ArrowRight size={18} style={{ marginLeft: '8px' }} />
           </Link>
-          {user ? (
+          {user && !user.error ? (
             <Link href="/dashboard" className="btn btn-secondary">
               {t('accessDashboard')}
             </Link>

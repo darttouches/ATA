@@ -4,8 +4,10 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './login.module.css';
+import { useLanguage } from '@/context/LanguageContext';
 
 function LoginForm() {
+    const { t } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
     const registered = searchParams.get('registered');
@@ -36,7 +38,7 @@ function LoginForm() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Erreur lors de la connexion');
+                throw new Error(data.error || t('error'));
             }
 
             // Refresh router to update server components (e.g. Navbar)
@@ -54,12 +56,12 @@ function LoginForm() {
     return (
         <div className={styles.container}>
             <div className={styles.formCard}>
-                <h1 className={styles.title}>Connexion</h1>
-                <p className={styles.subtitle}>Heureux de vous revoir !</p>
+                <h1 className={styles.title}>{t('loginTitle')}</h1>
+                <p className={styles.subtitle}>{t('welcomeBack')}</p>
 
                 {registered && (
                     <div className={styles.success}>
-                        Votre compte a été créé avec succès. Veuillez vous connecter.
+                        {t('accountCreatedSuccess')}
                     </div>
                 )}
 
@@ -67,7 +69,7 @@ function LoginForm() {
 
                 <form onSubmit={handleSubmit}>
                     <div className={styles.inputGroup}>
-                        <label className={styles.label} htmlFor="email">Email</label>
+                        <label className={styles.label} htmlFor="email">{t('email')}</label>
                         <input
                             type="email"
                             id="email"
@@ -82,9 +84,9 @@ function LoginForm() {
 
                     <div className={styles.inputGroup}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <label className={styles.label} htmlFor="password">Mot de passe</label>
+                            <label className={styles.label} htmlFor="password">{t('password')}</label>
                             <Link href="/forgot-password" className={styles.link} style={{ fontSize: '0.8rem' }}>
-                                Mot de passe oublié ?
+                                {t('forgotPassword')}
                             </Link>
                         </div>
                         <input
@@ -105,13 +107,13 @@ function LoginForm() {
                         style={{ width: '100%', marginTop: '1rem' }}
                         disabled={loading}
                     >
-                        {loading ? 'Connexion...' : 'Se connecter'}
+                        {loading ? t('logInProgress') : t('loginAction')}
                     </button>
                 </form>
 
                 <div className={styles.footer}>
-                    Pas encore de compte ?
-                    <Link href="/signup" className={styles.link}>S'inscrire</Link>
+                    {t('noAccountYet')}
+                    <Link href="/signup" className={styles.link}>{t('signupAction')}</Link>
                 </div>
             </div>
         </div>
@@ -120,7 +122,7 @@ function LoginForm() {
 
 export default function Login() {
     return (
-        <Suspense fallback={<div style={{ textAlign: 'center', marginTop: '100px' }}>Chargement...</div>}>
+        <Suspense fallback={<div style={{ textAlign: 'center', marginTop: '100px' }}>Loading...</div>}>
             <LoginForm />
         </Suspense>
     );

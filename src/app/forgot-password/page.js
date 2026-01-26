@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import styles from '../login/login.module.css';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ForgotPassword() {
+    const { t } = useLanguage();
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -26,68 +29,62 @@ export default function ForgotPassword() {
             if (res.ok) {
                 setMessage(data.message);
             } else {
-                setError(data.error);
+                setError(data.error || t('error'));
             }
         } catch (err) {
-            setError('Une erreur est survenue. Veuillez réessayer.');
+            setError(t('serverError'));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-                <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-[#11224E]">
-                        Mot de passe oublié
-                    </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
-                        Entrez votre adresse email pour recevoir un lien de réinitialisation.
-                    </p>
-                </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <label htmlFor="email-address" className="sr-only">Adresse email</label>
-                            <input
-                                id="email-address"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-[#11224E] focus:border-[#11224E] focus:z-10 sm:text-sm"
-                                placeholder="Adresse email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
+        <div className={styles.container}>
+            <div className={styles.formCard}>
+                <h1 className={styles.title}>{t('forgotPasswordTitle')}</h1>
+                <p className={styles.subtitle}>
+                    {t('forgotPasswordSubtitle')}
+                </p>
+
+                {message && (
+                    <div className={styles.success}>
+                        {message}
+                    </div>
+                )}
+                {error && (
+                    <div className={styles.error}>
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="email-address" className={styles.label}>{t('email')}</label>
+                        <input
+                            id="email-address"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
+                            required
+                            className={styles.input}
+                            placeholder="votre@email.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
                     </div>
 
-                    {message && (
-                        <div className="text-green-600 text-sm text-center bg-green-50 p-2 rounded">
-                            {message}
-                        </div>
-                    )}
-                    {error && (
-                        <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded">
-                            {error}
-                        </div>
-                    )}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="btn btn-primary"
+                        style={{ width: '100%', marginTop: '1rem' }}
+                    >
+                        {loading ? t('sendingLink') : t('sendResetLink')}
+                    </button>
 
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#11224E] hover:bg-[#1a3a7a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#11224E] transition-colors duration-200"
-                        >
-                            {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
-                        </button>
-                    </div>
-
-                    <div className="text-center">
-                        <Link href="/login" className="font-medium text-[#11224E] hover:text-[#1a3a7a]">
-                            Retour à la connexion
+                    <div className={styles.footer}>
+                        <Link href="/login" className={styles.link}>
+                            {t('backToLogin')}
                         </Link>
                     </div>
                 </form>

@@ -21,7 +21,9 @@ export async function GET() {
                 { role: 'admin' }
             ]
         })
-            .select('name email role profileImage lastActive')
+            .select('name role profileImage lastActive club preferredClub') // Removed email
+            .populate('club', 'name')
+            .populate('preferredClub', 'name')
             .lean();
 
         // Enhance users with unread count and last message timestamp

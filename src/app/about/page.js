@@ -16,19 +16,22 @@ export default function AboutPage() {
     const [mapCenter, setMapCenter] = useState([36.8065, 10.1815]);
     const [mapZoom, setMapZoom] = useState(10);
     const [loading, setLoading] = useState(true);
+    const [associationLogo, setAssociationLogo] = useState(null);
 
     const [lightboxImage, setLightboxImage] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [boardRes, sectionsRes] = await Promise.all([
+                const [boardRes, sectionsRes, settingsRes] = await Promise.all([
                     fetch('/api/board'),
-                    fetch('/api/about')
+                    fetch('/api/about'),
+                    fetch('/api/admin/settings')
                 ]);
 
                 const boardData = await boardRes.json();
                 const sectionsData = await sectionsRes.json();
+                const settingsData = await settingsRes.json();
 
                 // Fetch clubs for map (public endpoint)
                 const clubsRes = await fetch('/api/clubs');
@@ -37,6 +40,7 @@ export default function AboutPage() {
                 setBoardMembers(boardData);
                 setSections(sectionsData);
                 setClubs(Array.isArray(clubsData) ? clubsData : []);
+                setAssociationLogo(settingsData.logo);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -56,7 +60,7 @@ export default function AboutPage() {
                 <div className={styles.hero}>
                     <div className={styles.logoContainer}>
                         <img
-                            src="/logo/1768028469348-logo touches d'art v3 .png"
+                            src={associationLogo || "/logo/1768028469348-logo touches d'art v3 .png"}
                             alt="Touches d'Art Logo"
                             className={styles.logo}
                         />
@@ -211,11 +215,11 @@ export default function AboutPage() {
                 {clubs.length > 0 && (
                     <>
                         <h2 className={styles.sectionTitle} style={{ marginTop: '6rem' }}>{t('ourLocations')}</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', height: '500px', marginBottom: '4rem' }}>
-                            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                        <div className="grid-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', height: 'auto', marginBottom: '4rem' }}>
+                            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--card-border)', height: '500px' }}>
                                 <ClubMap clubs={clubs} center={mapCenter} zoom={mapZoom} />
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', paddingRight: '10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', paddingRight: '10px', maxHeight: '500px' }}>
                                 {clubs.map(club => (
                                     <button
                                         key={club._id}

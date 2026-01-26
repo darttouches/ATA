@@ -155,6 +155,43 @@
 
     .objectiveItem {
         font-size: 1rem;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .objectivesSection {
+        padding: 1.5rem;
+    }
+
+    .textBlock {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    .domainCard,
+    .valueCard {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .title {
+        font-size: 2rem;
+    }
+
+    .logoContainer {
+        width: 150px;
+        height: 150px;
+    }
+
+    .boardGrid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .domainsGrid,
+    .valuesGrid {
+        grid-template-columns: 1fr;
     }
 }
 
