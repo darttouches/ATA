@@ -9,7 +9,12 @@ const ChatMessageSchema = new mongoose.Schema({
     recipient: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
+        required: false, // Optional for group messages
+    },
+    group: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ChatGroup',
+        required: false, // Optional for direct messages
     },
     message: {
         type: String,
@@ -19,6 +24,10 @@ const ChatMessageSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    readBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    }],
     createdAt: {
         type: Date,
         default: Date.now,
