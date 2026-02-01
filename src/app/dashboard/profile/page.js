@@ -112,7 +112,9 @@ export default function ProfilePage() {
         }
     };
 
-    if (loading) return <div className="container" style={{ padding: '2rem' }}>{t('loadingProfile')}</div>;
+    if (loading) return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}><Loader2 className="animate-spin" style={{ margin: '0 auto' }} /></div>;
+
+    if (!user) return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>{t('sessionExpired')}</div>;
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>

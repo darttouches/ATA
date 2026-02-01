@@ -157,3 +157,15 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+.main-content {
+  padding-top: 80px;
+  min-height: 100vh;
+  position: relative;
+}
+
+@media (max-width: 767px) {
+  .main-content {
+    padding-top: 70px;
+  }
+}

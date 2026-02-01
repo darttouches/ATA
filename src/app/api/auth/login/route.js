@@ -53,9 +53,14 @@ export async function POST(req) {
             }
         }
 
+        // Generate a new Session ID
+        const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        user.sessionId = sessionId;
+        await user.save();
+
         // Create Token
         const token = jwt.sign(
-            { userId: user._id, role: user.role, name: user.name },
+            { userId: user._id, role: user.role, name: user.name, sessionId: sessionId },
             JWT_SECRET,
             { expiresIn: '7d' }
         );

@@ -34,7 +34,7 @@ export default async function RootLayout({ children }) {
       <body className={inter.className}>
         <LanguageProvider>
           <Navbar user={user} serverLogo={logo} />
-          <main style={{ paddingTop: '80px', minHeight: '100vh', position: 'relative' }}>
+          <main className="main-content">
             {children}
           </main>
           <BackgroundMusic />
