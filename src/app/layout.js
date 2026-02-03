@@ -13,6 +13,16 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: "Touches D'Art - Association Culturelle et Artistique",
   description: "Plateforme officielle de l'association Touches D'Art. Découvrez nos clubs, activités et créations artistiques.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: "Touches D'Art",
+  },
+  manifest: '/manifest.webmanifest',
+};
+
+export const viewport = {
+  themeColor: '#11224E',
 };
 
 export default async function RootLayout({ children }) {

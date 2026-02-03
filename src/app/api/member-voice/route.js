@@ -69,8 +69,8 @@ export async function POST(req) {
         try {
             const notifications = [];
 
-            // 1. Notify Admins
-            const admins = await User.find({ role: 'admin' });
+            // 1. Notify Admins and National Board
+            const admins = await User.find({ role: { $in: ['admin', 'national'] } });
             admins.forEach(admin => {
                 notifications.push({
                     recipient: admin._id,
@@ -125,7 +125,7 @@ export async function GET(req) {
         await dbConnect();
 
         let query = {};
-        if (user.role === 'admin') {
+        if (user.role === 'admin' || user.role === 'national') {
             query = {};
         } else if (user.role === 'president') {
             if (!user.club) return NextResponse.json([]);

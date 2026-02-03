@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, LogIn, LayoutDashboard, LogOut, Search, Globe } from 'lucide-react';
+import { Menu, X, User, LogIn, LayoutDashboard, LogOut, Search, Globe, Download } from 'lucide-react';
 import styles from './Navbar.module.css';
 import SearchTool from './SearchTool';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,6 +11,8 @@ const Navbar = ({ user, serverLogo }) => {
     const { language, changeLanguage, t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [logo, setLogo] = useState(serverLogo || null);
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showInstallBtn, setShowInstallBtn] = useState(false);
 
     useEffect(() => {
         if (!logo) {
@@ -19,6 +21,101 @@ const Navbar = ({ user, serverLogo }) => {
             });
         }
     }, [logo]);
+
+    useEffect(() => {
+        // PWA Install Logic
+        const handleBeforeInstallPrompt = (e) => {
+            console.log('✅ PWA: beforeinstallprompt event fired');
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstallBtn(true);
+        };
+
+        const handleAppInstalled = () => {
+            console.log('🎉 PWA: Application installed successfully');
+            setShowInstallBtn(false);
+            setDeferredPrompt(null);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.addEventListener('appinstalled', handleAppInstalled);
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('✅ PWA: Service Worker registered'))
+                .catch(err => console.error('❌ PWA: SW register failed:', err));
+        }
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
+        };
+    }, []);
+
+    // Push Subscription Logic
+    useEffect(() => {
+        if ('serviceWorker' in navigator && user) {
+            navigator.serviceWorker.ready.then((reg) => {
+                // Request permission and subscribe if not already
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            subscribeToPush(reg);
+                        }
+                    });
+                } else if (Notification.permission === 'granted') {
+                    subscribeToPush(reg);
+                }
+            });
+        }
+    }, [user]);
+
+    const subscribeToPush = async (registration) => {
+        try {
+            const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (!publicVapidKey) return;
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+            });
+
+            await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({ subscription }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            console.log('✅ Push: User is subscribed');
+        } catch (error) {
+            console.error('❌ Push: Subscribe failed:', error);
+        }
+    };
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+            setShowInstallBtn(false);
+        }
+    };
 
     const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -40,6 +137,18 @@ const Navbar = ({ user, serverLogo }) => {
                 </div>
 
                 <div className={styles.actions}>
+                    {/* PWA Install Button Desktop */}
+                    {showInstallBtn && (
+                        <button
+                            onClick={handleInstallClick}
+                            className={`btn btn-primary ${styles.installBtn}`}
+                            style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                            <Download size={18} />
+                            <span className={styles.installText}>{t('installApp')}</span>
+                        </button>
+                    )}
+
                     <div className={styles.langSwitcher}>
                         <Globe size={18} />
                         <select
@@ -80,6 +189,30 @@ const Navbar = ({ user, serverLogo }) => {
             {/* Mobile Menu Overlay */}
             <div className={`${styles.mobileMenu} ${isOpen ? styles.open : ''}`}>
                 <div className={styles.mobileLinks}>
+                    {/* PWA Install Button Mobile */}
+                    {showInstallBtn && (
+                        <button
+                            onClick={() => { handleInstallClick(); toggleMenu(); }}
+                            style={{
+                                background: 'var(--primary)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '1rem',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px',
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                marginBottom: '1rem'
+                            }}
+                        >
+                            <Download size={20} />
+                            {t('installApp')}
+                        </button>
+                    )}
+
                     <Link href="/" onClick={toggleMenu}>{t('home')}</Link>
                     <Link href="/about" onClick={toggleMenu}>{t('about')}</Link>
 

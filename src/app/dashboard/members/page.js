@@ -114,12 +114,12 @@ export default function MembersPointsPage() {
                                         fontSize: '0.65rem',
                                         padding: '2px 8px',
                                         borderRadius: '10px',
-                                        background: member.role === 'admin' ? '#ef444422' : (member.role === 'president' ? 'var(--primary-bg)' : 'rgba(255,255,255,0.05)'),
-                                        color: member.role === 'admin' ? '#ef4444' : (member.role === 'president' ? 'var(--primary)' : '#94a3b8'),
-                                        border: `1px solid ${member.role === 'admin' ? '#ef444444' : (member.role === 'president' ? 'var(--primary-border)' : 'rgba(255,255,255,0.1)')}`,
+                                        background: member.role === 'admin' ? '#ef444422' : (member.role === 'president' ? 'var(--primary-bg)' : (member.role === 'national' ? 'rgba(124, 58, 237, 0.1)' : 'rgba(255,255,255,0.05)')),
+                                        color: member.role === 'admin' ? '#ef4444' : (member.role === 'president' ? 'var(--primary)' : (member.role === 'national' ? 'var(--primary)' : '#94a3b8')),
+                                        border: `1px solid ${member.role === 'admin' ? '#ef444444' : (member.role === 'president' ? 'var(--primary-border)' : (member.role === 'national' ? 'var(--primary-border)' : 'rgba(255,255,255,0.1)'))}`,
                                         textTransform: 'capitalize'
                                     }}>
-                                        {member.role === 'president' ? t('president') : (member.role === 'admin' ? 'Admin' : t('member'))}
+                                        {member.role === 'president' ? t('president') : (member.role === 'national' ? t('nationalBoardMember') : (member.role === 'admin' ? 'Admin' : t('member')))}
                                     </span>
                                 </h3>
                                 <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{member.email}</p>

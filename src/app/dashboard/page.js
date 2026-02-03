@@ -246,7 +246,7 @@ export default function DashboardHome() {
                                 {selectedMember.firstName} {selectedMember.lastName || selectedMember.name}
                             </h2>
                             <p style={{
-                                color: selectedMember.role === 'admin' ? '#ef4444' : (selectedMember.role === 'president' ? 'var(--primary)' : '#94a3b8'),
+                                color: selectedMember.role === 'admin' ? '#ef4444' : (selectedMember.role === 'president' ? 'var(--primary)' : (selectedMember.role === 'national' ? 'var(--primary)' : '#94a3b8')),
                                 fontWeight: 600,
                                 fontSize: '0.9rem',
                                 marginBottom: '1.5rem',
@@ -256,8 +256,8 @@ export default function DashboardHome() {
                                 gap: '0.4rem',
                                 textTransform: 'capitalize'
                             }}>
-                                {selectedMember.role === 'admin' ? <ShieldCheck size={16} /> : (selectedMember.role === 'president' ? <Award size={16} /> : <User size={16} />)}
-                                {selectedMember.role === 'president' ? t('president') : (selectedMember.role === 'admin' ? 'Admin' : t('member'))}
+                                {selectedMember.role === 'admin' ? <ShieldCheck size={16} /> : (selectedMember.role === 'president' ? <Award size={16} /> : (selectedMember.role === 'national' ? <ShieldCheck size={16} /> : <User size={16} />))}
+                                {selectedMember.role === 'president' ? t('president') : (selectedMember.role === 'national' ? t('nationalBoardMember') : (selectedMember.role === 'admin' ? 'Admin' : t('member')))}
                             </p>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>

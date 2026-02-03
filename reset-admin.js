@@ -38,15 +38,15 @@ async function resetAdmin() {
         if (admin) {
             console.log('Admin found:', admin.email);
             const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash('123456', salt);
+            const hash = await bcrypt.hash('123456xata', salt);
 
             // Update password directly
             await User.updateOne({ _id: admin._id }, { password: hash });
-            console.log('SUCCESS: Admin password reset to: 123456');
+            console.log('SUCCESS: Admin password reset to: 123456xata');
         } else {
             console.log('No admin found. Creating one...');
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash('123456', salt);
+            const hashedPassword = await bcrypt.hash('123456xata', salt);
 
             await User.create({
                 name: 'Admin',
@@ -55,7 +55,7 @@ async function resetAdmin() {
                 role: 'admin',
                 status: 'approved'
             });
-            console.log('SUCCESS: Created admin user (admin@ata.com) with password: 123456');
+            console.log('SUCCESS: Created admin user (admin@ata.com) with password: 123456xata');
         }
 
         mongoose.disconnect();

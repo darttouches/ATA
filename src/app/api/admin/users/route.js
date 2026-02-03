@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
 
@@ -24,11 +24,17 @@ export async function GET() {
 export async function PATCH(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
 
         const { id, role, club, status, isPaid, memberNumber, phone } = await req.json();
+
+        // Security: National members cannot change roles
+        if (user.role === 'national' && role) {
+            return NextResponse.json({ error: 'Vous n\'avez pas l\'autorisation de modifier les rôles' }, { status: 403 });
+        }
+
         await dbConnect();
 
         const updateData = {};
@@ -54,7 +60,7 @@ export async function PATCH(req) {
 export async function DELETE(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
 

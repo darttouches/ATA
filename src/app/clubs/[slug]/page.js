@@ -9,12 +9,14 @@ import { ArrowLeft, MapPin, User as UserIcon, Facebook, Instagram, Youtube, Glob
 import { notFound } from 'next/navigation';
 import ClientClubContent from './ClientClubContent';
 import ClubPolls from './ClubPolls';
+import Lightbox from '@/components/Lightbox';
 
 export default function ClubDetailPage({ params }) {
     const { slug } = use(params);
     const { t, language, formatDynamicText } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showCoverLightbox, setShowCoverLightbox] = useState(false);
 
     useEffect(() => {
         fetch(`/api/clubs/${slug}`)
@@ -60,7 +62,14 @@ export default function ClubDetailPage({ params }) {
             </Link>
 
             {/* Hero Header */}
-            <div className={styles.hero} style={{ backgroundImage: `linear-gradient(rgba(17, 34, 78, 0.4), rgba(17, 34, 78, 0.8)), url(${club.coverImage})` }}>
+            <div
+                className={styles.hero}
+                style={{
+                    backgroundImage: `linear-gradient(rgba(17, 34, 78, 0.4), rgba(17, 34, 78, 0.8)), url(${club.coverImage})`,
+                    cursor: 'zoom-in'
+                }}
+                onClick={() => setShowCoverLightbox(true)}
+            >
                 <div className={styles.heroOverlay}>
                     <h1 className={styles.clubName}>{formatDynamicText(club.name)}</h1>
                     <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
@@ -73,6 +82,14 @@ export default function ClubDetailPage({ params }) {
                     </div>
                 </div>
             </div>
+
+            {showCoverLightbox && (
+                <Lightbox
+                    images={[club.coverImage]}
+                    currentIndex={0}
+                    onClose={() => setShowCoverLightbox(false)}
+                />
+            )}
 
             <div className={styles.mainGrid}>
                 <div className={styles.content}>

@@ -16,6 +16,7 @@ export const translations = {
         connexion: "Connexion",
         signup: "S'inscrire",
         logout: "Se déconnecter",
+        installApp: "Installer l'App",
 
         // Auth
         loginTitle: "Connexion",
@@ -95,6 +96,7 @@ export const translations = {
         birthdaySubtitle: "Joyeux anniversaire à notre membre exceptionnel :",
         birthdaySubtitlePlural: "Joyeux anniversaire à nos membres exceptionnels :",
         president: "Président",
+        nationalBoardMember: "Membre Bureau National",
         eventsFormations: "Événements & Formations",
         photoGallery: "Galerie Photos",
         videosCreations: "Vidéos & Réalisations",
@@ -508,6 +510,7 @@ export const translations = {
         connexion: "Login",
         signup: "Sign Up",
         logout: "Logout",
+        installApp: "Install App",
 
         // Auth
         loginTitle: "Login",
@@ -587,6 +590,7 @@ export const translations = {
         birthdaySubtitle: "Happy birthday to our exceptional member:",
         birthdaySubtitlePlural: "Happy birthday to our exceptional members:",
         president: "President",
+        nationalBoardMember: "National Board Member",
         eventsFormations: "Events & Training",
         photoGallery: "Photo Gallery",
         videosCreations: "Videos & Creations",
@@ -879,6 +883,18 @@ export const translations = {
         submit: "Submit",
         confirmDeletePoll: "Delete this poll permanently?",
         national: "National",
+        testimonialsTitle: "Reviews & Testimonials",
+        noTestimonials: "No testimonials yet.",
+        confirmDeleteTestimonial: "Delete this testimonial?",
+        approvedStatus: "Approved",
+        waitingStatus: "Pending",
+        pointsManagementTitle: "Points Management",
+        pointsManagementDesc: "Assign or remove bonus points for your club members.",
+        searchMemberPlaceholder: "Search member by name or email...",
+        bonusPoints: "Bonus Points",
+        noMemberFound: "No member found.",
+        updateError: "Update error",
+        technicalError: "Technical error",
 
         // General
         loading: "Loading...",
@@ -967,6 +983,7 @@ export const translations = {
         connexion: "تسجيل الدخول",
         signup: "إنشاء حساب",
         logout: "تسجيل الخروج",
+        installApp: "تثبيت التطبيق",
 
         // Auth
         loginTitle: "تسجيل الدخول",
@@ -1046,6 +1063,7 @@ export const translations = {
         birthdaySubtitle: "عيد ميلاد سعيد لعضونا المتميز:",
         birthdaySubtitlePlural: "عيد ميلاد سعيد لأعضائنا المتميزين:",
         president: "الرئيس",
+        nationalBoardMember: "عضو مكتب وطني",
         eventsFormations: "الفعاليات والتكوينات",
         photoGallery: "معرض الصور",
         videosCreations: "الفيديوهات والإنجازات",

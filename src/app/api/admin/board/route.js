@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
         await dbConnect();
@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
         const data = await req.json();
@@ -35,7 +35,7 @@ export async function POST(req) {
 export async function PUT(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
         const { id, ...updateData } = await req.json();
@@ -50,7 +50,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
         const { searchParams } = new URL(req.url);

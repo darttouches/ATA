@@ -181,4 +181,31 @@
     .mobileMenu {
         display: none;
     }
+
+    .installBtn {
+        display: flex !important;
+    }
+}
+
+.installBtn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.installBtn:hover {
+    transform: scale(1.05);
+    background: var(--primary-hover, #1e40af);
+}
+
+@media (max-width: 991px) {
+    .installText {
+        display: none;
+    }
+    .installBtn {
+        padding: 0.5rem !important;
+    }
 }

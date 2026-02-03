@@ -5,6 +5,7 @@ import styles from './about.module.css';
 import { Target, Heart, Zap, CheckCircle2, Palette, Smile, Users, User, MapPin } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import dynamic from 'next/dynamic';
+import Lightbox from '@/components/Lightbox';
 
 const ClubMap = dynamic(() => import('@/components/ClubMap'), { ssr: false });
 
@@ -274,20 +275,11 @@ export default function AboutPage() {
 
             {/* Lightbox */}
             {lightboxImage && (
-                <div
-                    style={{
-                        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                        background: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out'
-                    }}
-                    onClick={() => setLightboxImage(null)}
-                >
-                    <img
-                        src={lightboxImage}
-                        alt="Full size"
-                        style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }}
-                    />
-                </div>
+                <Lightbox
+                    images={[lightboxImage]}
+                    currentIndex={0}
+                    onClose={() => setLightboxImage(null)}
+                />
             )}
         </div>
     );

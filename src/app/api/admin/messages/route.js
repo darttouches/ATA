@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         await dbConnect();
         const messages = await ContactMessage.find({}).sort({ createdAt: -1 });
@@ -19,7 +19,7 @@ export async function GET() {
 export async function PATCH(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { id, status } = await req.json();
         await dbConnect();
@@ -33,7 +33,7 @@ export async function PATCH(req) {
 export async function DELETE(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');

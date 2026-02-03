@@ -10,7 +10,7 @@ export async function GET() {
         const user = await getUser();
         console.log('User:', user ? `${user.email} (${user.role})` : 'null');
 
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             console.log('Access denied - user not admin');
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
@@ -42,7 +42,7 @@ export async function POST(req) {
         const user = await getUser();
         console.log('User:', user ? `${user.email} (${user.role})` : 'null');
 
-        if (!user || user.role !== 'admin') {
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) {
             console.log('Access denied - user not admin');
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }

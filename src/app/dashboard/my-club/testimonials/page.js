@@ -67,8 +67,8 @@ export default function TestimonialsPage() {
                         {t('noTestimonials')}
                     </div>
                 ) : (
-                    testimonials.map(t => (
-                        <div key={t._id} style={{
+                    testimonials.map(testimonial => (
+                        <div key={testimonial._id} style={{
                             background: 'var(--card-bg)',
                             padding: '1.5rem',
                             borderRadius: '12px',
@@ -80,31 +80,31 @@ export default function TestimonialsPage() {
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                     {[...Array(5)].map((_, i) => (
-                                        <Star key={i} size={16} fill={i < t.rating ? "#fbbf24" : "none"} color={i < t.rating ? "#fbbf24" : "currentColor"} style={{ opacity: i < t.rating ? 1 : 0.2 }} />
+                                        <Star key={i} size={16} fill={i < testimonial.rating ? "#fbbf24" : "none"} color={i < testimonial.rating ? "#fbbf24" : "currentColor"} style={{ opacity: i < testimonial.rating ? 1 : 0.2 }} />
                                     ))}
-                                    <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem' }}>{new Date(t.createdAt).toLocaleDateString()}</span>
+                                    <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem' }}>{new Date(testimonial.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <p style={{ fontStyle: 'italic', marginBottom: '1rem', lineHeight: '1.6' }}>"{t.content}"</p>
+                                <p style={{ fontStyle: 'italic', marginBottom: '1rem', lineHeight: '1.6' }}>"{testimonial.content}"</p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#333', overflow: 'hidden' }}>
                                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
-                                            {(t.name || 'A').charAt(0)}
+                                            {(testimonial.name || 'A').charAt(0)}
                                         </div>
                                     </div>
-                                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.name || t('anonymous')}</span>
+                                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{testimonial.name || t('anonymous')}</span>
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderLeft: '1px solid var(--card-border)', paddingLeft: '1.5rem' }}>
                                 <button
-                                    onClick={() => toggleApprove(t._id, t.approved)}
-                                    className={`btn ${t.approved ? 'btn-success' : 'btn-secondary'}`}
-                                    style={{ width: '100%', justifyContent: 'center', background: t.approved ? 'rgba(34, 197, 94, 0.2)' : '', color: t.approved ? '#22c55e' : '' }}
+                                    onClick={() => toggleApprove(testimonial._id, testimonial.approved)}
+                                    className={`btn ${testimonial.approved ? 'btn-success' : 'btn-secondary'}`}
+                                    style={{ width: '100%', justifyContent: 'center', background: testimonial.approved ? 'rgba(34, 197, 94, 0.2)' : '', color: testimonial.approved ? '#22c55e' : '' }}
                                 >
-                                    {t.approved ? <Check size={18} style={{ marginRight: '5px' }} /> : <X size={18} style={{ marginRight: '5px' }} />}
-                                    {t.approved ? t('approvedStatus') : t('waitingStatus')}
+                                    {testimonial.approved ? <Check size={18} style={{ marginRight: '5px' }} /> : <X size={18} style={{ marginRight: '5px' }} />}
+                                    {testimonial.approved ? t('approvedStatus') : t('waitingStatus')}
                                 </button>
-                                <button onClick={() => handleDelete(t._id)} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', color: '#f43f5e' }}>
+                                <button onClick={() => handleDelete(testimonial._id)} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', color: '#f43f5e' }}>
                                     <Trash2 size={18} /> {t('delete')}
                                 </button>
                             </div>

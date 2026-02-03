@@ -2,21 +2,48 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Testimonial from '@/models/Testimonial';
+import { getUser } from '@/lib/auth';
+import User from '@/models/User';
 
 // GET: List testimonials
 export async function GET(req) {
     try {
+        const currentUser = await getUser();
+        if (!currentUser) {
+            return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+        }
+
         await dbConnect();
         const { searchParams } = new URL(req.url);
         const clubId = searchParams.get('clubId');
         const approved = searchParams.get('approved');
 
         let query = {};
-        if (clubId) query.club = clubId;
-        if (approved) query.approved = approved === 'true';
+
+        // Role-based filtering
+        if (currentUser.role === 'admin' || currentUser.role === 'national') {
+            // Admin and National can see everything or filter by clubId
+            if (clubId) query.club = clubId;
+        } else if (currentUser.role === 'president') {
+            // President can only see their club's testimonials
+            const dbUser = await User.findById(currentUser.userId);
+            if (!dbUser || !dbUser.club) {
+                return NextResponse.json({ success: true, data: [] });
+            }
+            query.club = dbUser.club;
+        } else {
+            // Regular members/others only see approved ones
+            query.approved = true;
+            if (clubId) query.club = clubId;
+        }
+
+        if (approved !== null) {
+            query.approved = approved === 'true';
+        }
 
         const testimonials = await Testimonial.find(query)
-            .populate('user', 'name profileImage') // If user exists
+            .populate('user', 'name profileImage')
+            .populate('club', 'name')
             .sort({ createdAt: -1 });
 
         return NextResponse.json({ success: true, data: testimonials }, { status: 200 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -12,8 +13,27 @@ import styles from './DashboardSidebar.module.css';
 export default function DashboardSidebar({ user, isOpen, onClose }) {
     const { t } = useLanguage();
     const pathname = usePathname();
+    const [unreadChats, setUnreadChats] = useState(0);
 
     const isActive = (path) => pathname === path;
+
+    useEffect(() => {
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchUnreadCount = async () => {
+        try {
+            const res = await fetch('/api/chat/unread-count');
+            if (res.ok) {
+                const data = await res.json();
+                setUnreadChats(data.count);
+            }
+        } catch (error) {
+            console.error('Failed to fetch unread count:', error);
+        }
+    };
 
     return (
         <>
@@ -39,7 +59,7 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                             display: 'inline-block',
                             fontWeight: 700
                         }}>
-                            {user.role === 'president' ? t('president') : user.role}
+                            {user.role === 'president' ? t('president') : (user.role === 'national' ? t('nationalBoardMember') : user.role)}
                         </div>
                     </div>
                     {/* Close button for mobile */}
@@ -64,7 +84,25 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                         <Bell size={18} /> {t('notifications')}
                     </Link>
                     <Link href="/dashboard/messages" className={`${styles.link} ${isActive('/dashboard/messages') ? styles.activeLink : ''}`} onClick={onClose}>
-                        <MessageSquare size={18} /> {t('messaging')}
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                            <MessageSquare size={18} />
+                            <span style={{ flex: 1 }}>{t('messaging')}</span>
+                            {unreadChats > 0 && (
+                                <span style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 'bold',
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    minWidth: '18px',
+                                    textAlign: 'center',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}>
+                                    {unreadChats > 9 ? '9+' : unreadChats}
+                                </span>
+                            )}
+                        </div>
                     </Link>
                     <Link href="/dashboard/voice" className={`${styles.link} ${isActive('/dashboard/voice') ? styles.activeLink : ''}`} onClick={onClose}>
                         <Mic size={18} /> {t('memberVoice')}
@@ -114,6 +152,33 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                             </Link>
                             <Link href="/dashboard/settings" className={`${styles.link} ${isActive('/dashboard/settings') ? styles.activeLink : ''}`} onClick={onClose}>
                                 <Settings size={18} /> {t('generalSettings')}
+                            </Link>
+                        </>
+                    )}
+
+                    {user.role === 'national' && (
+                        <>
+                            <div className={styles.sectionLabel}>{t('nationalBoard')}</div>
+                            <Link href="/dashboard/users" className={`${styles.link} ${isActive('/dashboard/users') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <Users size={18} /> {t('users')}
+                            </Link>
+                            <Link href="/dashboard/clubs" className={`${styles.link} ${isActive('/dashboard/clubs') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <Shield size={18} /> {t('clubsManagement')}
+                            </Link>
+                            <Link href="/dashboard/members" className={`${styles.link} ${isActive('/dashboard/members') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <Users size={18} /> {t('membersManagement')}
+                            </Link>
+                            <Link href="/dashboard/content" className={`${styles.link} ${isActive('/dashboard/content') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <FileText size={18} /> {t('contents')}
+                            </Link>
+                            <Link href="/dashboard/actions-moderation" className={`${styles.link} ${isActive('/dashboard/actions-moderation') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <Calendar size={18} /> {t('actionsModeration')}
+                            </Link>
+                            <Link href="/dashboard/polls-moderation" className={`${styles.link} ${isActive('/dashboard/polls-moderation') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <BarChart3 size={18} /> {t('pollsModeration')}
+                            </Link>
+                            <Link href="/dashboard/reclamations" className={`${styles.link} ${isActive('/dashboard/reclamations') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <AlertCircle size={18} /> {t('demandsReclamations')}
                             </Link>
                         </>
                     )}

@@ -10,10 +10,25 @@ export default function UsersManagement() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedUsers, setSelectedUsers] = useState(new Set());
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
-        fetchUsers();
+        const loadData = async () => {
+            await fetchCurrentUser();
+            await fetchUsers();
+        };
+        loadData();
     }, []);
+
+    const fetchCurrentUser = async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            const data = await res.json();
+            if (res.ok) setCurrentUser(data);
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+        }
+    };
 
     const fetchUsers = async () => {
         const res = await fetch('/api/admin/users');
@@ -23,6 +38,12 @@ export default function UsersManagement() {
     };
 
     const updateUser = async (userId, updateData) => {
+        // Prevent role update if current user is 'national'
+        if (currentUser?.role === 'national' && updateData.role) {
+            alert(t('notAuthorizedRoleChange') || "Vous n'êtes pas autorisé à modifier les rôles.");
+            return;
+        }
+
         const res = await fetch('/api/admin/users', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -31,6 +52,9 @@ export default function UsersManagement() {
         if (res.ok) {
             const updated = await res.json();
             setUsers(users.map(u => u._id === userId ? updated : u));
+        } else {
+            const err = await res.json();
+            alert(err.error || t('updateError'));
         }
     };
 
@@ -209,17 +233,21 @@ export default function UsersManagement() {
                                                 <select
                                                     value={user.role}
                                                     onChange={(e) => updateUser(user._id, { role: e.target.value })}
+                                                    disabled={currentUser?.role !== 'admin'}
                                                     style={{
                                                         background: 'rgba(17, 34, 78, 0.5)',
                                                         color: 'white',
                                                         border: '1px solid rgba(255,255,255,0.1)',
                                                         padding: '4px 8px',
                                                         borderRadius: '4px',
-                                                        fontSize: '0.85rem'
+                                                        fontSize: '0.85rem',
+                                                        cursor: currentUser?.role === 'admin' ? 'pointer' : 'not-allowed',
+                                                        opacity: currentUser?.role === 'admin' ? 1 : 0.7
                                                     }}
                                                 >
                                                     <option value="membre">{t('member')}</option>
                                                     <option value="president">{t('president')}</option>
+                                                    <option value="national">{t('nationalBoardMember')}</option>
                                                     <option value="admin">Admin</option>
                                                 </select>
                                             </td>

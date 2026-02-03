@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         await dbConnect();
         const contents = await Content.find({}).populate('club', 'name').populate('author', 'name').sort({ createdAt: -1 });
@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, club, onHome, isBestOff } = await req.json();
         await dbConnect();
@@ -50,7 +50,7 @@ export async function POST(req) {
 export async function PATCH(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { id, status, onHome, isBestOff } = await req.json();
         await dbConnect();
@@ -70,7 +70,7 @@ export async function PATCH(req) {
 export async function PUT(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club } = await req.json();
         await dbConnect();
@@ -90,7 +90,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
