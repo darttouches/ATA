@@ -18,7 +18,10 @@ export const metadata = {
     statusBarStyle: 'default',
     title: "Touches D'Art",
   },
-  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/logo/1769021673687-bva05-logo touches d\'art v3  (1).png', // Same as manifest default
+  },
 };
 
 export const viewport = {
