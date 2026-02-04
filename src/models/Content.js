@@ -40,6 +40,22 @@ const ContentSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    program: {
+        items: [{
+            title: String,
+            startTime: String,
+            endTime: String,
+            duration: String,
+            type: {
+                type: String,
+                enum: ['content', 'pause', 'coffee_break', 'text', 'remark', 'breakfast', 'lunch', 'dinner', 'soiree', 'sleep', 'conference', 'formation', 'dj_party', 'spectacle'],
+                default: 'content'
+            },
+            description: String
+        }],
+        globalDuration: String,
+        partsCount: Number
+    },
     createdAt: {
         type: Date,
         default: Date.now,

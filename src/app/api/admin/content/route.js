@@ -21,7 +21,19 @@ export async function POST(req) {
         const user = await getUser();
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
-        const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, club, onHome, isBestOff } = await req.json();
+        const body = await req.json();
+        const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, club, onHome, isBestOff, program } = body;
+
+        // Clean program data
+        const cleanProgram = program ? {
+            ...program,
+            partsCount: (program.partsCount && !isNaN(parseInt(program.partsCount))) ? parseInt(program.partsCount) : undefined,
+            items: Array.isArray(program.items) ? program.items.map(item => ({
+                ...item,
+                duration: item.duration || ''
+            })) : []
+        } : undefined;
+
         await dbConnect();
 
         const content = await Content.create({
@@ -38,12 +50,14 @@ export async function POST(req) {
             club,
             author: user.userId,
             onHome: onHome || false,
-            isBestOff: isBestOff || false
+            isBestOff: isBestOff || false,
+            program: cleanProgram
         });
 
         return NextResponse.json(content);
     } catch (error) {
-        return NextResponse.json({ error: 'Erreur lors de la création' }, { status: 500 });
+        console.error('Admin Content creation error:', error);
+        return NextResponse.json({ error: error.message || 'Erreur lors de la création' }, { status: 500 });
     }
 }
 
@@ -72,18 +86,31 @@ export async function PUT(req) {
         const user = await getUser();
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
-        const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club } = await req.json();
+        const body = await req.json();
+        const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club, program } = body;
+
+        // Clean program data
+        const cleanProgram = program ? {
+            ...program,
+            partsCount: (program.partsCount && !isNaN(parseInt(program.partsCount))) ? parseInt(program.partsCount) : undefined,
+            items: Array.isArray(program.items) ? program.items.map(item => ({
+                ...item,
+                duration: item.duration || ''
+            })) : []
+        } : undefined;
+
         await dbConnect();
 
         const updated = await Content.findByIdAndUpdate(
             id,
-            { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club },
+            { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club, program: cleanProgram },
             { new: true }
         );
 
         return NextResponse.json(updated);
     } catch (error) {
-        return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 });
+        console.error('Admin Content update error:', error);
+        return NextResponse.json({ error: error.message || 'Erreur lors de la mise à jour' }, { status: 500 });
     }
 }
 

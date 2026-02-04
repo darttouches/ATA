@@ -125,9 +125,66 @@ export default function ContentDetailModal({ item, onClose }) {
                         </div>
                     )}
 
+                    {item.program?.items?.length > 0 && (
+                        <div className={styles.programSection}>
+                            <h4 className={styles.sectionTitle}><Clock size={18} /> {t('manifestationPlan')}</h4>
+
+                            {(item.program.globalDuration || item.program.partsCount) && (
+                                <div className={styles.programMeta}>
+                                    {item.program.globalDuration && (
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{t('globalDuration')}</span>
+                                            <span style={{ fontWeight: 700 }}>{item.program.globalDuration}</span>
+                                        </div>
+                                    )}
+                                    {item.program.partsCount && (
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{t('partsCount')}</span>
+                                            <span style={{ fontWeight: 700 }}>{item.program.partsCount}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className={styles.timeline}>
+                                {item.program.items.map((pitem, idx) => (
+                                    <div key={idx} className={styles.timelineItem}>
+                                        <div className={styles.timelineDot}>
+                                            {pitem.type === 'coffee_break' && <Clock size={10} />}
+                                            {pitem.type === 'pause' && <Play size={10} />}
+                                            {/* fallback dot */}
+                                        </div>
+                                        <div className={styles.timelineContent}>
+                                            <div className={styles.timeInfo}>
+                                                <Clock size={14} />
+                                                {pitem.startTime || '--:--'} {pitem.endTime ? ` - ${pitem.endTime}` : ''}
+                                                {pitem.duration && <span style={{ opacity: 0.5, marginLeft: '10px' }}>({pitem.duration} min)</span>}
+                                            </div>
+                                            <div className={styles.itemTitle}>
+                                                {pitem.type === 'coffee_break' && '☕ '}
+                                                {pitem.type === 'pause' && '⏸️ '}
+                                                {pitem.type === 'breakfast' && '🥐 '}
+                                                {pitem.type === 'lunch' && '🍲 '}
+                                                {pitem.type === 'dinner' && '🍽️ '}
+                                                {pitem.type === 'soiree' && '🌙 '}
+                                                {pitem.type === 'sleep' && '🛌 '}
+                                                {pitem.type === 'conference' && '🎤 '}
+                                                {pitem.type === 'formation' && '🎓 '}
+                                                {pitem.type === 'dj_party' && '🎧 '}
+                                                {pitem.type === 'spectacle' && '🎭 '}
+                                                {pitem.title || t(pitem.type)}
+                                            </div>
+                                            {pitem.description && <p className={styles.itemDesc}>{pitem.description}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {item.link && (
                         <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
-                            <a href={item.link} target="_blank" className="btn btn-primary" style={{ padding: '14px 40px', display: 'inline-flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: '14px 40px', display: 'inline-flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
                                 {t('participate')} <ExternalLink size={20} />
                             </a>
                         </div>

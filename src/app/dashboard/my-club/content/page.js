@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Calendar, Video, Image, Lightbulb, CheckCircle, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import ProgramEditor from '@/components/ProgramEditor';
 
 export default function ChefContentManagement() {
     const { t } = useLanguage();
@@ -19,7 +20,12 @@ export default function ChefContentManagement() {
         time: '',
         photos: [],
         videoUrl: '',
-        link: ''
+        link: '',
+        program: {
+            items: [],
+            globalDuration: '',
+            partsCount: ''
+        }
     });
 
     useEffect(() => {
@@ -93,9 +99,13 @@ export default function ChefContentManagement() {
             const dataToSend = {
                 ...formData,
                 id: editId,
-                // Ensure photos is a clean array of valid URLs
                 photos: Array.isArray(formData.photos) ? formData.photos.filter(p => p && p.length > 5) : [],
-                mediaUrl: formData.mediaUrl || (formData.photos.length > 0 ? formData.photos[0] : '')
+                mediaUrl: formData.mediaUrl || (formData.photos.length > 0 ? formData.photos[0] : ''),
+                program: formData.program ? {
+                    ...formData.program,
+                    partsCount: formData.program.partsCount ? parseInt(formData.program.partsCount) : undefined,
+                    items: formData.program.items || []
+                } : undefined
             };
 
             const method = editId ? 'PUT' : 'POST';
@@ -136,7 +146,8 @@ export default function ChefContentManagement() {
             photos: photosArray,
             videoUrl: item.videoUrl || '',
             link: item.link || '',
-            mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : '')
+            mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : ''),
+            program: item.program || { items: [], globalDuration: '', partsCount: '' }
         });
         setShowModal(true);
     };
@@ -191,7 +202,11 @@ export default function ChefContentManagement() {
                 <h1>{t('contentsEventsTitle')}</h1>
                 <button className="btn btn-primary" onClick={() => {
                     setEditId(null);
-                    setFormData({ title: '', type: 'event', description: '', date: '', time: '', photos: [], videoUrl: '', link: '', mediaUrl: '' });
+                    setFormData({
+                        title: '', type: 'event', description: '', date: '', time: '',
+                        photos: [], videoUrl: '', link: '', mediaUrl: '',
+                        program: { items: [], globalDuration: '', partsCount: '' }
+                    });
                     setShowModal(true);
                 }}>
                     <Plus size={18} style={{ marginRight: '8px' }} /> {t('add')}
@@ -395,7 +410,19 @@ export default function ChefContentManagement() {
                                     />
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem' }}>
+
+                            {(formData.type === 'event' || formData.type === 'formation') && (
+                                <ProgramEditor
+                                    program={formData.program?.items || []}
+                                    setProgram={(items) => setFormData({ ...formData, program: { ...formData.program, items } })}
+                                    globalDuration={formData.program?.globalDuration || ''}
+                                    setGlobalDuration={(val) => setFormData({ ...formData, program: { ...formData.program, globalDuration: val } })}
+                                    partsCount={formData.program?.partsCount || ''}
+                                    setPartsCount={(val) => setFormData({ ...formData, program: { ...formData.program, partsCount: val } })}
+                                />
+                            )}
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '20px' }}>
                                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>{t('cancel')}</button>
                                 <button
                                     type="submit"

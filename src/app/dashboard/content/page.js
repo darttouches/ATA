@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Check, X, GalleryHorizontal, Home, ShieldCheck, Trash2, Edit2, Upload, XCircle, CheckCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import ProgramEditor from '@/components/ProgramEditor';
 
 export default function AdminContentModeration() {
     const { t } = useLanguage();
@@ -21,7 +22,12 @@ export default function AdminContentModeration() {
         videoUrl: '',
         link: '',
         status: 'approved',
-        club: ''
+        club: '',
+        program: {
+            items: [],
+            globalDuration: '',
+            partsCount: ''
+        }
     });
 
     useEffect(() => {
@@ -88,7 +94,8 @@ export default function AdminContentModeration() {
             link: item.link || '',
             status: item.status,
             club: item.club?._id || item.club || '',
-            mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : '')
+            mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : ''),
+            program: item.program || { items: [], globalDuration: '', partsCount: '' }
         });
         setShowModal(true);
     };
@@ -104,7 +111,12 @@ export default function AdminContentModeration() {
                 ...formData,
                 id: editId,
                 photos: Array.isArray(formData.photos) ? formData.photos.filter(p => p && p.length > 5) : [],
-                mediaUrl: formData.mediaUrl || (formData.photos.length > 0 ? formData.photos[0] : '')
+                mediaUrl: formData.mediaUrl || (formData.photos.length > 0 ? formData.photos[0] : ''),
+                program: formData.program ? {
+                    ...formData.program,
+                    partsCount: formData.program.partsCount ? parseInt(formData.program.partsCount) : undefined,
+                    items: formData.program.items || []
+                } : undefined
             };
 
             const method = editId ? 'PUT' : 'POST';
@@ -199,7 +211,11 @@ export default function AdminContentModeration() {
                     className="btn btn-primary"
                     onClick={() => {
                         setEditId(null);
-                        setFormData({ title: '', type: 'event', description: '', date: '', time: '', photos: [], videoUrl: '', link: '', status: 'approved', club: '' });
+                        setFormData({
+                            title: '', type: 'event', description: '', date: '', time: '',
+                            photos: [], videoUrl: '', link: '', status: 'approved', club: '',
+                            program: { items: [], globalDuration: '', partsCount: '' }
+                        });
                         setShowModal(true);
                     }}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -444,7 +460,18 @@ export default function AdminContentModeration() {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '1rem' }}>
+                            {(formData.type === 'event' || formData.type === 'formation') && (
+                                <ProgramEditor
+                                    program={formData.program?.items || []}
+                                    setProgram={(items) => setFormData({ ...formData, program: { ...formData.program, items } })}
+                                    globalDuration={formData.program?.globalDuration || ''}
+                                    setGlobalDuration={(val) => setFormData({ ...formData, program: { ...formData.program, globalDuration: val } })}
+                                    partsCount={formData.program?.partsCount || ''}
+                                    setPartsCount={(val) => setFormData({ ...formData, program: { ...formData.program, partsCount: val } })}
+                                />
+                            )}
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '20px' }}>
                                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>{t('cancel')}</button>
                                 <button
                                     type="submit"
