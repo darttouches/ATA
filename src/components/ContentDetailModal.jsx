@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Calendar, Clock, Image as ImageIcon, Play, ExternalLink } from 'lucide-react';
+import { X, Calendar, Clock, Image as ImageIcon, Play, ExternalLink, User } from 'lucide-react';
 import styles from './ContentDetailModal.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 import Lightbox from './Lightbox';
@@ -7,6 +7,14 @@ import Lightbox from './Lightbox';
 export default function ContentDetailModal({ item, onClose }) {
     const { t, formatDynamicText } = useLanguage();
     const [lightboxIndex, setLightboxIndex] = useState(-1);
+    const [expandedGroups, setExpandedGroups] = useState({});
+
+    const toggleGroup = (time) => {
+        setExpandedGroups(prev => ({
+            ...prev,
+            [time]: !prev[time]
+        }));
+    };
 
     if (!item) return null;
 
@@ -147,34 +155,69 @@ export default function ContentDetailModal({ item, onClose }) {
                             )}
 
                             <div className={styles.timeline}>
-                                {item.program.items.map((pitem, idx) => (
-                                    <div key={idx} className={styles.timelineItem}>
-                                        <div className={styles.timelineDot}>
-                                            {pitem.type === 'coffee_break' && <Clock size={10} />}
-                                            {pitem.type === 'pause' && <Play size={10} />}
-                                            {/* fallback dot */}
-                                        </div>
-                                        <div className={styles.timelineContent}>
-                                            <div className={styles.timeInfo}>
-                                                <Clock size={14} />
-                                                {pitem.startTime || '--:--'} {pitem.endTime ? ` - ${pitem.endTime}` : ''}
-                                                {pitem.duration && <span style={{ opacity: 0.5, marginLeft: '10px' }}>({pitem.duration} min)</span>}
-                                            </div>
-                                            <div className={styles.itemTitle}>
-                                                {pitem.type === 'coffee_break' && '☕ '}
-                                                {pitem.type === 'pause' && '⏸️ '}
-                                                {pitem.type === 'breakfast' && '🥐 '}
-                                                {pitem.type === 'lunch' && '🍲 '}
-                                                {pitem.type === 'dinner' && '🍽️ '}
-                                                {pitem.type === 'soiree' && '🌙 '}
-                                                {pitem.type === 'sleep' && '🛌 '}
-                                                {pitem.type === 'conference' && '🎤 '}
-                                                {pitem.type === 'formation' && '🎓 '}
-                                                {pitem.type === 'dj_party' && '🎧 '}
-                                                {pitem.type === 'spectacle' && '🎭 '}
-                                                {pitem.title || t(pitem.type)}
-                                            </div>
-                                            {pitem.description && <p className={styles.itemDesc}>{pitem.description}</p>}
+                                {Object.entries(
+                                    item.program.items.reduce((acc, pitem) => {
+                                        const time = pitem.startTime || '---';
+                                        if (!acc[time]) acc[time] = [];
+                                        acc[time].push(pitem);
+                                        return acc;
+                                    }, {})
+                                ).sort((a, b) => a[0].localeCompare(b[0])).map(([time, items], groupIdx) => (
+                                    <div
+                                        key={groupIdx}
+                                        className={`${styles.timelineGroup} ${expandedGroups[time] ? styles.activeGroup : ''}`}
+                                        onClick={() => toggleGroup(time)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <div className={styles.timelineTime}>{time}</div>
+                                        <div className={styles.timelineGroupItems}>
+                                            {items.map((pitem, idx) => (
+                                                <div key={idx} className={styles.timelineItem}>
+                                                    <div className={styles.timelineDot}>
+                                                        {pitem.type === 'coffee_break' && <Clock size={10} />}
+                                                        {pitem.type === 'pause' && <Play size={10} />}
+                                                    </div>
+                                                    <div className={styles.timelineContent}>
+                                                        <div className={styles.itemTitleGroup}>
+                                                            <div className={styles.itemTitle}>
+                                                                {pitem.type === 'coffee_break' && '☕ '}
+                                                                {pitem.type === 'pause' && '⏸️ '}
+                                                                {pitem.type === 'breakfast' && '🥐 '}
+                                                                {pitem.type === 'lunch' && '🍲 '}
+                                                                {pitem.type === 'dinner' && '🍽️ '}
+                                                                {pitem.type === 'soiree' && '🌙 '}
+                                                                {pitem.type === 'sleep' && '🛌 '}
+                                                                {pitem.type === 'conference' && '🎤 '}
+                                                                {pitem.type === 'formation' && '🎓 '}
+                                                                {pitem.type === 'dj_party' && '🎧 '}
+                                                                {pitem.type === 'spectacle' && '🎭 '}
+                                                                {pitem.title || t(pitem.type)}
+                                                            </div>
+                                                            <div className={styles.timeRangeMini}>
+                                                                {pitem.startTime} {pitem.endTime ? ` - ${pitem.endTime}` : ''}
+                                                            </div>
+                                                        </div>
+
+                                                        {expandedGroups[time] && (
+                                                            <div className={styles.expandedContent} style={{ marginTop: '15px' }}>
+                                                                {(pitem.speakerName || pitem.speakerPhoto) && (
+                                                                    <div className={styles.speakerInfo}>
+                                                                        <div className={styles.speakerAvatar}>
+                                                                            {pitem.speakerPhoto ? (
+                                                                                <img src={pitem.speakerPhoto} alt={pitem.speakerName} />
+                                                                            ) : (
+                                                                                <User size={18} style={{ opacity: 0.5 }} />
+                                                                            )}
+                                                                        </div>
+                                                                        {pitem.speakerName && <span className={styles.speakerName}>{pitem.speakerName}</span>}
+                                                                    </div>
+                                                                )}
+                                                                {pitem.description && <p className={styles.itemDesc}>{pitem.description}</p>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 ))}

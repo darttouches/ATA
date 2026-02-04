@@ -465,6 +465,8 @@ export const translations = {
         formation: "Formation",
         dj_party: "DJ Party",
         spectacle: "Spectacle",
+        speakerName: "Intervenant / Animateur",
+        speakerPhoto: "Photo de l'intervenant",
         settingsTitle: "Paramètres de l'Association",
 
         // General
@@ -972,6 +974,8 @@ export const translations = {
         formation: "Training",
         dj_party: "DJ Party",
         spectacle: "Show",
+        speakerName: "Speaker / Animator",
+        speakerPhoto: "Speaker Photo",
         settingsTitle: "Association Settings",
         nationalBoardTitle: "National Board",
         newMember: "New Member",
@@ -1485,6 +1489,8 @@ export const translations = {
         formation: "تكوين",
         dj_party: "حفلة DJ",
         spectacle: "عرض",
+        speakerName: "المتحدث / المنشط",
+        speakerPhoto: "صورة المتحدث",
         settingsTitle: "إعدادات الجمعية",
         nationalBoardTitle: "المكتب الوطني",
         newMember: "عضو جديد",

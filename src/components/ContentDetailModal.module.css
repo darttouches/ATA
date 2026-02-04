@@ -229,77 +229,197 @@
 .timeline {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 20px;
     position: relative;
-    padding-left: 30px;
+    padding-left: 0;
 }
 
-.timeline::before {
+.timelineGroup {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 20px;
+    position: relative;
+    padding: 10px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.timelineGroup:hover {
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.activeGroup {
+    background: rgba(var(--primary-rgb), 0.08);
+}
+
+.timelineTime {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--primary);
+    text-align: right;
+    padding-top: 15px;
+    position: relative;
+}
+
+.timelineTime::after {
     content: '';
     position: absolute;
-    left: 0;
-    top: 5px;
-    bottom: 5px;
-    width: 2px;
-    background: linear-gradient(to bottom, var(--primary), rgba(255, 255, 255, 0.1));
+    right: -11px;
+    top: 22px;
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--primary);
+    z-index: 2;
+}
+
+.timelineGroupItems {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-left: 20px;
+    border-left: 2px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+.itemTitleGroup {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.timeRangeMini {
+    font-size: 0.75rem;
+    opacity: 0.4;
+    font-weight: 600;
 }
 
 .timelineItem {
     position: relative;
-    padding-bottom: 30px;
-}
-
-.timelineItem:last-child {
     padding-bottom: 0;
 }
 
-.timelineDot {
-    position: absolute;
-    left: -40px;
-    top: 0;
-    width: 22px;
-    height: 22px;
-    background: #0f0f13;
-    border: 2px solid var(--primary);
-    border-radius: 50%;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary);
-}
-
 .timelineContent {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
-    padding: 15px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    transition: all 0.3s ease;
-}
-
-.timelineContent:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.timeInfo {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--primary);
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    background: none;
+    padding: 0;
+    border: none;
 }
 
 .itemTitle {
     font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+}
+
+.expandedContent {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.speakerInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    width: fit-content;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.speakerAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.speakerAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.speakerName {
+    font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: 5px;
+    color: var(--secondary);
 }
 
 .itemDesc {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     opacity: 0.7;
-    line-height: 1.5;
+    line-height: 1.6;
+    color: #ccc;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 5px;
+}
+
+@media (max-width: 600px) {
+    .timelineGroup {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+
+    .timelineTime {
+        text-align: left;
+        padding-top: 0;
+    }
+
+    .timelineTime::after {
+        display: none;
+    }
+
+    .timelineGroupItems {
+        padding-left: 0;
+        border-left: none;
+    }
+
+    .itemTitleGroup {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+}
+
+@media (max-width: 600px) {
+    .timelineGroup {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .timelineTime {
+        text-align: left;
+        padding-top: 0;
+    }
+
+    .timelineTime::after {
+        display: none;
+    }
+
+    .timelineGroupItems {
+        padding-left: 0;
+        border-left: none;
+    }
 }

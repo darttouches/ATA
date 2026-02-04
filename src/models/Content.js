@@ -51,7 +51,9 @@ const ContentSchema = new mongoose.Schema({
                 enum: ['content', 'pause', 'coffee_break', 'text', 'remark', 'breakfast', 'lunch', 'dinner', 'soiree', 'sleep', 'conference', 'formation', 'dj_party', 'spectacle'],
                 default: 'content'
             },
-            description: String
+            description: String,
+            speakerName: String,
+            speakerPhoto: String
         }],
         globalDuration: String,
         partsCount: Number

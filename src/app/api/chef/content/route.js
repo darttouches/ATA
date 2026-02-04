@@ -35,8 +35,14 @@ export async function POST(req) {
             ...program,
             partsCount: (program.partsCount && !isNaN(parseInt(program.partsCount))) ? parseInt(program.partsCount) : undefined,
             items: Array.isArray(program.items) ? program.items.map(item => ({
-                ...item,
-                duration: item.duration || ''
+                title: item.title || '',
+                startTime: item.startTime || '',
+                endTime: item.endTime || '',
+                duration: item.duration || '',
+                type: item.type || 'content',
+                description: item.description || '',
+                speakerName: item.speakerName || '',
+                speakerPhoto: item.speakerPhoto || ''
             })) : []
         } : undefined;
 
@@ -93,9 +99,15 @@ export async function PUT(req) {
         const cleanProgram = program ? {
             ...program,
             partsCount: (program.partsCount && !isNaN(parseInt(program.partsCount))) ? parseInt(program.partsCount) : undefined,
-            items: Array.isArray(program.items) ? program.items.map(item => ({
-                ...item,
-                duration: item.duration || ''
+            items: Array.isArray(program.items) ? program.items.map(pitem => ({
+                title: pitem.title || '',
+                startTime: pitem.startTime || '',
+                endTime: pitem.endTime || '',
+                duration: pitem.duration || '',
+                type: pitem.type || 'content',
+                description: pitem.description || '',
+                speakerName: pitem.speakerName || '',
+                speakerPhoto: pitem.speakerPhoto || ''
             })) : []
         } : undefined;
 

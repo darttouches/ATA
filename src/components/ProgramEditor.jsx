@@ -1,12 +1,13 @@
 "use client";
 
 import React from 'react';
-import { Plus, Trash2, Clock, Coffee, Utensils, Info, FileText, Layout, Zap, Moon, Bed, Mic, GraduationCap, Music, Ticket } from 'lucide-react';
+import { Plus, Trash2, Clock, Coffee, Utensils, Info, FileText, Layout, Zap, Moon, Bed, Mic, GraduationCap, Music, Ticket, User, Camera, Upload } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './ProgramEditor.module.css';
 
 const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration, partsCount, setPartsCount }) => {
     const { t } = useLanguage();
+    const [uploading, setUploading] = React.useState(null); // track index of item uploading
 
     const addItem = () => {
         const newItem = {
@@ -15,7 +16,9 @@ const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration,
             endTime: '',
             duration: '',
             type: 'content',
-            description: ''
+            description: '',
+            speakerName: '',
+            speakerPhoto: ''
         };
         setProgram([...program, newItem]);
     };
@@ -40,6 +43,32 @@ const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration,
         }
 
         setProgram(newProgram);
+    };
+
+    const handleSpeakerPhotoUpload = async (e, index) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploading(index);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileName: file.name, fileData: reader.result, folder: 'speakers' }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    updateItem(index, 'speakerPhoto', data.url);
+                }
+            } catch (error) {
+                console.error('Speaker photo upload failed:', error);
+            } finally {
+                setUploading(null);
+            }
+        };
+        reader.readAsDataURL(file);
     };
 
     const getTypeIcon = (type) => {
@@ -96,7 +125,7 @@ const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration,
                 {program.map((item, index) => (
                     <div key={index} className={styles.itemCard}>
                         <div className={styles.itemHeader}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                                 <div className={styles.iconWrapper} style={{
                                     background: item.type === 'content' ? 'rgba(var(--primary-rgb), 0.2)' : 'rgba(255,255,255,0.05)',
                                     color: item.type === 'content' ? 'var(--primary)' : 'white'
@@ -156,7 +185,40 @@ const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration,
                             />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: '10px', alignItems: 'center' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <User size={14} style={{ opacity: 0.6 }} />
+                                <input
+                                    type="text"
+                                    className={styles.inputField}
+                                    style={{ fontSize: '0.8rem' }}
+                                    value={item.speakerName}
+                                    onChange={(e) => updateItem(index, 'speakerName', e.target.value)}
+                                    placeholder={t('speakerName')}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <label className={styles.uploadBtnMini}>
+                                    {uploading === index ? <Clock size={12} className={styles.spin} /> : <Camera size={12} />}
+                                    <input type="file" hidden accept="image/*" onChange={(e) => handleSpeakerPhotoUpload(e, index)} />
+                                </label>
+                                <input
+                                    type="text"
+                                    className={styles.inputField}
+                                    style={{ fontSize: '0.8rem' }}
+                                    value={item.speakerPhoto}
+                                    onChange={(e) => updateItem(index, 'speakerPhoto', e.target.value)}
+                                    placeholder={t('speakerPhoto') + " (URL)"}
+                                />
+                                {item.speakerPhoto && (
+                                    <div className={styles.miniPreview}>
+                                        <img src={item.speakerPhoto} alt="speaker" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
                             <div style={{ fontSize: '0.8rem', opacity: 0.6, whiteSpace: 'nowrap' }}>
                                 {t('durationMin')} :
                             </div>
