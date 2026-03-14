@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function UsersManagement() {
     const { t, language } = useLanguage();
@@ -11,16 +12,14 @@ export default function UsersManagement() {
     const [loading, setLoading] = useState(true);
     const [selectedUsers, setSelectedUsers] = useState(new Set());
     const [currentUser, setCurrentUser] = useState(null);
+    const [selectedEditUser, setSelectedEditUser] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        password: '',
+        officialRole: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        const loadData = async () => {
-            await fetchCurrentUser();
-            await fetchUsers();
-        };
-        loadData();
-    }, []);
-
-    const fetchCurrentUser = async () => {
+    const fetchCurrentUser = useCallback(async () => {
         try {
             const res = await fetch('/api/auth/me');
             const data = await res.json();
@@ -28,14 +27,21 @@ export default function UsersManagement() {
         } catch (error) {
             console.error('Error fetching current user:', error);
         }
-    };
+    }, []);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         const res = await fetch('/api/admin/users');
         const data = await res.json();
         if (res.ok) setUsers(data);
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        const loadData = async () => {
+            await Promise.all([fetchCurrentUser(), fetchUsers()]);
+        };
+        loadData();
+    }, [fetchCurrentUser, fetchUsers]);
 
     const updateUser = async (userId, updateData) => {
         // Prevent role update if current user is 'national'
@@ -200,12 +206,19 @@ export default function UsersManagement() {
                                     const isPending = user.status === 'pending';
                                     const isSelected = selectedUsers.has(user._id);
                                     return (
-                                        <tr key={user._id} style={{
-                                            borderBottom: '1px solid var(--card-border)',
-                                            background: isSelected ? 'rgba(124, 58, 237, 0.05)' : (isPending ? 'rgba(124, 58, 237, 0.02)' : 'transparent'),
-                                            transition: 'background 0.2s'
-                                        }}>
-                                            <td style={{ padding: '1rem' }}>
+                                        <tr key={user._id} 
+                                            onClick={() => {
+                                                setSelectedEditUser(user);
+                                                setEditFormData({ password: '', officialRole: user.officialRole || '' });
+                                            }}
+                                            style={{
+                                                borderBottom: '1px solid var(--card-border)',
+                                                background: isSelected ? 'rgba(124, 58, 237, 0.05)' : (isPending ? 'rgba(124, 58, 237, 0.02)' : 'transparent'),
+                                                transition: 'background 0.2s',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <td style={{ padding: '1rem' }} onClick={(e) => e.stopPropagation()}>
                                                 <button
                                                     onClick={() => toggleSelectUser(user._id)}
                                                     style={{ background: 'none', border: 'none', color: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.2)', cursor: 'pointer', padding: 0 }}
@@ -214,9 +227,9 @@ export default function UsersManagement() {
                                                 </button>
                                             </td>
                                             <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                                                     {user.profileImage ? (
-                                                        <img src={user.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <Image src={user.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
                                                     ) : (
                                                         <UserCog size={20} style={{ opacity: 0.3 }} />
                                                     )}
@@ -234,6 +247,7 @@ export default function UsersManagement() {
                                                     value={user.role}
                                                     onChange={(e) => updateUser(user._id, { role: e.target.value })}
                                                     disabled={currentUser?.role !== 'admin'}
+                                                    onClick={(e) => e.stopPropagation()}
                                                     style={{
                                                         background: 'rgba(17, 34, 78, 0.5)',
                                                         color: 'white',
@@ -253,7 +267,7 @@ export default function UsersManagement() {
                                             </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <button
-                                                    onClick={() => updateUser(user._id, { isPaid: !user.isPaid })}
+                                                    onClick={(e) => { e.stopPropagation(); updateUser(user._id, { isPaid: !user.isPaid }); }}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -278,6 +292,7 @@ export default function UsersManagement() {
                                                     type="text"
                                                     defaultValue={user.phone || ""}
                                                     placeholder={t('phonePlaceholder')}
+                                                    onClick={(e) => e.stopPropagation()}
                                                     onBlur={(e) => {
                                                         if (e.target.value !== user.phone) {
                                                             updateUser(user._id, { phone: e.target.value });
@@ -298,6 +313,7 @@ export default function UsersManagement() {
                                                 <select
                                                     value={user.status || 'approved'}
                                                     onChange={(e) => updateUser(user._id, { status: e.target.value })}
+                                                    onClick={(e) => e.stopPropagation()}
                                                     style={{
                                                         background: user.status === 'pending' ? 'var(--primary)' : 'rgba(17, 34, 78, 0.5)',
                                                         color: 'white',
@@ -313,7 +329,7 @@ export default function UsersManagement() {
                                                     <option value="rejected">{t('rejected')}</option>
                                                 </select>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
+                                            <td style={{ padding: '1rem' }} onClick={(e) => e.stopPropagation()}>
                                                 <button
                                                     onClick={() => deleteUser(user._id)}
                                                     style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '5px' }}
@@ -330,6 +346,112 @@ export default function UsersManagement() {
                     </div>
                 </div>
             ))}
+
+            {/* User Edit Modal */}
+            {selectedEditUser && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', zIndex: 3000, padding: '1rem'
+                }} onClick={() => setSelectedEditUser(null)}>
+                    <div className="card" style={{ width: '100%', maxWidth: '500px', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <UserCog size={24} color="var(--primary)" /> {t('userDetails') || 'Détails du membre'}
+                        </h2>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
+                                {selectedEditUser.profileImage ? (
+                                    <Image src={selectedEditUser.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
+                                ) : (
+                                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <UserCog size={30} style={{ opacity: 0.3 }} />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{selectedEditUser.firstName} {selectedEditUser.lastName}</h3>
+                                <p style={{ margin: '5px 0', opacity: 0.6, fontSize: '0.9rem' }}>{selectedEditUser.email}</p>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(124, 58, 237, 0.1)', color: 'var(--primary)', borderRadius: '4px', fontWeight: 600 }}>
+                                        {selectedEditUser.role}
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
+                                        ID: {selectedEditUser.memberNumber || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem', fontSize: '0.85rem' }}>
+                            <div>
+                                <label style={{ opacity: 0.5, display: 'block', marginBottom: '4px' }}>{t('registeredOn')}</label>
+                                <div>{new Date(selectedEditUser.createdAt).toLocaleDateString(language === 'ar' ? 'ar-TN' : 'fr-FR')}</div>
+                            </div>
+                            <div>
+                                <label style={{ opacity: 0.5, display: 'block', marginBottom: '4px' }}>Club</label>
+                                <div>{selectedEditUser.club?.name || selectedEditUser.preferredClub?.name || t('noClub')}</div>
+                            </div>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                                    {t('positionClub') || 'Position au club'}
+                                </label>
+                                <input
+                                    type="text"
+                                    className="card"
+                                    style={{ width: '100%', padding: '12px', border: '1px solid var(--card-border)' }}
+                                    placeholder="Ex: Secrétaire Général, Graphiste..."
+                                    value={editFormData.officialRole}
+                                    onChange={(e) => setEditFormData({ ...editFormData, officialRole: e.target.value })}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '2rem' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                                    {t('adminNewPassword') || t('newPassword')}
+                                </label>
+                                <input
+                                    type="text"
+                                    className="card"
+                                    style={{ width: '100%', padding: '12px', border: '1px solid var(--card-border)' }}
+                                    placeholder={t('leaveToKeepSame')}
+                                    value={editFormData.password}
+                                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                className="btn btn-secondary"
+                                style={{ flex: 1 }}
+                                onClick={() => setSelectedEditUser(null)}
+                            >
+                                {t('cancel')}
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                style={{ flex: 1 }}
+                                disabled={isSaving}
+                                onClick={async () => {
+                                    setIsSaving(true);
+                                    await updateUser(selectedEditUser._id, {
+                                        officialRole: editFormData.officialRole,
+                                        password: editFormData.password || undefined
+                                    });
+                                    setIsSaving(false);
+                                    setSelectedEditUser(null);
+                                }}
+                            >
+                                {isSaving ? t('saving') || 'Enregistrement...' : t('save')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

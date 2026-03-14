@@ -22,10 +22,6 @@ const ActionSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please provide a description'],
     },
-    description: {
-        type: String,
-        required: [true, 'Please provide a description'],
-    },
     club: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',

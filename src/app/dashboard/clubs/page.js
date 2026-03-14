@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, MapPin, Edit2, Upload, X, Camera } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function ClubsManagement() {
     const { t, formatDynamicText } = useLanguage();
@@ -19,22 +20,22 @@ export default function ClubsManagement() {
         partnerReviews: []
     });
 
-    useEffect(() => {
-        fetchClubs();
-        fetchChiefs();
-    }, []);
-
-    const fetchClubs = async () => {
+    const fetchClubs = useCallback(async () => {
         const res = await fetch('/api/admin/clubs');
         const data = await res.json();
         if (res.ok) setClubs(data);
-    };
+    }, []);
 
-    const fetchChiefs = async () => {
+    const fetchChiefs = useCallback(async () => {
         const res = await fetch('/api/admin/users');
         const data = await res.json();
         if (res.ok) setChiefs(data.filter(u => u.role === 'president' || u.role === 'admin'));
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchClubs();
+        fetchChiefs();
+    }, [fetchClubs, fetchChiefs]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -348,7 +349,7 @@ export default function ClubsManagement() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
                                             <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
                                                 {member.photo ? (
-                                                    <img src={member.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <Image src={member.photo} alt={member.name || ""} fill style={{ objectFit: 'cover' }} />
                                                 ) : (
                                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Camera size={16} style={{ opacity: 0.3 }} /></div>
                                                 )}
@@ -403,9 +404,9 @@ export default function ClubsManagement() {
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', opacity: 0.7 }}>{t('coverImage')}</label>
                                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                     {formData.coverImage && (
-                                        <div style={{ position: 'relative' }}>
-                                            <img src={formData.coverImage} alt="Preview" style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
-                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, coverImage: '' }))} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px' }}><X size={10} /></button>
+                                        <div style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                                            <Image src={formData.coverImage} alt="Preview" fill style={{ objectFit: 'cover' }} />
+                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, coverImage: '' }))} style={{ position: 'absolute', top: '2px', right: '2px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px', zIndex: 10 }}><X size={10} /></button>
                                         </div>
                                     )}
                                     <label className="btn btn-secondary" style={{ cursor: 'pointer', fontSize: '0.75rem', flex: 1, textAlign: 'center' }}>

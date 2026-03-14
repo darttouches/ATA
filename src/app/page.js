@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './page.module.css';
 
 import { useState, useEffect } from 'react';
@@ -204,10 +205,13 @@ export default function Home() {
                 className={styles.partnerLink}
                 title={partner.name}
               >
-                <img
+                <Image
                   src={partner.logo}
                   alt={partner.name}
                   className={styles.partnerLogo}
+                  width={150}
+                  height={60}
+                  style={{ objectFit: 'contain' }}
                 />
               </a>
             ))}

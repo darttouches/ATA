@@ -28,7 +28,7 @@ export async function PATCH(req) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
 
-        const { id, role, club, status, isPaid, memberNumber, phone } = await req.json();
+        const { id, role, club, status, isPaid, memberNumber, phone, password, officialRole } = await req.json();
 
         // Security: National members cannot change roles
         if (user.role === 'national' && role) {
@@ -44,6 +44,12 @@ export async function PATCH(req) {
         if (isPaid !== undefined) updateData.isPaid = isPaid;
         if (memberNumber !== undefined) updateData.memberNumber = memberNumber;
         if (phone !== undefined) updateData.phone = phone;
+        if (officialRole !== undefined) updateData.officialRole = officialRole;
+        
+        if (password) {
+            const bcrypt = require('bcryptjs');
+            updateData.password = await bcrypt.hash(password, 10);
+        }
 
         const updatedUser = await User.findByIdAndUpdate(
             id,
@@ -53,6 +59,7 @@ export async function PATCH(req) {
 
         return NextResponse.json(updatedUser);
     } catch (error) {
+        console.error('Update error:', error);
         return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 });
     }
 }

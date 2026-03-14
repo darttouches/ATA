@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize, Minimize } from 'lucide-react';
 import styles from './Lightbox.module.css';
 
@@ -47,11 +48,14 @@ const Lightbox = ({ images, currentIndex, onClose, onPrev, onNext }) => {
                 </button>
             )}
 
-            <div className={styles.imageContainer} onClick={(e) => e.stopPropagation()}>
-                <img
+            <div className={styles.imageContainer} style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                <Image
                     src={currentImage}
                     alt=""
+                    fill
+                    unoptimized
                     className={`${styles.image} ${isZoomed ? styles.zoomed : ''}`}
+                    style={{ objectFit: 'contain' }}
                     onClick={() => setIsZoomed(!isZoomed)}
                 />
             </div>

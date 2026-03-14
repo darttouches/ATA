@@ -26,6 +26,18 @@ export default function SearchTool() {
         setCurrentIndex(-1);
     }, []);
 
+    function scrollToResult(element) {
+        if (!element) return;
+
+        // Remove active class from previous
+        document.querySelectorAll('.search-highlight-active').forEach(el =>
+            el.classList.remove('search-highlight-active')
+        );
+
+        element.classList.add('search-highlight-active');
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     const performSearch = useCallback((text) => {
         clearHighlights();
         if (!text || text.length < 2) return;
@@ -83,18 +95,6 @@ export default function SearchTool() {
         }
     }, [clearHighlights]);
 
-    const scrollToResult = (element) => {
-        if (!element) return;
-
-        // Remove active class from previous
-        document.querySelectorAll('.search-highlight-active').forEach(el =>
-            el.classList.remove('search-highlight-active')
-        );
-
-        element.classList.add('search-highlight-active');
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
-
     const handleNext = () => {
         if (results.length === 0) return;
         const next = (currentIndex + 1) % results.length;
@@ -109,7 +109,7 @@ export default function SearchTool() {
         scrollToResult(results[prev]);
     };
 
-    const toggleSearch = () => {
+    const toggleSearch = useCallback(() => {
         if (isOpen) {
             setIsOpen(false);
             setQuery('');
@@ -118,7 +118,7 @@ export default function SearchTool() {
             setIsOpen(true);
             setTimeout(() => inputRef.current?.focus(), 100);
         }
-    };
+    }, [isOpen, clearHighlights]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -132,7 +132,7 @@ export default function SearchTool() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen]);
+    }, [isOpen, toggleSearch]);
 
     return (
         <div className={styles.searchContainer}>

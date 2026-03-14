@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { BarChart3, TrendingUp, Users, Calendar, X, Award, ShieldCheck, MapPin, Bell, Clock, User } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -156,15 +157,15 @@ export default function DashboardHome() {
                                                 onMouseEnter={(e) => e.currentTarget.style.transform = `translateY(${-yOffset}px) scale(1.1)`}
                                                 onMouseLeave={(e) => e.currentTarget.style.transform = `translateY(${-yOffset}px) scale(1)`}
                                             >
-                                                <div style={{
-                                                    width: '60px', height: '60px', borderRadius: '50%',
+                                        <div style={{ width: '60px', height: '60px', borderRadius: '50%',
                                                     border: '3px solid var(--primary)',
                                                     background: 'var(--card-bg)',
                                                     overflow: 'hidden', padding: '3px',
-                                                    boxShadow: '0 0 20px rgba(56, 189, 248, 0.3)'
+                                                    boxShadow: '0 0 20px rgba(56, 189, 248, 0.3)',
+                                                    position: 'relative'
                                                 }}>
                                                     {member.profileImage ? (
-                                                        <img src={member.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                                        <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                                                     ) : (
                                                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
                                                             {(member.firstName || member.name).charAt(0)}
@@ -226,9 +227,9 @@ export default function DashboardHome() {
 
                         {/* Profile Image Float */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-60px', position: 'relative' }}>
-                            <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: '5px solid var(--card-bg)', background: '#222', overflow: 'hidden', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
+                            <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: '5px solid var(--card-bg)', background: '#222', overflow: 'hidden', boxShadow: '0 10px 20px rgba(0,0,0,0.2)', position: 'relative' }}>
                                 {selectedMember.profileImage ? (
-                                    <img src={selectedMember.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <Image src={selectedMember.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
                                 ) : (
                                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 800 }}>
                                         {selectedMember.firstName?.charAt(0) || selectedMember.name.charAt(0)}

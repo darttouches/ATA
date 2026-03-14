@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Save, User, CheckCircle, XCircle } from 'lucide-react';
@@ -212,9 +213,9 @@ export default function ActionDetailsPage({ params }) {
                                     return (
                                         <tr key={member._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                             <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
                                                     {member.profileImage ? (
-                                                        <img src={member.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
                                                     ) : (
                                                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.8rem' }}>
                                                             {(member.firstName || member.name || '?').charAt(0).toUpperCase()}

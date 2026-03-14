@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Save, Globe, Facebook, Instagram, Youtube, Upload, Trash2, Plus, User } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -11,27 +11,30 @@ export default function MyClubManagement() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        fetchClub();
-        fetchMembers();
-    }, []);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         const res = await fetch('/api/dashboard/members');
         if (res.ok) {
             const data = await res.json();
             setAvailableMembers(data.data);
         }
-    };
+    }, []);
 
-    const fetchClub = async () => {
+    const fetchClub = useCallback(async () => {
         const res = await fetch('/api/chef/my-club');
         if (res.ok) {
             const data = await res.json();
             setClub(data);
         }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        const load = async () => {
+            await fetchClub();
+            await fetchMembers();
+        };
+        load();
+    }, [fetchClub, fetchMembers]);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];

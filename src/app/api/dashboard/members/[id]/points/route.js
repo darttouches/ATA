@@ -8,14 +8,14 @@ import { getUser } from '@/lib/auth';
 export async function POST(req, { params }) {
     try {
         await dbConnect();
-        const { userId } = await params;
+        const { id } = await params;
         const { amount } = await req.json();
 
         const sessionUser = await getUser();
         if (!sessionUser) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
         const actor = await User.findById(sessionUser.userId || sessionUser._id || sessionUser.id).select('club role');
-        const targetMember = await User.findById(userId);
+        const targetMember = await User.findById(id);
 
         if (!targetMember) return NextResponse.json({ success: false, error: 'Member not found' }, { status: 404 });
 

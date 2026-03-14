@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PollWidget from '@/components/PollWidget';
 import { BarChart3 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -10,11 +10,7 @@ export default function ClubPolls({ clubId }) {
     const [polls, setPolls] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchPolls();
-    }, [clubId]);
-
-    const fetchPolls = async () => {
+    const fetchPolls = useCallback(async () => {
         try {
             const res = await fetch(`/api/polls?clubId=${clubId}`);
             if (res.ok) {
@@ -26,7 +22,11 @@ export default function ClubPolls({ clubId }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [clubId]);
+
+    useEffect(() => {
+        fetchPolls();
+    }, [fetchPolls]);
 
     if (loading) return null;
     if (polls.length === 0) return null;

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { Plus, Trash2, Clock, Coffee, Utensils, Info, FileText, Layout, Zap, Moon, Bed, Mic, GraduationCap, Music, Ticket, User, Camera, Upload } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './ProgramEditor.module.css';
@@ -211,8 +212,8 @@ const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration,
                                     placeholder={t('speakerPhoto') + " (URL)"}
                                 />
                                 {item.speakerPhoto && (
-                                    <div className={styles.miniPreview}>
-                                        <img src={item.speakerPhoto} alt="speaker" />
+                                    <div className={styles.miniPreview} style={{ position: 'relative' }}>
+                                        <Image src={item.speakerPhoto} alt="speaker" fill style={{ objectFit: 'cover' }} />
                                     </div>
                                 )}
                             </div>

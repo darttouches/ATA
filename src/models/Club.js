@@ -31,6 +31,10 @@ const ClubSchema = new mongoose.Schema({
         type: String,
         default: '/images/default-club-logo.jpg',
     },
+    color: {
+        type: String,
+        default: '#1e293b',
+    },
     socialLinks: {
         facebook: String,
         instagram: String,

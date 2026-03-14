@@ -2,9 +2,10 @@
 
 // Force recompile
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, Loader2, CheckCircle2, Palette, Smile, Users, Target, Heart, Zap, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function AboutManagement() {
     const { t } = useLanguage();
@@ -26,11 +27,7 @@ export default function AboutManagement() {
     });
     const [uploading, setUploading] = useState(false);
 
-    useEffect(() => {
-        fetchSections();
-    }, []);
-
-    const fetchSections = async () => {
+    const fetchSections = useCallback(async () => {
         setLoading(true);
         const res = await fetch('/api/admin/about');
         if (res.ok) {
@@ -38,7 +35,14 @@ export default function AboutManagement() {
             setSections(data);
         }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        const load = async () => {
+            await fetchSections();
+        };
+        load();
+    }, [fetchSections]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -238,9 +242,9 @@ export default function AboutManagement() {
 
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
                                     {formData.images.map((img, index) => (
-                                        <div key={index} style={{ position: 'relative', width: '80px', height: '80px' }}>
-                                            <img src={img} alt={`Upload ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--card-border)' }} />
-                                            <button type="button" onClick={() => removeImage(index)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px' }}>
+                                        <div key={index} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                                            <Image src={img} alt={`Upload ${index}`} fill style={{ objectFit: 'cover' }} />
+                                            <button type="button" onClick={() => removeImage(index)} style={{ position: 'absolute', top: '2px', right: '2px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', zIndex: 10 }}>
                                                 <X size={12} />
                                             </button>
                                         </div>

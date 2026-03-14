@@ -2,6 +2,7 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { getUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 
 export async function GET() {
     try {
@@ -25,7 +26,7 @@ export async function PATCH(req) {
         if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
         const body = await req.json();
-        const { firstName, lastName, phone, birthDate, profileImage, preferredClub } = body;
+        const { firstName, lastName, phone, birthDate, profileImage, preferredClub, newPassword } = body;
 
         await dbConnect();
 
@@ -39,6 +40,16 @@ export async function PATCH(req) {
         if (birthDate) updateData.birthDate = birthDate;
         if (profileImage) updateData.profileImage = profileImage;
         if (preferredClub) updateData.preferredClub = preferredClub;
+        if (body.facebook !== undefined) updateData.facebook = body.facebook;
+        if (body.instagram !== undefined) updateData.instagram = body.instagram;
+        if (body.whatsapp !== undefined) updateData.whatsapp = body.whatsapp;
+        if (body.linkedin !== undefined) updateData.linkedin = body.linkedin;
+        if (body.website !== undefined) updateData.website = body.website;
+
+        if (newPassword) {
+            const salt = await bcrypt.genSalt(10);
+            updateData.password = await bcrypt.hash(newPassword, salt);
+        }
 
         const updatedUser = await User.findByIdAndUpdate(
             authUser.userId,

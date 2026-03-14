@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Camera, Upload, Loader2, Save, User as UserIcon } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function ProfilePage() {
     const { t } = useLanguage();
@@ -17,38 +18,46 @@ export default function ProfilePage() {
         phone: '',
         birthDate: '',
         preferredClub: '',
-        profileImage: ''
+        profileImage: '',
+        newPassword: '',
+        confirmPassword: '',
+        facebook: '',
+        instagram: '',
+        whatsapp: '',
+        linkedin: '',
+        website: ''
     });
     const [message, setMessage] = useState({ type: '', text: '' });
 
-    useEffect(() => {
-        fetchProfile();
-        fetchClubs();
-    }, []);
-
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         try {
             const res = await fetch('/api/user/profile');
             const data = await res.json();
             if (res.ok) {
                 setUser(data);
-                setFormData({
+                setFormData(prev => ({
+                    ...prev,
                     firstName: data.firstName || '',
                     lastName: data.lastName || '',
                     phone: data.phone || '',
                     birthDate: data.birthDate ? data.birthDate.split('T')[0] : '',
                     preferredClub: data.preferredClub?._id || data.preferredClub || '',
-                    profileImage: data.profileImage || ''
-                });
+                    profileImage: data.profileImage || '',
+                    facebook: data.facebook || '',
+                    instagram: data.instagram || '',
+                    whatsapp: data.whatsapp || '',
+                    linkedin: data.linkedin || '',
+                    website: data.website || ''
+                }));
             }
         } catch (error) {
             console.error("Error fetching profile", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, []); // Removed unnecessary t dependency
 
-    const fetchClubs = async () => {
+    const fetchClubs = useCallback(async () => {
         try {
             const res = await fetch('/api/clubs');
             const data = await res.json();
@@ -56,7 +65,12 @@ export default function ProfilePage() {
         } catch (err) {
             console.error("Failed to fetch clubs", err);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchProfile();
+        fetchClubs();
+    }, [fetchProfile, fetchClubs]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -93,6 +107,19 @@ export default function ProfilePage() {
         setSaving(true);
         setMessage({ type: '', text: '' });
 
+        if (formData.newPassword) {
+            if (formData.newPassword !== formData.confirmPassword) {
+                setMessage({ type: 'error', text: 'Les mots de passe ne correspondent pas' });
+                setSaving(false);
+                return;
+            }
+            if (formData.newPassword.length < 6) {
+                setMessage({ type: 'error', text: 'Le mot de passe doit contenir au moins 6 caractères' });
+                setSaving(false);
+                return;
+            }
+        }
+
         try {
             const res = await fetch('/api/user/profile', {
                 method: 'PATCH',
@@ -101,6 +128,7 @@ export default function ProfilePage() {
             });
             if (res.ok) {
                 setMessage({ type: 'success', text: t('profileUpdated') });
+                setFormData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
                 fetchProfile();
             } else {
                 setMessage({ type: 'error', text: t('updateError') });
@@ -147,10 +175,11 @@ export default function ProfilePage() {
                                 overflow: 'hidden',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                position: 'relative'
                             }}>
                                 {formData.profileImage ? (
-                                    <img src={formData.profileImage} alt={t('myProfile')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <Image src={formData.profileImage} alt={t('myProfile')} fill style={{ objectFit: 'cover' }} />
                                 ) : (
                                     <UserIcon size={60} style={{ opacity: 0.2 }} />
                                 )}
@@ -232,6 +261,74 @@ export default function ProfilePage() {
                                 <option key={club._id} value={club._id} style={{ background: '#11224E', color: 'white' }}>{club.name}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div style={{ padding: '1.5rem', background: 'rgba(124, 58, 237, 0.05)', borderRadius: '12px', marginBottom: '2.5rem', border: '1px solid var(--card-border)' }}>
+                        <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '1.2rem', color: 'var(--primary)' }}>{t('socialLinks')}</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>Facebook URL</label>
+                                <input
+                                    type="text" name="facebook" className="card" style={{ width: '100%', padding: '10px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.facebook} onChange={handleChange}
+                                    placeholder="https://facebook.com/..."
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>Instagram URL</label>
+                                <input
+                                    type="text" name="instagram" className="card" style={{ width: '100%', padding: '10px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.instagram} onChange={handleChange}
+                                    placeholder="https://instagram.com/..."
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>WhatsApp (Format: 216XXXXXXXX)</label>
+                                <input
+                                    type="text" name="whatsapp" className="card" style={{ width: '100%', padding: '10px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.whatsapp} onChange={handleChange}
+                                    placeholder="21620000000"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>LinkedIn URL</label>
+                                <input
+                                    type="text" name="linkedin" className="card" style={{ width: '100%', padding: '10px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.linkedin} onChange={handleChange}
+                                    placeholder="https://linkedin.com/in/..."
+                                />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>{t('websiteOptional')}</label>
+                                <input
+                                    type="text" name="website" className="card" style={{ width: '100%', padding: '10px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.website} onChange={handleChange}
+                                    placeholder="https://yourwebsite.com"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '1.5rem', background: 'rgba(244, 63, 94, 0.05)', borderRadius: '12px', marginBottom: '2.5rem', border: '1px solid var(--card-border)' }}>
+                        <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '1rem', color: '#f43f5e' }}>{t('security')}</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', opacity: 0.8 }}>{t('newPassword')}</label>
+                                <input
+                                    type="password" name="newPassword" className="card" style={{ width: '100%', padding: '12px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.newPassword} onChange={handleChange}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', opacity: 0.8 }}>{t('confirmPassword')}</label>
+                                <input
+                                    type="password" name="confirmPassword" className="card" style={{ width: '100%', padding: '12px', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
+                                    value={formData.confirmPassword} onChange={handleChange}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

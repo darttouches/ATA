@@ -84,7 +84,7 @@ export default function TestimonialsPage() {
                                     ))}
                                     <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem' }}>{new Date(testimonial.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <p style={{ fontStyle: 'italic', marginBottom: '1rem', lineHeight: '1.6' }}>"{testimonial.content}"</p>
+                                <p style={{ fontStyle: 'italic', marginBottom: '1rem', lineHeight: '1.6' }}>&quot;{testimonial.content}&quot;</p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#333', overflow: 'hidden' }}>
                                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>

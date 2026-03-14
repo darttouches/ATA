@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, Upload, X, Loader2, User as UserIcon } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function BoardManagement() {
     const { t } = useLanguage();
@@ -19,11 +20,7 @@ export default function BoardManagement() {
         order: 0
     });
 
-    useEffect(() => {
-        fetchMembers();
-    }, []);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         setLoading(true);
         const res = await fetch('/api/admin/board');
         if (res.ok) {
@@ -31,7 +28,11 @@ export default function BoardManagement() {
             setMembers(data);
         }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchMembers();
+    }, [fetchMembers]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -138,10 +139,11 @@ export default function BoardManagement() {
                             background: 'rgba(255,255,255,0.05)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            position: 'relative'
                         }}>
                             {member.photo ? (
-                                <img src={member.photo} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <Image src={member.photo} alt={member.name} fill style={{ objectFit: 'cover' }} />
                             ) : (
                                 <UserIcon size={40} style={{ opacity: 0.2 }} />
                             )}
@@ -206,9 +208,9 @@ export default function BoardManagement() {
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>{t('memberPhoto')}</label>
                                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                     {formData.photo && (
-                                        <div style={{ position: 'relative' }}>
-                                            <img src={formData.photo} alt={t('preview')} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }} />
-                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, photo: '' }))} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px' }}><X size={10} /></button>
+                                        <div style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--primary)' }}>
+                                            <Image src={formData.photo} alt={t('preview')} fill style={{ objectFit: 'cover' }} />
+                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, photo: '' }))} style={{ position: 'absolute', top: '2px', right: '2px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px', zIndex: 10 }}><X size={10} /></button>
                                         </div>
                                     )}
                                     <label className="btn btn-secondary" style={{ cursor: 'pointer', fontSize: '0.75rem', flex: 1, textAlign: 'center' }}>

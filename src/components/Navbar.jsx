@@ -1,39 +1,58 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, User, LogIn, LayoutDashboard, LogOut, Search, Globe, Download } from 'lucide-react';
 import styles from './Navbar.module.css';
 import SearchTool from './SearchTool';
 import { useLanguage } from '@/context/LanguageContext';
 
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 const Navbar = ({ user, serverLogo }) => {
     const { language, changeLanguage, t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [logo, setLogo] = useState(serverLogo || null);
+    const [ataWavesPublished, setAtaWavesPublished] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [showInstallBtn, setShowInstallBtn] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
     const [showIOSTip, setShowIOSTip] = useState(false);
 
     useEffect(() => {
-        // Detect iOS
-        const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-        setIsIOS(isIOSDevice);
+        const initPWA = async () => {
+            // Detect iOS
+            const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+            setIsIOS(isIOSDevice);
 
-        // Show tip if on iOS and NOT already in PWA mode
-        if (isIOSDevice && !isStandalone) {
-            setShowIOSTip(true);
-        }
+            // Show tip if on iOS and NOT already in PWA mode
+            if (isIOSDevice && !isStandalone) {
+                setShowIOSTip(true);
+            }
+        };
+        initPWA();
     }, []);
     useEffect(() => {
-        if (!logo) {
-            fetch('/api/admin/settings').then(res => res.json()).then(data => {
-                if (data.logo) setLogo(data.logo);
-            });
-        }
-    }, [logo]);
+        fetch('/api/admin/settings').then(res => res.json()).then(data => {
+            setLogo(prevLogo => !prevLogo && data.logo ? data.logo : prevLogo);
+            setAtaWavesPublished(data?.ataWaves?.isPublished || false);
+        }).catch(err => console.error(err));
+    }, []);
 
     useEffect(() => {
         // PWA Install Logic
@@ -67,24 +86,7 @@ const Navbar = ({ user, serverLogo }) => {
     }, []);
 
     // Push Subscription Logic
-    useEffect(() => {
-        if ('serviceWorker' in navigator && user) {
-            navigator.serviceWorker.ready.then((reg) => {
-                // Request permission and subscribe if not already
-                if (Notification.permission === 'default') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            subscribeToPush(reg);
-                        }
-                    });
-                } else if (Notification.permission === 'granted') {
-                    subscribeToPush(reg);
-                }
-            });
-        }
-    }, [user]);
-
-    const subscribeToPush = async (registration) => {
+    const subscribeToPush = useCallback(async (registration) => {
         try {
             const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (!publicVapidKey) return;
@@ -103,22 +105,26 @@ const Navbar = ({ user, serverLogo }) => {
         } catch (error) {
             console.error('❌ Push: Subscribe failed:', error);
         }
-    };
+    }, []);
 
-    function urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding)
-            .replace(/\-/g, '+')
-            .replace(/_/g, '/');
-
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-
-        for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
+    useEffect(() => {
+        if ('serviceWorker' in navigator && user) {
+            navigator.serviceWorker.ready.then((reg) => {
+                // Request permission and subscribe if not already
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            subscribeToPush(reg);
+                        }
+                    });
+                } else if (Notification.permission === 'granted') {
+                    subscribeToPush(reg);
+                }
+            });
         }
-        return outputArray;
-    }
+    }, [user, subscribeToPush]);
+
+
 
     const handleInstallClick = async () => {
         if (!deferredPrompt) return;
@@ -148,7 +154,7 @@ const Navbar = ({ user, serverLogo }) => {
                     justifyContent: 'center',
                     gap: '15px'
                 }}>
-                    <span>📱 <strong>iOS :</strong> Pour installer l'app, cliquez sur <Download size={16} inline="true" style={{ verticalAlign: 'middle' }} /> (Partage) puis <strong>"Sur l'écran d'accueil"</strong>.</span>
+                    <span>📱 <strong>iOS :</strong> Pour installer l&apos;app, cliquez sur <Download size={16} inline="true" style={{ verticalAlign: 'middle' }} /> (Partage) puis <strong>&quot;Sur l&apos;écran d&apos;accueil&quot;</strong>.</span>
                     <button
                         onClick={() => setShowIOSTip(false)}
                         style={{ background: 'rgba(0,0,0,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
@@ -160,8 +166,8 @@ const Navbar = ({ user, serverLogo }) => {
             <nav className={styles.navbar}>
                 <div className={`container ${styles.navContainer}`}>
                     <Link href="/" className={styles.logo} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {logo && <img src={logo} alt="Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
-                        {language === 'ar' ? t('brandName') : <>Touches<span className={styles.highlight}>D'Art</span></>}
+                        {logo && <Image src={logo} alt="Logo" height={40} width={120} style={{ height: '40px', width: 'auto', objectFit: 'contain' }} priority sizes="120px" />}
+                        {language === 'ar' ? t('brandName') : <>Touches<span className={styles.highlight}>D&apos;Art</span></>}
                     </Link>
 
                     {/* Desktop Menu */}
@@ -170,6 +176,9 @@ const Navbar = ({ user, serverLogo }) => {
                         <Link href="/about" className={styles.navLink}>{t('about')}</Link>
                         <Link href="/clubs" className={styles.navLink}>{t('clubs')}</Link>
                         <Link href="/best-off" className={styles.navLink}>{t('bestOff')}</Link>
+                        {ataWavesPublished && (
+                            <Link href="/ata-waves" className={styles.navLink} style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{t('ataWaves')}</Link>
+                        )}
                         <Link href="/contact" className={styles.navLink}>{t('contact')}</Link>
                     </div>
 
@@ -252,9 +261,11 @@ const Navbar = ({ user, serverLogo }) => {
 
                         <Link href="/" onClick={toggleMenu}>{t('home')}</Link>
                         <Link href="/about" onClick={toggleMenu}>{t('about')}</Link>
-
                         <Link href="/clubs" onClick={toggleMenu}>{t('clubs')}</Link>
                         <Link href="/best-off" onClick={toggleMenu}>{t('bestOff')}</Link>
+                        {ataWavesPublished && (
+                            <Link href="/ata-waves" onClick={toggleMenu} style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', padding: '0.5rem 0' }}>{t('ataWaves')}</Link>
+                        )}
                         <Link href="/contact" onClick={toggleMenu}>{t('contact')}</Link>
                         {user ? (
                             <>

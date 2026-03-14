@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -14,16 +14,11 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
     const { t } = useLanguage();
     const pathname = usePathname();
     const [unreadChats, setUnreadChats] = useState(0);
+    const [canManageAtaWaves, setCanManageAtaWaves] = useState(false);
 
     const isActive = (path) => pathname === path;
 
-    useEffect(() => {
-        fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
-        return () => clearInterval(interval);
-    }, []);
-
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = useCallback(async () => {
         try {
             const res = await fetch('/api/chat/unread-count');
             if (res.ok) {
@@ -33,7 +28,25 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
         } catch (error) {
             console.error('Failed to fetch unread count:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const load = async () => {
+            await fetchUnreadCount();
+        };
+        load();
+        
+        const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
+        
+        // Check if user can manage ATA Waves
+        fetch('/api/admin/settings').then(res => res.json()).then(data => {
+            if (user?.role === 'admin' || data?.ataWaves?.authorizedUsers?.includes(user?._id)) {
+                setCanManageAtaWaves(true);
+            }
+        });
+        
+        return () => clearInterval(interval);
+    }, [fetchUnreadCount, user?._id, user?.role]);
 
     return (
         <>
@@ -83,6 +96,11 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                     <Link href="/dashboard/notifications" className={`${styles.link} ${isActive('/dashboard/notifications') ? styles.activeLink : ''}`} onClick={onClose}>
                         <Bell size={18} /> {t('notifications')}
                     </Link>
+                    {user.status === 'approved' && (
+                        <Link href={`/card/${user._id}`} className={styles.link} onClick={onClose} target="_blank">
+                            <Shield size={18} /> {t('membershipCard') || 'Ma Carte Membre'}
+                        </Link>
+                    )}
                     <Link href="/dashboard/messages" className={`${styles.link} ${isActive('/dashboard/messages') ? styles.activeLink : ''}`} onClick={onClose}>
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                             <MessageSquare size={18} />
@@ -206,6 +224,15 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                             </Link>
                             <Link href="/dashboard/my-club/polls" className={`${styles.link} ${isActive('/dashboard/my-club/polls') ? styles.activeLink : ''}`} onClick={onClose}>
                                 <BarChart3 size={18} /> {t('polls')}
+                            </Link>
+                        </>
+                    )}
+                    
+                    {canManageAtaWaves && (
+                        <>
+                            <div className={styles.sectionLabel}>ATA Waves</div>
+                            <Link href="/dashboard/ata-waves" className={`${styles.link} ${isActive('/dashboard/ata-waves') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <Mic size={18} /> Gestion ATA Waves
                             </Link>
                         </>
                     )}

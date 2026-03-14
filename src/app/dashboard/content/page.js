@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X, GalleryHorizontal, Home, ShieldCheck, Trash2, Edit2, Upload, XCircle, CheckCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
+import Image from 'next/image';
 
 export default function AdminContentModeration() {
     const { t } = useLanguage();
@@ -30,12 +31,15 @@ export default function AdminContentModeration() {
         }
     });
 
-    useEffect(() => {
-        fetchContents();
-        fetchClubs();
+    const fetchContents = useCallback(async () => {
+        setLoading(true);
+        const res = await fetch('/api/admin/content');
+        const data = await res.json();
+        if (res.ok) setContents(data);
+        setLoading(false);
     }, []);
 
-    const fetchClubs = async () => {
+    const fetchClubs = useCallback(async () => {
         try {
             const res = await fetch('/api/admin/clubs');
             if (res.ok) {
@@ -48,16 +52,12 @@ export default function AdminContentModeration() {
         } catch (error) {
             console.error('Error fetching clubs:', error);
         }
-    };
+    }, []);
 
-    const fetchContents = async () => {
-        const res = await fetch('/api/admin/content');
-        if (res.ok) {
-            const data = await res.json();
-            setContents(data);
-        }
-        setLoading(false);
-    };
+    useEffect(() => {
+        fetchContents();
+        fetchClubs();
+    }, [fetchContents, fetchClubs]);
 
     const updateStatus = async (id, status) => {
         const res = await fetch('/api/admin/content', {
@@ -407,7 +407,7 @@ export default function AdminContentModeration() {
                                         }}>
                                             {formData.photos.map((url, idx) => (
                                                 <div key={idx} style={{ position: 'relative', height: '100px', borderRadius: '6px', overflow: 'hidden', border: idx === 0 ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)' }}>
-                                                    <img src={url} alt={`preview-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <Image src={url} alt={`preview-${idx}`} fill style={{ objectFit: 'cover' }} />
                                                     {idx === 0 && (
                                                         <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'var(--primary)', color: 'white', fontSize: '0.6rem', textAlign: 'center', padding: '2px 0', fontWeight: 700 }}>
                                                             {t('cover')}

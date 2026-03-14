@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 import ClubTestimonials from './ClubTestimonials';
 import styles from './ClubDetail.module.css';
 import { ArrowLeft, MapPin, User as UserIcon, Facebook, Instagram, Youtube, Globe, Calendar, Clock, Cake, PartyPopper, Gift, Award } from 'lucide-react';
@@ -145,9 +146,9 @@ export default function ClubDetailPage({ params }) {
                                                 border: '1px solid rgba(255,255,255,0.3)',
                                                 animation: 'pulse 2s infinite ease-in-out'
                                             }}>
-                                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '2px solid white', background: 'white' }}>
+                                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '2px solid white', background: 'white', position: 'relative' }}>
                                                     {member.profileImage ? (
-                                                        <img src={member.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <Image src={member.profileImage} alt={member.firstName || t('birthdayMember')} fill style={{ objectFit: 'cover' }} />
                                                     ) : (
                                                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF6B6B' }}>
                                                             {member.name?.charAt(0) || member.firstName?.charAt(0)}
@@ -246,10 +247,11 @@ export default function ClubDetailPage({ params }) {
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 overflow: 'hidden',
-                                                border: member.type === 'auto' ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)'
+                                                border: member.type === 'auto' ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
+                                                position: 'relative'
                                             }}>
                                                 {member.photo ? (
-                                                    <img src={member.photo} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <Image src={member.photo} alt={member.name} fill style={{ objectFit: 'cover' }} />
                                                 ) : (
                                                     <UserIcon size={20} />
                                                 )}

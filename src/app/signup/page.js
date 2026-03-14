@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Camera, Upload, Loader2 } from 'lucide-react';
+import { Camera, Upload, Loader2, Eye, EyeOff } from 'lucide-react';
 import styles from './signup.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -25,6 +26,8 @@ export default function Signup() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     useEffect(() => {
         const fetchClubs = async () => {
@@ -123,10 +126,11 @@ export default function Signup() {
                                 overflow: 'hidden',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                position: 'relative'
                             }}>
                                 {formData.profileImage ? (
-                                    <img src={formData.profileImage} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <Image src={formData.profileImage} alt="Profile" fill style={{ objectFit: 'cover' }} />
                                 ) : (
                                     <Camera size={40} style={{ opacity: 0.3 }} />
                                 )}
@@ -205,17 +209,47 @@ export default function Signup() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className={styles.inputGroup}>
                             <label className={styles.label} htmlFor="password">{t('password')}</label>
-                            <input
-                                type="password" id="password" name="password" className={styles.input}
-                                value={formData.password} onChange={handleChange} required placeholder="••••••••" minLength={6}
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showPassword ? "text" : "password"} id="password" name="password" className={styles.input}
+                                    value={formData.password} onChange={handleChange} required placeholder="••••••••" minLength={6}
+                                    style={{ paddingRight: '45px' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute', right: '12px', top: '50%',
+                                        transform: 'translateY(-50%)', background: 'none',
+                                        border: 'none', color: 'rgba(255,255,255,0.4)',
+                                        cursor: 'pointer', display: 'flex'
+                                    }}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                         </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label} htmlFor="confirmPassword">{t('confirmPassword')}</label>
-                            <input
-                                type="password" id="confirmPassword" name="confirmPassword" className={styles.input}
-                                value={formData.confirmPassword} onChange={handleChange} required placeholder="••••••••"
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"} id="confirmPassword" name="confirmPassword" className={styles.input}
+                                    value={formData.confirmPassword} onChange={handleChange} required placeholder="••••••••"
+                                    style={{ paddingRight: '45px' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    style={{
+                                        position: 'absolute', right: '12px', top: '50%',
+                                        transform: 'translateY(-50%)', background: 'none',
+                                        border: 'none', color: 'rgba(255,255,255,0.4)',
+                                        cursor: 'pointer', display: 'flex'
+                                    }}
+                                >
+                                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                         </div>
                     </div>
 

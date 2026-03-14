@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import { X, Calendar, Clock, Image as ImageIcon, Play, ExternalLink, User } from 'lucide-react';
 import styles from './ContentDetailModal.module.css';
 import { useLanguage } from '@/context/LanguageContext';
@@ -82,32 +83,99 @@ export default function ContentDetailModal({ item, onClose }) {
                     {(uniqueImages.length > 0 || item.videoUrl) && (
                         <div className={styles.mediaContainer}>
                             {coverImage && (
-                                <div className={styles.heroWrapper}>
-                                    <img
+                                <div className={styles.heroWrapper} style={{ position: 'relative' }}>
+                                    <Image
                                         src={coverImage}
                                         alt="Couverture"
+                                        fill
                                         className={styles.heroImage}
+                                        style={{ objectFit: 'cover' }}
                                         onClick={() => openLightbox(0)}
                                     />
-                                    <div className={styles.heroBadge}>{t('featuredPhoto')}</div>
+                                    <div className={styles.heroBadge} style={{ zIndex: 1 }}>{t('featuredPhoto')}</div>
                                 </div>
                             )}
 
                             {item.videoUrl && (
                                 <div className={styles.videoWrapper}>
                                     <h4 className={styles.sectionTitle}><Play size={18} /> {t('eventVideo')}</h4>
-                                    {item.videoUrl.includes('youtube.com') || item.videoUrl.includes('youtu.be') ? (
-                                        <iframe
-                                            width="100%"
-                                            height="450"
-                                            src={item.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                                            frameBorder="0"
-                                            allowFullScreen
-                                            style={{ borderRadius: '16px' }}
-                                        ></iframe>
-                                    ) : (
-                                        <video src={item.videoUrl} controls style={{ width: '100%', borderRadius: '16px' }}></video>
-                                    )}
+                                    {(() => {
+                                        const url = item.videoUrl;
+                                        // YouTube
+                                        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                                            const embedUrl = url.replace('watch?v=', 'embed/').split('&')[0].replace('youtu.be/', 'youtube.com/embed/');
+                                            return (
+                                                <iframe
+                                                    width="100%"
+                                                    height="450"
+                                                    src={embedUrl}
+                                                    frameBorder="0"
+                                                    allowFullScreen
+                                                    style={{ borderRadius: '16px' }}
+                                                ></iframe>
+                                            );
+                                        }
+                                        // Instagram (Reels or Posts)
+                                        if (url.includes('instagram.com')) {
+                                            const cleanUrl = url.split('?')[0];
+                                            const embedUrl = cleanUrl.endsWith('/') ? `${cleanUrl}embed/` : `${cleanUrl}/embed/`;
+                                            return (
+                                                <iframe
+                                                    src={embedUrl}
+                                                    width="100%"
+                                                    height="600"
+                                                    frameBorder="0"
+                                                    scrolling="no"
+                                                    allowTransparency="true"
+                                                    allow="encrypted-media"
+                                                    style={{ borderRadius: '16px', background: 'white' }}
+                                                ></iframe>
+                                            );
+                                        }
+                                        // TikTok
+                                        if (url.includes('tiktok.com')) {
+                                            const match = url.match(/\/video\/(\d+)/);
+                                            if (match) {
+                                                const videoId = match[1];
+                                                return (
+                                                    <iframe
+                                                        src={`https://www.tiktok.com/embed/v2/${videoId}`}
+                                                        width="100%"
+                                                        height="580"
+                                                        frameBorder="0"
+                                                        style={{ borderRadius: '16px' }}
+                                                    ></iframe>
+                                                );
+                                            }
+                                        }
+                                        // Facebook
+                                        if (url.includes('facebook.com') || url.includes('fb.watch')) {
+                                            return (
+                                                <iframe
+                                                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&width=560`}
+                                                    width="100%"
+                                                    height="315"
+                                                    style={{ border: 'none', overflow: 'hidden', borderRadius: '16px' }}
+                                                    scrolling="no"
+                                                    frameBorder="0"
+                                                    allowFullScreen={true}
+                                                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                                                ></iframe>
+                                            );
+                                        }
+                                        // Direct Video File
+                                        if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('cloudinary.com')) {
+                                            return <video src={url} controls style={{ width: '100%', borderRadius: '16px' }}></video>;
+                                        }
+                                        // Fallback link
+                                        return (
+                                            <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '16px' }}>
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+                                                    <Play size={16} /> {t('viewPage') || 'Voir la vidéo'}
+                                                </a>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             )}
 
@@ -118,11 +186,13 @@ export default function ContentDetailModal({ item, onClose }) {
                                     </h4>
                                     <div className={styles.photoGrid}>
                                         {uniqueImages.map((url, idx) => (
-                                            <div key={idx} className={styles.photoItem}>
-                                                <img
+                                            <div key={idx} className={styles.photoItem} style={{ position: 'relative' }}>
+                                                <Image
                                                     src={url}
                                                     alt={`${item.title} - ${idx + 1}`}
+                                                    fill
                                                     className={styles.modalPhoto}
+                                                    style={{ objectFit: 'cover' }}
                                                     onClick={() => openLightbox(idx)}
                                                 />
                                             </div>
@@ -202,9 +272,9 @@ export default function ContentDetailModal({ item, onClose }) {
                                                             <div className={styles.expandedContent} style={{ marginTop: '15px' }}>
                                                                 {(pitem.speakerName || pitem.speakerPhoto) && (
                                                                     <div className={styles.speakerInfo}>
-                                                                        <div className={styles.speakerAvatar}>
+                                                                        <div className={styles.speakerAvatar} style={{ position: 'relative' }}>
                                                                             {pitem.speakerPhoto ? (
-                                                                                <img src={pitem.speakerPhoto} alt={pitem.speakerName} />
+                                                                                <Image src={pitem.speakerPhoto} alt={pitem.speakerName} fill style={{ objectFit: 'cover' }} />
                                                                             ) : (
                                                                                 <User size={18} style={{ opacity: 0.5 }} />
                                                                             )}

@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Minus, Award, Shield, User, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function MembersPointsPage() {
     const { t } = useLanguage();
@@ -9,12 +10,9 @@ export default function MembersPointsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [updatingId, setUpdatingId] = useState(null);
+    const [roleUpdatingId, setRoleUpdatingId] = useState(null);
 
-    useEffect(() => {
-        fetchMembers();
-    }, []);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         try {
             const res = await fetch('/api/dashboard/members');
             const data = await res.json();
@@ -26,9 +24,13 @@ export default function MembersPointsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handleUpdatePoints = async (userId, amount) => {
+    useEffect(() => {
+        fetchMembers();
+    }, [fetchMembers]);
+
+    const handleUpdatePoints = useCallback(async (userId, amount) => {
         setUpdatingId(userId);
         try {
             const res = await fetch(`/api/dashboard/members/${userId}/points`, {
@@ -38,7 +40,7 @@ export default function MembersPointsPage() {
             });
             const data = await res.json();
             if (data.success) {
-                setMembers(members.map(m => m._id === userId ? { ...m, bonusPoints: data.newPoints } : m));
+                setMembers(prev => prev.map(m => m._id === userId ? { ...m, bonusPoints: data.newPoints } : m));
             } else {
                 alert(data.error || t('updateError'));
             }
@@ -48,7 +50,29 @@ export default function MembersPointsPage() {
         } finally {
             setUpdatingId(null);
         }
-    };
+    }, [t]);
+
+    const handleUpdateOfficialRole = useCallback(async (userId, officialRole) => {
+        setRoleUpdatingId(userId);
+        try {
+            const res = await fetch(`/api/dashboard/members/${userId}/official-role`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ officialRole })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setMembers(prev => prev.map(m => m._id === userId ? { ...m, officialRole: data.officialRole } : m));
+            } else {
+                alert(data.error || 'Erreur lors de la mise à jour');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Erreur technique');
+        } finally {
+            setRoleUpdatingId(null);
+        }
+    }, []);
 
     const filteredMembers = members.filter(m =>
         (m.firstName + ' ' + m.lastName).toLowerCase().includes(search.toLowerCase()) ||
@@ -98,9 +122,9 @@ export default function MembersPointsPage() {
                 {filteredMembers.map(member => (
                     <div key={member._id} className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', overflow: 'hidden' }}>
+                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', overflow: 'hidden', position: 'relative' }}>
                                 {member.profileImage ? (
-                                    <img src={member.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
                                 ) : (
                                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>
                                         {member.firstName?.charAt(0)}
@@ -142,6 +166,35 @@ export default function MembersPointsPage() {
                                 </span>
                             </div>
                             <Award size={24} className="text-primary" style={{ opacity: 0.5 }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label style={{ fontSize: '0.75rem', opacity: 0.7, fontWeight: 600 }}>Poste / Rôle Officiel (pour la carte)</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    type="text"
+                                    defaultValue={member.officialRole || ''}
+                                    placeholder="Ex: Vice-Président, Secrétaire..."
+                                    id={`role-${member._id}`}
+                                    style={{
+                                        flex: 1,
+                                        padding: '0.6rem 0.8rem',
+                                        fontSize: '0.85rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid var(--card-border)',
+                                        borderRadius: '8px',
+                                        color: 'white'
+                                    }}
+                                />
+                                <button
+                                    onClick={() => handleUpdateOfficialRole(member._id, document.getElementById(`role-${member._id}`).value)}
+                                    className="btn btn-primary"
+                                    style={{ padding: '0 1rem', fontSize: '0.75rem' }}
+                                    disabled={roleUpdatingId === member._id}
+                                >
+                                    {roleUpdatingId === member._id ? <Loader2 className="animate-spin" size={14} /> : 'OK'}
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '0.5rem' }}>

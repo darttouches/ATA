@@ -6,13 +6,13 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req, { params }) {
     try {
-        const { pollId } = await params;
+        const { id } = await params;
         const { selectedOptions } = await req.json(); // Array of option indices
         const user = await getUser();
         const ip = req.headers.get('x-forwarded-for') || 'anonymous';
 
         await dbConnect();
-        const poll = await Poll.findById(pollId);
+        const poll = await Poll.findById(id);
 
         if (!poll || poll.status !== 'approved') {
             return NextResponse.json({ error: 'Sondage non disponible' }, { status: 404 });

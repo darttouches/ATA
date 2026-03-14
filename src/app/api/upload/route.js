@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '10mb',
+        },
+    },
+};
+
 export async function POST(req) {
     try {
         const user = await getUser();
@@ -19,7 +27,12 @@ export async function POST(req) {
         // Determine resource type based on file extension
         const extension = fileName.split('.').pop().toLowerCase();
         const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
-        const resourceType = videoExtensions.includes(extension) ? 'video' : 'image';
+        const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
+        
+        let resourceType = 'image';
+        if (videoExtensions.includes(extension) || audioExtensions.includes(extension)) {
+            resourceType = 'video';
+        }
 
         console.log(`Uploading ${resourceType} to Cloudinary: ${fileName}`);
 

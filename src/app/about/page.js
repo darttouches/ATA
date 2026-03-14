@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './about.module.css';
 import { Target, Heart, Zap, CheckCircle2, Palette, Smile, Users, User, MapPin } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Lightbox from '@/components/Lightbox';
 
@@ -60,10 +61,13 @@ export default function AboutPage() {
                 {/* Hero Section */}
                 <div className={styles.hero}>
                     <div className={styles.logoContainer}>
-                        <img
+                        <Image
                             src={associationLogo || "/logo/1768028469348-logo touches d'art v3 .png"}
                             alt="Touches d'Art Logo"
                             className={styles.logo}
+                            width={150}
+                            height={150}
+                            style={{ objectFit: 'contain' }}
                         />
                     </div>
                     <div>
@@ -165,8 +169,15 @@ export default function AboutPage() {
                         {s.images && s.images.length > 0 && s.imageLayout === 'top' && (
                             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(s.images.length, 3)}, 1fr)`, gap: '1rem', marginBottom: '1.5rem' }}>
                                 {s.images.map((img, i) => (
-                                    <div key={i} style={{ aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden', borderRadius: '8px' }} onClick={() => setLightboxImage(img)}>
-                                        <img src={img} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
+                                    <div key={i} style={{ aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', position: 'relative' }} onClick={() => setLightboxImage(img)}>
+                                        <Image 
+                                            src={img} 
+                                            alt={s.title} 
+                                            fill
+                                            style={{ objectFit: 'cover', transition: 'transform 0.3s' }} 
+                                            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} 
+                                            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} 
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -186,8 +197,15 @@ export default function AboutPage() {
                             {s.images && s.images.length > 0 && (s.imageLayout === 'left' || s.imageLayout === 'right') && (
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {s.images.map((img, i) => (
-                                        <div key={i} style={{ aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden', borderRadius: '8px' }} onClick={() => setLightboxImage(img)}>
-                                            <img src={img} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
+                                        <div key={i} style={{ aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', position: 'relative' }} onClick={() => setLightboxImage(img)}>
+                                            <Image 
+                                                src={img} 
+                                                alt={s.title} 
+                                                fill
+                                                style={{ objectFit: 'cover', transition: 'transform 0.3s' }} 
+                                                onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} 
+                                                onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} 
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -203,8 +221,15 @@ export default function AboutPage() {
                                 marginTop: '1.5rem'
                             }}>
                                 {s.images.map((img, i) => (
-                                    <div key={i} style={{ aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden', borderRadius: '8px' }} onClick={() => setLightboxImage(img)}>
-                                        <img src={img} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
+                                    <div key={i} style={{ aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden', borderRadius: '8px', position: 'relative' }} onClick={() => setLightboxImage(img)}>
+                                        <Image 
+                                            src={img} 
+                                            alt={s.title} 
+                                            fill
+                                            style={{ objectFit: 'cover', transition: 'transform 0.3s' }} 
+                                            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} 
+                                            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} 
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -259,7 +284,13 @@ export default function AboutPage() {
                                 <div key={member._id} className={styles.boardCard}>
                                     <div className={styles.boardPhotoContainer}>
                                         {member.photo ? (
-                                            <img src={member.photo} alt={member.name} className={styles.boardPhoto} />
+                                            <Image 
+                                                src={member.photo} 
+                                                alt={member.name} 
+                                                fill 
+                                                className={styles.boardPhoto}
+                                                style={{ objectFit: 'cover' }}
+                                            />
                                         ) : (
                                             <User size={60} style={{ opacity: 0.1 }} />
                                         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, BellOff, ExternalLink, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -10,11 +10,7 @@ export default function NotificationsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -31,7 +27,11 @@ export default function NotificationsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     const markAsRead = async (id) => {
         try {

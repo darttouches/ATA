@@ -36,7 +36,7 @@ export default function Footer() {
                     {/* Column 1: About */}
                     <div>
                         <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', background: 'linear-gradient(to right, var(--secondary), var(--primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Touches D'Art
+                            Touches D&apos;Art
                         </h3>
                         <p style={{ opacity: 0.7, lineHeight: 1.6, marginBottom: '1.5rem' }}>
                             {settings.description || t('aboutDesc')}
@@ -120,7 +120,7 @@ export default function Footer() {
 
                 {/* Copyright Bar */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 0', textAlign: 'center', fontSize: '0.85rem', opacity: 0.5 }}>
-                    <p>{settings.copyright || `© ${new Date().getFullYear()} Touches D'Art. All rights reserved.`}</p>
+                    <p>{settings.copyright || `© ${new Date().getFullYear()} Touches D&apos;Art. All rights reserved.`}</p>
                 </div>
             </div>
         </footer>

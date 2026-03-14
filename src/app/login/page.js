@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 import styles from './login.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -18,6 +19,7 @@ function LoginForm() {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -89,16 +91,31 @@ function LoginForm() {
                                 {t('forgotPassword')}
                             </Link>
                         </div>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            className={styles.input}
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                            placeholder="••••••••"
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                name="password"
+                                className={styles.input}
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                                placeholder="••••••••"
+                                style={{ paddingRight: '45px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute', right: '12px', top: '50%',
+                                    transform: 'translateY(-50%)', background: 'none',
+                                    border: 'none', color: 'rgba(255,255,255,0.4)',
+                                    cursor: 'pointer', display: 'flex'
+                                }}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
 
                     <button

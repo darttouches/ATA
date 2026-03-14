@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Mail, Trash2, CheckCircle, Clock, AlertCircle, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -9,18 +9,21 @@ export default function ReclamationsManagement() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchMessages();
-    }, []);
-
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         const res = await fetch('/api/admin/messages');
         const data = await res.json();
         if (res.ok) {
             setMessages(data);
         }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        const load = async () => {
+            await fetchMessages();
+        };
+        load();
+    }, [fetchMessages]);
 
     const updateStatus = async (id, status) => {
         await fetch('/api/admin/messages', {

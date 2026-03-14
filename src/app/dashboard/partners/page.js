@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, Upload, X, ExternalLink, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function PartnersManagement() {
     const { t } = useLanguage();
@@ -19,11 +20,7 @@ export default function PartnersManagement() {
         order: 0
     });
 
-    useEffect(() => {
-        fetchPartners();
-    }, []);
-
-    const fetchPartners = async () => {
+    const fetchPartners = useCallback(async () => {
         setLoading(true);
         const res = await fetch('/api/admin/partners');
         if (res.ok) {
@@ -31,7 +28,11 @@ export default function PartnersManagement() {
             setPartners(data);
         }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchPartners();
+    }, [fetchPartners]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -137,9 +138,10 @@ export default function PartnersManagement() {
                             alignItems: 'center',
                             justifyContent: 'center',
                             padding: '1rem',
-                            overflow: 'hidden'
+                            overflow: 'hidden',
+                            position: 'relative'
                         }}>
-                            <img src={partner.logo} alt={partner.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                            <Image src={partner.logo} alt={partner.name} fill style={{ objectFit: 'contain', padding: '1rem' }} />
                         </div>
                         <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>{partner.name}</h3>
                         {partner.website && (
@@ -204,9 +206,9 @@ export default function PartnersManagement() {
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.8 }}>{t('partnerLogo')}</label>
                                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                     {formData.logo && (
-                                        <div style={{ position: 'relative', background: 'white', padding: '5px', borderRadius: '4px' }}>
-                                            <img src={formData.logo} alt={t('preview')} style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
-                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, logo: '' }))} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px' }}><X size={10} /></button>
+                                        <div style={{ position: 'relative', background: 'white', padding: '5px', borderRadius: '4px', width: '60px', height: '60px', overflow: 'hidden' }}>
+                                            <Image src={formData.logo} alt={t('preview')} fill style={{ objectFit: 'contain' }} />
+                                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, logo: '' }))} style={{ position: 'absolute', top: '2px', right: '2px', background: '#f43f5e', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', padding: '2px', zIndex: 10 }}><X size={10} /></button>
                                         </div>
                                     )}
                                     <label className="btn btn-secondary" style={{ cursor: 'pointer', fontSize: '0.75rem', flex: 1, textAlign: 'center' }}>

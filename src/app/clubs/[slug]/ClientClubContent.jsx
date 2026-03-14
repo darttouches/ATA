@@ -1,23 +1,33 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Clock, X, ChevronRight, Play, Image as ImageIcon } from 'lucide-react';
 import ContentDetailModal from '@/components/ContentDetailModal';
 import styles from './ClubDetail.module.css';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function ClientClubContent({ events, gallery, videos }) {
     const { t, language } = useLanguage();
     const [selectedItem, setSelectedItem] = useState(null);
 
+    useEffect(() => {
+        if (selectedItem) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [selectedItem]);
+
     const openDetails = (item) => {
         setSelectedItem(item);
-        document.body.style.overflow = 'hidden';
     };
 
     const closeDetails = () => {
         setSelectedItem(null);
-        document.body.style.overflow = 'auto';
     };
 
     return (
@@ -66,10 +76,12 @@ export default function ClientClubContent({ events, gallery, videos }) {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                         {gallery.map((item) => (
                             <div key={item._id} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => openDetails(item)}>
-                                <img
+                                <Image
                                     src={item.photos?.[0] || item.mediaUrl}
                                     alt={item.title}
-                                    style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--card-border)' }}
+                                    width={300}
+                                    height={150}
+                                    style={{ objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--card-border)', height: '150px', width: '100%' }}
                                 />
                                 {item.photos?.length > 1 && (
                                     <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(17, 34, 78, 0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>

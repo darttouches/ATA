@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, CheckCircle, Clock, AlertCircle, BarChart3, Users, Globe, ChevronDown, ChevronUp, Calendar, EyeOff, Eye } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -20,11 +20,7 @@ export default function PollManager({ isModeration = false }) {
         hidden: false
     });
 
-    useEffect(() => {
-        fetchPolls();
-    }, []);
-
-    const fetchPolls = async () => {
+    const fetchPolls = useCallback(async () => {
         setLoading(true);
         try {
             const endpoint = isModeration ? '/api/admin/polls' : '/api/polls?manage=true';
@@ -38,7 +34,11 @@ export default function PollManager({ isModeration = false }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [isModeration]);
+
+    useEffect(() => {
+        fetchPolls();
+    }, [fetchPolls]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

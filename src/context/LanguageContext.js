@@ -6,6 +6,21 @@ export const LanguageContext = createContext();
 
 export const translations = {
     fr: {
+        // ATA Waves
+        ataWaves: "ATA Waves",
+        latestEpisodes: "Dernières Émissions",
+        episodesCount: "émission(s)",
+        noEpisodes: "Aucune émission disponible pour le moment.",
+        contentNotAvailable: "Contenu Non Disponible",
+        pageNotPublished: "La page ATA Waves n'est pas publiée en ce moment.",
+        video: "Vidéo",
+        by: "Par",
+        publishedOn: "Publié le",
+        unsupportedPlayer: "Lecteur non supporté pour cette plateforme",
+        openVideoDirectly: "Cliquez sur le bouton ci-dessous pour visionner l'émission directement sur la plateforme d'origine.",
+        openVideoBtn: "Ouvrir la vidéo",
+        teamAta: "Équipe ATA",
+
         // Navbar
         home: "Accueil",
         about: "À propos",
@@ -228,6 +243,10 @@ export const translations = {
         selectClub: "Sélectionner un club",
         saveChanges: "Sauvegarder les modifications",
         profileUpdated: "Profil mis à jour avec succès !",
+        membershipCard: "Ma Carte Membre",
+        security: "Sécurité",
+        newPassword: "Nouveau mot de passe",
+        confirmPassword: "Confirmer le mot de passe",
         updateError: "Erreur lors de la mise à jour.",
         serverError: "Erreur serveur.",
         loadingProfile: "Chargement du profil...",
@@ -334,13 +353,13 @@ export const translations = {
         event: "Événement",
         formation: "Formation",
         photoGalleryLabel: "Photo / Galerie",
-        videoYoutube: "Vidéo / YouTube",
+        videoYoutube: "Vidéo (YouTube, Instagram, Facebook, TikTok)",
         announcement: "Annonce",
         galleryPhotos: "Galerie Photos",
         imagesImported: "image(s) importée(s)",
         clearAll: "Vider tout",
         noPhotoSelected: "Aucune photo sélectionnée",
-        videoUrl: "URL Vidéo",
+        videoUrl: "URL Vidéo (YouTube, Instagram, Facebook, TikTok)",
         externalLink: "Lien externe",
         submitForValidation: "Soumettre à validation",
         contentUpdated: "Contenu mis à jour !",
@@ -405,6 +424,11 @@ export const translations = {
         selectAtLeastOne: "Veuillez sélectionner au moins un utilisateur.",
         noClub: "Sans Club",
         registeredOn: "Inscrit le",
+        userDetails: "Détails du membre",
+        positionClub: "Position au club",
+        adminNewPassword: "Nouveau mot de passe",
+        leaveToKeepSame: "Laisser vide pour ne pas modifier",
+        notAuthorizedRoleChange: "Vous n'êtes pas autorisé à modifier les rôles.",
         role: "Rôle",
         payment: "Paiement",
         phone: "Téléphone",
@@ -438,7 +462,7 @@ export const translations = {
         refused: "Refusé",
         photosSelect: "Photos (Sélectionnez une ou plusieurs)",
         importPhotos: "Importer Photos",
-        videoUrlYoutube: "URL Vidéo (YouTube)",
+        videoUrlYoutube: "URL Vidéo (YouTube, Instagram, Facebook, TikTok)",
         externalLinkRegistration: "Lien externe / Inscription",
         saveChanges: "Enregistrer les modifications",
         createEvent: "Créer l'événement",
@@ -523,6 +547,21 @@ export const translations = {
         noAddress: "Adresse non renseignée"
     },
     en: {
+        // ATA Waves
+        ataWaves: "ATA Waves",
+        latestEpisodes: "Latest Episodes",
+        episodesCount: "episode(s)",
+        noEpisodes: "No episodes available right now.",
+        contentNotAvailable: "Content Not Available",
+        pageNotPublished: "The ATA Waves page is not published right now.",
+        video: "Video",
+        by: "By",
+        publishedOn: "Published on",
+        unsupportedPlayer: "Player not supported for this platform",
+        openVideoDirectly: "Click the button below to view the episode directly on its original platform.",
+        openVideoBtn: "Open video",
+        teamAta: "ATA Team",
+
         // Navbar
         home: "Home",
         about: "About",
@@ -745,6 +784,10 @@ export const translations = {
         selectClub: "Select a club",
         saveChanges: "Save changes",
         profileUpdated: "Profile updated successfully!",
+        membershipCard: "My Membership Card",
+        security: "Security",
+        newPassword: "New Password",
+        confirmPassword: "Confirm Password",
         updateError: "Error during update.",
         serverError: "Server error.",
         loadingProfile: "Loading profile...",
@@ -772,6 +815,12 @@ export const translations = {
         selectAll: "Select All",
         deselectAll: "Deselect All",
         exportExcel: "Export Excel",
+        registeredOn: "Member since",
+        userDetails: "Member Details",
+        positionClub: "Position in the club",
+        adminNewPassword: "New Password",
+        leaveToKeepSame: "Leave blank to keep current",
+        notAuthorizedRoleChange: "You are not authorized to change roles.",
         member: "Member",
         role: "Role",
         payment: "Payment",
@@ -864,13 +913,13 @@ export const translations = {
         event: "Event",
         formation: "Training",
         photoGalleryLabel: "Photo / Gallery",
-        videoYoutube: "Video / YouTube",
+        videoYoutube: "Video (YouTube, Instagram, Facebook, TikTok)",
         announcement: "Announcement",
         galleryPhotos: "Photo Gallery",
         imagesImported: "image(s) imported",
         clearAll: "Clear all",
         noPhotoSelected: "No photo selected",
-        videoUrl: "Video URL",
+        videoUrl: "Video URL (YouTube, Instagram, Facebook, TikTok)",
         externalLink: "External link",
         submitForValidation: "Submit for validation",
         contentUpdated: "Content updated!",
@@ -1066,6 +1115,20 @@ export const translations = {
         requestNewLink: "طلب رابط جديد.",
         resetSuccessRedirect: "تمت إعادة تعيين كلمة المرور بنجاح. جاري توجيهك لصفحة تسجيل الدخول...",
 
+        ataWaves: "أمواج أطا",
+        latestEpisodes: "أحدث الحلقات",
+        episodesCount: "حلقة/حلقات",
+        noEpisodes: "لا توجد حلقات متاحة في الوقت الحالي.",
+        contentNotAvailable: "المحتوى غير متوفر",
+        pageNotPublished: "صفحة ATA Waves غير منشورة حالياً.",
+        video: "فيديو",
+        by: "بواسطة",
+        publishedOn: "نُشر في",
+        unsupportedPlayer: "المشغل غير مدعوم على هذه المنصة",
+        openVideoDirectly: "انقر على الزر أدناه لمشاهدة الحلقة مباشرة على المنصة الأصلية.",
+        openVideoBtn: "فتح الفيديو",
+        teamAta: "فريق أطا",
+
         // Home
         brandName: "لمسات فنّية",
         heroTitle: "عبر عن إبداعك مع",
@@ -1241,6 +1304,10 @@ export const translations = {
         selectClub: "اختر نادياً",
         saveChanges: "حفظ التغييرات",
         profileUpdated: "تم تحديث الملف الشخصي بنجاح!",
+        membershipCard: "بطاقة العضوية",
+        security: "الأمان",
+        newPassword: "كلمة سر جديدة",
+        confirmPassword: "تأكيد كلمة السر",
         updateError: "حدث خطأ أثناء التحديث.",
         serverError: "خطأ في الخادم.",
         loadingProfile: "جاري تحميل الملف الشخصي...",
@@ -1266,6 +1333,12 @@ export const translations = {
         selectAll: "تحديد الكل",
         deselectAll: "إلغاء تحديد الكل",
         exportExcel: "تصدير Excel",
+        registeredOn: "عضو منذ",
+        userDetails: "تفاصيل العضو",
+        positionClub: "المنصب في النادي",
+        adminNewPassword: "كلمة سر جديدة",
+        leaveToKeepSame: "اتركه فارغاً للاحتفاظ بالحالية",
+        notAuthorizedRoleChange: "ليس لديك صلاحية لتغيير الأدوار.",
         member: "عضو",
         role: "الدور",
         payment: "الدفع",
@@ -1535,14 +1608,15 @@ export const translations = {
 };
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState('fr');
-
-    useEffect(() => {
-        const savedLang = localStorage.getItem('language');
-        if (savedLang && ['fr', 'en', 'ar'].includes(savedLang)) {
-            setLanguage(savedLang);
+    const [language, setLanguage] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const savedLang = localStorage.getItem('language');
+            if (savedLang && ['fr', 'en', 'ar'].includes(savedLang)) {
+                return savedLang;
+            }
         }
-    }, []);
+        return 'fr';
+    });
 
     const changeLanguage = (lang) => {
         setLanguage(lang);

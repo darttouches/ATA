@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, Video, Image, Lightbulb, CheckCircle, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+import { Plus, Trash2, Calendar, Video, Image as ImageIcon, Lightbulb, CheckCircle, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
 
@@ -28,18 +29,18 @@ export default function ChefContentManagement() {
         }
     });
 
-    useEffect(() => {
-        fetchContents();
-    }, []);
-
-    const fetchContents = async () => {
+    const fetchContents = useCallback(async () => {
         const res = await fetch('/api/chef/content');
         if (res.ok) {
             const data = await res.json();
             setContents(data);
         }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchContents();
+    }, [fetchContents]);
 
     const [uploading, setUploading] = useState(0);
 
@@ -171,7 +172,7 @@ export default function ChefContentManagement() {
         switch (type) {
             case 'event': return <Calendar size={20} />;
             case 'video': return <Video size={20} />;
-            case 'photo': return <Image size={20} />;
+            case 'photo': return <ImageIcon size={20} />;
             case 'formation': return <Lightbulb size={20} />;
             default: return <Calendar size={20} />;
         }
@@ -357,7 +358,7 @@ export default function ChefContentManagement() {
                                     }}>
                                         {formData.photos.map((url, idx) => (
                                             <div key={idx} style={{ position: 'relative', height: '100px', borderRadius: '6px', overflow: 'hidden', border: idx === 0 ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)' }}>
-                                                <img src={url} alt={`preview-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <Image src={url} alt={`preview-${idx}`} fill style={{ objectFit: 'cover' }} />
                                                 {idx === 0 && (
                                                     <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'var(--primary)', color: 'white', fontSize: '0.6rem', textAlign: 'center', padding: '2px 0', fontWeight: 700 }}>
                                                         {t('cover')}
@@ -369,7 +370,8 @@ export default function ChefContentManagement() {
                                                     style={{
                                                         position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.7)',
                                                         border: 'none', color: 'white', borderRadius: '50%', width: '22px', height: '22px',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s'
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s',
+                                                        zIndex: 2
                                                     }}
                                                     onMouseEnter={(e) => e.target.style.background = '#f43f5e'}
                                                     onMouseLeave={(e) => e.target.style.background = 'rgba(0,0,0,0.7)'}

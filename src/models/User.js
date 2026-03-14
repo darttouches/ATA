@@ -86,10 +86,13 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    facebook: String,
+    instagram: String,
+    whatsapp: String,
+    linkedin: String,
+    website: String,
+    officialRole: String, // Assigned by admin/president
 });
 
-if (mongoose.models.User) {
-    delete mongoose.models.User;
-}
-
-export default mongoose.model('User', UserSchema);
+// Robust export for Next.js HMR
+export default mongoose.models.User || mongoose.model('User', UserSchema);

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Search, BadgeCheck, ShieldAlert, MessageCircle, ArrowLeft, Plus, Users, Check, X, Settings, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import Image from 'next/image';
 
 export default function ChatPage() {
     const { t } = useLanguage();
@@ -31,57 +32,15 @@ export default function ChatPage() {
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
 
-    useEffect(() => {
-        fetchCurrentUser();
-        fetchChatUsers();
-        fetchChatGroups();
-    }, []);
-
-    const fetchCurrentUser = async () => {
+    const fetchCurrentUser = useCallback(async () => {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
             const data = await res.json();
             setCurrentUser(data);
         }
-    };
-
-    useEffect(() => {
-        if (selectedUser) {
-            setSelectedGroup(null);
-            fetchMessages({ userId: selectedUser._id });
-            const interval = setInterval(() => fetchMessages({ userId: selectedUser._id, isPolling: true }), 5000);
-            return () => clearInterval(interval);
-        }
-    }, [selectedUser]);
-
-    useEffect(() => {
-        if (selectedGroup) {
-            setSelectedUser(null);
-            fetchMessages({ groupId: selectedGroup._id });
-            const interval = setInterval(() => fetchMessages({ groupId: selectedGroup._id, isPolling: true }), 5000);
-            return () => clearInterval(interval);
-        }
-    }, [selectedGroup]);
-
-    // Poll for user/group list updates
-    useEffect(() => {
-        const interval = setInterval(() => {
-            fetchChatUsers(true);
-            fetchChatGroups(true);
-        }, 10000);
-        return () => clearInterval(interval);
     }, []);
 
-    const scrollToBottom = (behavior = "smooth") => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTo({
-                top: chatContainerRef.current.scrollHeight,
-                behavior
-            });
-        }
-    };
-
-    const fetchChatUsers = async (isPolling = false) => {
+    const fetchChatUsers = useCallback(async (isPolling = false) => {
         if (!isPolling) setLoadingUsers(true);
         try {
             const res = await fetch('/api/chat/users');
@@ -94,9 +53,9 @@ export default function ChatPage() {
         } finally {
             if (!isPolling) setLoadingUsers(false);
         }
-    };
+    }, []);
 
-    const fetchChatGroups = async (isPolling = false) => {
+    const fetchChatGroups = useCallback(async (isPolling = false) => {
         try {
             const res = await fetch('/api/chat/groups');
             if (res.ok) {
@@ -106,9 +65,18 @@ export default function ChatPage() {
         } catch (error) {
             console.error('Failed to fetch groups:', error);
         }
-    };
+    }, []);
 
-    const fetchMessages = async ({ userId, groupId, isPolling = false }) => {
+    const scrollToBottom = useCallback((behavior = "smooth") => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior
+            });
+        }
+    }, []);
+
+    const fetchMessages = useCallback(async ({ userId, groupId, isPolling = false }) => {
         if (!isPolling) setLoadingMessages(true);
         try {
             const url = groupId
@@ -128,7 +96,40 @@ export default function ChatPage() {
         } finally {
             if (!isPolling) setLoadingMessages(false);
         }
-    };
+    }, [scrollToBottom]);
+
+    useEffect(() => {
+        fetchCurrentUser();
+        fetchChatUsers();
+        fetchChatGroups();
+    }, [fetchCurrentUser, fetchChatUsers, fetchChatGroups]);
+
+    useEffect(() => {
+        if (selectedUser) {
+            setSelectedGroup(null);
+            fetchMessages({ userId: selectedUser._id });
+            const interval = setInterval(() => fetchMessages({ userId: selectedUser._id, isPolling: true }), 5000);
+            return () => clearInterval(interval);
+        }
+    }, [selectedUser, fetchMessages]);
+
+    useEffect(() => {
+        if (selectedGroup) {
+            setSelectedUser(null);
+            fetchMessages({ groupId: selectedGroup._id });
+            const interval = setInterval(() => fetchMessages({ groupId: selectedGroup._id, isPolling: true }), 5000);
+            return () => clearInterval(interval);
+        }
+    }, [selectedGroup, fetchMessages]);
+
+    // Poll for user/group list updates
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchChatUsers(true);
+            fetchChatGroups(true);
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [fetchChatUsers, fetchChatGroups]);
 
     useEffect(() => {
         if ((selectedUser || selectedGroup) && window.innerWidth <= 768) {
@@ -518,10 +519,11 @@ export default function ChatPage() {
                                         justifyContent: 'center',
                                         color: 'white',
                                         fontWeight: 700,
-                                        overflow: 'hidden'
+                                        overflow: 'hidden',
+                                        position: 'relative'
                                     }}>
                                         {user.profileImage ? (
-                                            <img src={user.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <Image src={user.profileImage} alt={user.name || ""} fill style={{ objectFit: 'cover' }} />
                                         ) : (
                                             user.name.charAt(0).toUpperCase()
                                         )}
@@ -598,12 +600,13 @@ export default function ChatPage() {
                                     fontWeight: 700,
                                     overflow: 'hidden',
                                     fontSize: '0.8rem',
-                                    color: 'white'
+                                    color: 'white',
+                                    position: 'relative'
                                 }}>
                                     {selectedGroup ? (
                                         <Users size={18} />
                                     ) : selectedUser.profileImage ? (
-                                        <img src={selectedUser.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <Image src={selectedUser.profileImage} alt={selectedUser.name || ""} fill style={{ objectFit: 'cover' }} />
                                     ) : (
                                         selectedUser.name.charAt(0).toUpperCase()
                                     )}

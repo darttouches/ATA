@@ -134,7 +134,7 @@ export default function PublicRegistrationPage({ params }) {
                             </p>
                         )}
                     </div>
-                    <button onClick={() => router.push('/')} className="btn btn-secondary">Retour à l'accueil</button>
+                    <button onClick={() => router.push('/')} className="btn btn-secondary">Retour à l&apos;accueil</button>
                 </div>
             </div>
         );
@@ -145,7 +145,7 @@ export default function PublicRegistrationPage({ params }) {
             <div className="max-w-3xl mx-auto">
                 <div className="mb-10 text-center">
                     <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                        Inscription à l'événement
+                        Inscription à l&apos;événement
                     </h1>
                     <div className="bg-white/5 p-6 rounded-2xl border border-white/10 inline-block text-left">
                         <h2 className="text-2xl font-bold text-blue-400 mb-2">{action.title}</h2>
