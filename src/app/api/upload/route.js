@@ -2,13 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
-export const config = {
-    api: {
-        bodyParser: {
-            sizeLimit: '10mb',
-        },
-    },
-};
+
 
 export async function POST(req) {
     try {
