@@ -128,7 +128,7 @@ export default function MembershipCardPage({ params }) {
                     <Link href="/" className="logo-badge-link">
                         <div className="logo-badge">
                             <Shield className="text-white" size={14} />
-                            <span className="logo-text">Touches D&apos;Art</span>
+                            <span className="logo-text">Touches D'Art</span>
                         </div>
                     </Link>
 
@@ -163,7 +163,7 @@ export default function MembershipCardPage({ params }) {
                             <span className="role-text">{userData.officialRole || (userData.role === 'membre' ? 'MEMBRE ACTIF' : userData.role?.toUpperCase())}</span>
                         </div>
                         <div className="club-name">
-                            <MapPin size={10} /> {userData.club?.name || 'Touches D&apos;Art'}
+                            <MapPin size={10} /> {userData.club?.name || "Touches D'Art"}
                         </div>
                     </div>
 
@@ -217,7 +217,7 @@ export default function MembershipCardPage({ params }) {
                                 <ExternalLink className="text-gray-100" size={16} />
                             )}
                         </div>
-                        <p className="qr-label">Scanner pour vérifier l&apos;adhésion</p>
+                        <p className="qr-label">Scanner pour vérifier l'adhésion</p>
                     </div>
                 </div>
 

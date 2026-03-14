@@ -154,7 +154,7 @@ const Navbar = ({ user, serverLogo }) => {
                     justifyContent: 'center',
                     gap: '15px'
                 }}>
-                    <span>📱 <strong>iOS :</strong> Pour installer l&apos;app, cliquez sur <Download size={16} inline="true" style={{ verticalAlign: 'middle' }} /> (Partage) puis <strong>&quot;Sur l&apos;écran d&apos;accueil&quot;</strong>.</span>
+                    <span>📱 <strong>iOS :</strong> Pour installer l'app, cliquez sur <Download size={16} inline="true" style={{ verticalAlign: 'middle' }} /> (Partage) puis <strong>"Sur l'écran d'accueil"</strong>.</span>
                     <button
                         onClick={() => setShowIOSTip(false)}
                         style={{ background: 'rgba(0,0,0,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
@@ -167,7 +167,7 @@ const Navbar = ({ user, serverLogo }) => {
                 <div className={`container ${styles.navContainer}`}>
                     <Link href="/" className={styles.logo} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {logo && <Image src={logo} alt="Logo" height={40} width={120} style={{ height: '40px', width: 'auto', objectFit: 'contain' }} priority sizes="120px" />}
-                        {language === 'ar' ? t('brandName') : <>Touches<span className={styles.highlight}>D&apos;Art</span></>}
+                        {language === 'ar' ? t('brandName') : <>Touches<span className={styles.highlight}>D'Art</span></>}
                     </Link>
 
                     {/* Desktop Menu */}

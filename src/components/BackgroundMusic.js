@@ -3,21 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
-export default function BackgroundMusic() {
+export default function BackgroundMusic({ initialSettings }) {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isPausedByVideo, setIsPausedByVideo] = useState(false);
-    const [musicSettings, setMusicSettings] = useState(null);
+    const [musicSettings, setMusicSettings] = useState(initialSettings);
 
     useEffect(() => {
-        // Initial fetch
-        fetch('/api/admin/settings')
-            .then(res => res.json())
-            .then(data => {
-                if (data.bgMusic) setMusicSettings(data.bgMusic);
-            })
-            .catch(err => console.error("Erreur chargement musique", err));
+        // If we don't have settings, or for refreshing them, fetch again
+        // But with initialSettings, this prevents the "Default Music" flicker
+        if (!initialSettings) {
+            fetch('/api/admin/settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.bgMusic) setMusicSettings(data.bgMusic);
+                })
+                .catch(err => console.error("Erreur chargement musique", err));
+        }
 
         const handleSettingsUpdate = (e) => {
             if (e.detail?.bgMusic) {
@@ -27,7 +30,7 @@ export default function BackgroundMusic() {
 
         window.addEventListener('settings-updated', handleSettingsUpdate);
         return () => window.removeEventListener('settings-updated', handleSettingsUpdate);
-    }, []);
+    }, [initialSettings]);
 
     // Sync volume whenever settings change
     useEffect(() => {
@@ -41,19 +44,16 @@ export default function BackgroundMusic() {
         if (audioRef.current && !isMuted && !isPausedByVideo) {
             audioRef.current.play().catch(() => {
                 // This is expected if browser blocks autoplay
-                console.log("Autoplay blocked by browser. Waiting for user interaction...");
             });
         }
     }, [musicSettings, isMuted, isPausedByVideo]);
 
     useEffect(() => {
-        // Global interaction listener to unlock audio
         const handleInteraction = () => {
             if (audioRef.current && audioRef.current.paused && !isMuted && !isPausedByVideo) {
                 audioRef.current.play()
                     .then(() => {
                         setIsPlaying(true);
-                        // Once successfully playing, we can stop listening for the first interaction
                         document.removeEventListener('click', handleInteraction);
                         document.removeEventListener('touchstart', handleInteraction);
                         document.removeEventListener('keydown', handleInteraction);
@@ -66,7 +66,6 @@ export default function BackgroundMusic() {
         document.addEventListener('touchstart', handleInteraction);
         document.addEventListener('keydown', handleInteraction);
         
-        // Listen for video play/pause events globally
         const handleVideoPlay = (e) => {
             if (e.target.tagName === 'VIDEO' && audioRef.current) {
                 if (!audioRef.current.paused) {
@@ -132,10 +131,13 @@ export default function BackgroundMusic() {
     };
 
     const getActiveTrackUrl = () => {
-        if (!musicSettings || !musicSettings.playlist) return "/music/background.mp3";
+        if (!musicSettings) return ""; // No track yet
+        if (!musicSettings.playlist || musicSettings.playlist.length === 0) return "/music/background.mp3";
         const track = musicSettings.playlist.find(t => t.id === musicSettings.activeTrackId);
         return track ? track.url : "/music/background.mp3";
     };
+
+    const currentUrl = getActiveTrackUrl();
 
     return (
         <div style={{
@@ -144,20 +146,21 @@ export default function BackgroundMusic() {
             right: '25px',
             zIndex: 9999
         }}>
-            <audio
-                id="bg-music-player"
-                key={getActiveTrackUrl()}
-                ref={audioRef}
-                src={getActiveTrackUrl()}
-                loop
-                autoPlay
-                preload="auto"
-                onPlay={() => {
-                    setIsPlaying(true);
-                    setIsPausedByVideo(false);
-                }}
-                onPause={() => setIsPlaying(false)}
-            />
+            {currentUrl && (
+                <audio
+                    id="bg-music-player"
+                    ref={audioRef}
+                    src={currentUrl}
+                    loop
+                    autoPlay
+                    preload="auto"
+                    onPlay={() => {
+                        setIsPlaying(true);
+                        setIsPausedByVideo(false);
+                    }}
+                    onPause={() => setIsPlaying(false)}
+                />
+            )}
             
             {musicSettings && (
                 <button

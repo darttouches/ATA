@@ -258,7 +258,7 @@ export default function AtaWavesManagement() {
                                 onClick={handleSave}
                                 disabled={!currentEpisode.title || !currentEpisode.videoUrl || !currentEpisode.coverImage || uploadingCover}
                             >
-                                <Save size={18} style={{ marginRight: '8px' }} /> Enregistrer l&apos;émission
+                                <Save size={18} style={{ marginRight: '8px' }} /> Enregistrer l'émission
                             </button>
                         </div>
                     </div>

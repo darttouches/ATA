@@ -34,10 +34,15 @@ export default async function RootLayout({ children }) {
   if (user && user.error) user = null;
 
   let logo = null;
+  let bgMusic = null;
   try {
     await dbConnect();
-    const logoData = await Settings.findOne({ key: 'site_logo' });
+    const [logoData, musicData] = await Promise.all([
+      Settings.findOne({ key: 'site_logo' }),
+      Settings.findOne({ key: 'bg_music' })
+    ]);
     logo = logoData?.value || null;
+    bgMusic = musicData?.value || null;
   } catch (dbError) {
     console.error('Database connection failed in RootLayout:', dbError.message);
   }
@@ -50,7 +55,7 @@ export default async function RootLayout({ children }) {
           <main className="main-content">
             {children}
           </main>
-          <BackgroundMusic />
+          <BackgroundMusic initialSettings={bgMusic} />
           <Footer />
         </LanguageProvider>
       </body>

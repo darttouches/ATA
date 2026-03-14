@@ -142,12 +142,12 @@ export default function AdminSettings() {
 
     return (
         <div style={{ maxWidth: '600px' }}>
-            <h1 style={{ marginBottom: '2rem' }}>Paramètres de l&apos;Association</h1>
+            <h1 style={{ marginBottom: '2rem' }}>Paramètres de l'Association</h1>
 
             <div className="card">
-                <h3>Logo de l&apos;Association</h3>
+                <h3>Logo de l'Association</h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
-                    Ce logo s&apos;affichera dans la barre de navigation sur toutes les pages.
+                    Ce logo s'affichera dans la barre de navigation sur toutes les pages.
                 </p>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2rem' }}>
@@ -194,7 +194,7 @@ export default function AdminSettings() {
             <div className="card" style={{ marginTop: '2rem' }}>
                 <h3>ATA Waves</h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
-                    Gérer la visibilité et l&apos;accès à l&apos;interface ATA Waves.
+                    Gérer la visibilité et l'accès à l'interface ATA Waves.
                 </p>
 
                 <div style={{ display: 'grid', gap: '1.5rem' }}>
@@ -281,7 +281,7 @@ export default function AdminSettings() {
             <div className="card" style={{ marginTop: '2rem' }}>
                 <h3>Musique de Fond</h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
-                    Gérer la musique de fond globale du site. La musique sera en pause automatiquement lors de l&apos;ouverture d&apos;une émission ATA Waves.
+                    Gérer la musique de fond globale du site. La musique sera en pause automatiquement lors de l'ouverture d'une émission ATA Waves.
                 </p>
 
                 <div style={{ display: 'grid', gap: '1.5rem' }}>

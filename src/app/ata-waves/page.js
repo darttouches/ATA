@@ -224,8 +224,8 @@ export default function AtaWavesPage() {
                                     <PlayCircle size={64} style={{ marginBottom: '20px', color: '#ff0050' }} />
                                     <h3 style={{ marginBottom: '10px', textAlign: 'center' }}>Lien TikTok Court détecté</h3>
                                     <p style={{ opacity: 0.8, marginBottom: '20px', textAlign: 'center', maxWidth: '500px', fontSize: '0.9rem' }}>
-                                        TikTok bloque l&apos;intégration de ses liens courts (vm.tiktok). <br/><br/>
-                                        <strong>Option 1 :</strong> Ouvrez ce lien sur votre navigateur, copiez le <span style={{color:'var(--primary)'}}>lien complet</span> qui apparait avec le numéro de la vidéo et mettez à jour cette émission pour l&apos;afficher ici.<br/>
+                                        TikTok bloque l'intégration de ses liens courts (vm.tiktok). <br/><br/>
+                                        <strong>Option 1 :</strong> Ouvrez ce lien sur votre navigateur, copiez le <span style={{color:'var(--primary)'}}>lien complet</span> qui apparait avec le numéro de la vidéo et mettez à jour cette émission pour l'afficher ici.<br/>
                                         <strong>Option 2 :</strong> Cliquez directement sur le bouton ci-dessous pour visionner sur TikTok !
                                     </p>
                                     <a href={selectedEpisode.videoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ff0050', border: 'none' }}>
