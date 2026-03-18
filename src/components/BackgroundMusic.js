@@ -39,14 +39,19 @@ export default function BackgroundMusic({ initialSettings }) {
         }
     }, [musicSettings]);
 
-    // Auto-play attempt on mount or settings load
+    const hasTriedAutoplay = useRef(false);
+
+    // Auto-play attempt ONLY when music settings first load
     useEffect(() => {
-        if (audioRef.current && !isMuted && !isPausedByVideo) {
+        if (!musicSettings || hasTriedAutoplay.current) return;
+        hasTriedAutoplay.current = true;
+
+        if (audioRef.current && !isMuted) {
             audioRef.current.play().catch(() => {
-                // This is expected if browser blocks autoplay
+                // Expected if browser blocks autoplay before user interaction
             });
         }
-    }, [musicSettings, isMuted, isPausedByVideo]);
+    }, [musicSettings]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const handleInteraction = () => {

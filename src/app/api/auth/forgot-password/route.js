@@ -28,7 +28,11 @@ export async function POST(req) {
         await user.save();
 
         // Create reset URL
-        const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
+        const host = req.headers.get('host');
+        const protocol = req.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
+        const resetUrl = host 
+            ? `${protocol}://${host}/reset-password?token=${resetToken}`
+            : `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
 
         const message = `
       <h1>Réinitialisation de votre mot de passe</h1>

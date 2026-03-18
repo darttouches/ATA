@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
+import Club from '@/models/Club';
 import { getUser } from '@/lib/auth';
 
 export async function POST(req, { params }) {
@@ -29,10 +30,18 @@ export async function POST(req, { params }) {
             hasPermission = true;
         }
         // Presidents can only edit members of their own club
-        else if (editor.role === 'president' && editor.club) {
-            const memberClubId = targetMember.club?.toString() || targetMember.preferredClub?.toString();
-            if (memberClubId === editor.club.toString()) {
-                hasPermission = true;
+        else if (editor.role === 'president') {
+            let editorClubId = editor.club;
+            if (!editorClubId) {
+                const ownedClub = await Club.findOne({ chief: editor._id });
+                if (ownedClub) editorClubId = ownedClub._id;
+            }
+
+            if (editorClubId) {
+                const memberClubId = targetMember.club?.toString() || targetMember.preferredClub?.toString();
+                if (memberClubId === editorClubId.toString()) {
+                    hasPermission = true;
+                }
             }
         }
 

@@ -14,84 +14,106 @@ export default function SearchTool() {
     const inputRef = useRef(null);
 
     const clearHighlights = useCallback(() => {
-        const highlights = document.querySelectorAll('.search-highlight');
-        highlights.forEach(h => {
-            const parent = h.parentNode;
-            if (parent) {
-                parent.replaceChild(document.createTextNode(h.textContent), h);
-                parent.normalize();
-            }
-        });
+        try {
+            const highlights = document.querySelectorAll('.search-highlight');
+            highlights.forEach(h => {
+                const parent = h.parentNode;
+                if (parent && parent.contains(h)) {
+                    parent.replaceChild(document.createTextNode(h.textContent), h);
+                    parent.normalize();
+                }
+            });
+        } catch (err) {
+            console.error("Error clearing highlights:", err);
+        }
         setResults([]);
         setCurrentIndex(-1);
     }, []);
 
     function scrollToResult(element) {
-        if (!element) return;
+        if (!element || !document.contains(element)) return;
 
-        // Remove active class from previous
-        document.querySelectorAll('.search-highlight-active').forEach(el =>
-            el.classList.remove('search-highlight-active')
-        );
+        try {
+            // Remove active class from previous
+            document.querySelectorAll('.search-highlight-active').forEach(el =>
+                el.classList.remove('search-highlight-active')
+            );
 
-        element.classList.add('search-highlight-active');
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('search-highlight-active');
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {
+            console.error("Error scrolling to result:", err);
+        }
     }
 
     const performSearch = useCallback((text) => {
         clearHighlights();
         if (!text || text.length < 2) return;
 
-        const walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            {
-                acceptNode: (node) => {
-                    if (node.parentElement.closest('nav') ||
-                        node.parentElement.closest('.' + styles.searchWrapper) ||
-                        node.parentElement.tagName === 'SCRIPT' ||
-                        node.parentElement.tagName === 'STYLE') {
-                        return NodeFilter.FILTER_REJECT;
+        try {
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: (node) => {
+                        if (!node.parentElement) return NodeFilter.FILTER_REJECT;
+                        if (node.parentElement.closest('nav') ||
+                            node.parentElement.closest('.' + styles.searchWrapper) ||
+                            node.parentElement.tagName === 'SCRIPT' ||
+                            node.parentElement.tagName === 'STYLE' ||
+                            node.parentElement.tagName === 'INPUT' ||
+                            node.parentElement.tagName === 'TEXTAREA') {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        return node.textContent.toLowerCase().includes(text.toLowerCase())
+                            ? NodeFilter.FILTER_ACCEPT
+                            : NodeFilter.FILTER_SKIP;
                     }
-                    return node.textContent.toLowerCase().includes(text.toLowerCase())
-                        ? NodeFilter.FILTER_ACCEPT
-                        : NodeFilter.FILTER_SKIP;
                 }
+            );
+
+            const nodes = [];
+            let currentNode;
+            while (currentNode = walker.nextNode()) {
+                nodes.push(currentNode);
             }
-        );
 
-        const nodes = [];
-        let currentNode;
-        while (currentNode = walker.nextNode()) {
-            nodes.push(currentNode);
-        }
+            const newResults = [];
+            nodes.forEach(node => {
+                const parent = node.parentNode;
+                if (!parent || !document.contains(parent)) return;
 
-        const newResults = [];
-        nodes.forEach(node => {
-            const content = node.textContent;
-            const regex = new RegExp(`(${text})`, 'gi');
-            const parts = content.split(regex);
+                const content = node.textContent;
+                const regex = new RegExp(`(${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                const parts = content.split(regex);
 
-            const fragment = document.createDocumentFragment();
-            parts.forEach(part => {
-                if (part.toLowerCase() === text.toLowerCase()) {
-                    const span = document.createElement('span');
-                    span.className = 'search-highlight';
-                    span.textContent = part;
-                    fragment.appendChild(span);
-                    newResults.push(span);
-                } else {
-                    fragment.appendChild(document.createTextNode(part));
+                const fragment = document.createDocumentFragment();
+                parts.forEach(part => {
+                    if (part.toLowerCase() === text.toLowerCase()) {
+                        const span = document.createElement('span');
+                        span.className = 'search-highlight';
+                        span.textContent = part;
+                        fragment.appendChild(span);
+                        newResults.push(span);
+                    } else {
+                        fragment.appendChild(document.createTextNode(part));
+                    }
+                });
+
+                try {
+                    parent.replaceChild(fragment, node);
+                } catch (e) {
+                    console.warn("Could not replace text node, React might have unmounted it", e);
                 }
             });
 
-            node.parentNode.replaceChild(fragment, node);
-        });
-
-        setResults(newResults);
-        if (newResults.length > 0) {
-            setCurrentIndex(0);
-            scrollToResult(newResults[0]);
+            setResults(newResults);
+            if (newResults.length > 0) {
+                setCurrentIndex(0);
+                setTimeout(() => scrollToResult(newResults[0]), 50);
+            }
+        } catch (err) {
+            console.error("Search failed:", err);
         }
     }, [clearHighlights]);
 

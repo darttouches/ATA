@@ -17,7 +17,10 @@ export default function DashboardLayout({ children }) {
                 const res = await fetch('/api/auth/me');
                 if (res.ok) {
                     const data = await res.json();
-                    setUser(data); // Fixed: API returns user directly, not { user: ... }
+                    setUser(data);
+                    
+                    // Trigger birthday check (doesn't need to await)
+                    fetch('/api/cron/birthdays').catch(err => console.error('Birthday cron error:', err));
                 } else {
                     window.location.href = '/login';
                 }

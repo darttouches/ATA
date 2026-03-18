@@ -22,7 +22,7 @@ export async function POST(req) {
         const extension = fileName.split('.').pop().toLowerCase();
         const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
         const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
-        
+
         let resourceType = 'image';
         if (videoExtensions.includes(extension) || audioExtensions.includes(extension)) {
             resourceType = 'video';

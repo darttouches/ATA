@@ -14,19 +14,26 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
     const { t } = useLanguage();
     const pathname = usePathname();
     const [unreadChats, setUnreadChats] = useState(0);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [canManageAtaWaves, setCanManageAtaWaves] = useState(false);
 
     const isActive = (path) => pathname === path;
 
     const fetchUnreadCount = useCallback(async () => {
         try {
-            const res = await fetch('/api/chat/unread-count');
-            if (res.ok) {
-                const data = await res.json();
+            const chatRes = await fetch('/api/chat/unread-count');
+            if (chatRes.ok) {
+                const data = await chatRes.json();
                 setUnreadChats(data.count);
             }
+            
+            const notifRes = await fetch('/api/notifications/unread-count');
+            if (notifRes.ok) {
+                const data = await notifRes.json();
+                setUnreadNotifications(data.count);
+            }
         } catch (error) {
-            console.error('Failed to fetch unread count:', error);
+            console.error('Failed to fetch unread counts:', error);
         }
     }, []);
 
@@ -40,7 +47,7 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
         
         // Check if user can manage ATA Waves
         fetch('/api/admin/settings').then(res => res.json()).then(data => {
-            if (user?.role === 'admin' || data?.ataWaves?.authorizedUsers?.includes(user?._id)) {
+            if (user?.role === 'admin' || data?.ataWaves?.authorizedUsers?.includes(user?._id) || data?.ataWaves?.authorizedUsers?.includes(user?._id?.toString())) {
                 setCanManageAtaWaves(true);
             }
         });
@@ -94,7 +101,26 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                         <User size={18} /> {t('myProfile')}
                     </Link>
                     <Link href="/dashboard/notifications" className={`${styles.link} ${isActive('/dashboard/notifications') ? styles.activeLink : ''}`} onClick={onClose}>
-                        <Bell size={18} /> {t('notifications')}
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                            <Bell size={18} />
+                            <span style={{ flex: 1 }}>{t('notifications')}</span>
+                            {unreadNotifications > 0 && (
+                                <span style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 'bold',
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    minWidth: '18px',
+                                    textAlign: 'center',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                    lineHeight: 1
+                                }}>
+                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                                </span>
+                            )}
+                        </div>
                     </Link>
                     {user.status === 'approved' && (
                         <Link href={`/card/${user._id}`} className={styles.link} onClick={onClose} target="_blank">

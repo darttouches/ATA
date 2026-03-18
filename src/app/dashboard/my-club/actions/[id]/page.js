@@ -50,12 +50,13 @@ export default function ActionDetailsPage({ params }) {
         }
     };
 
+    const [clubs, setClubs] = useState([]);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const actionRes = await fetch(`/api/actions/${id}`);
                 const actionData = await actionRes.json();
-
                 if (!actionData.success) throw new Error(actionData.error);
                 setAction(actionData.data);
 
@@ -71,15 +72,28 @@ export default function ActionDetailsPage({ params }) {
                     });
                 }
 
-                const membersRes = await fetch(`/api/users?clubId=${actionData.data.club._id || actionData.data.club}`);
-                const membersData = await membersRes.json();
-                if (membersData.success && Array.isArray(membersData.data)) {
-                    setMembers(membersData.data);
-                    membersData.data.forEach(m => {
+                // Fetch ALL users and ALL clubs
+                const [usersRes, clubsRes] = await Promise.all([
+                    fetch('/api/users'),
+                    fetch('/api/clubs')
+                ]);
+                
+                const usersData = await usersRes.json();
+                const clubsData = await clubsRes.json();
+
+                if (usersData.success && Array.isArray(usersData.data)) {
+                    setMembers(usersData.data);
+                    usersData.data.forEach(m => {
                         if (!initialMap[m._id]) {
                             initialMap[m._id] = { present: false, remark: '' };
                         }
                     });
+                }
+                
+                if (Array.isArray(clubsData)) {
+                    setClubs(clubsData);
+                } else if (clubsData.data && Array.isArray(clubsData.data)) {
+                    setClubs(clubsData.data);
                 }
 
                 setAttendanceMap(initialMap);
@@ -192,65 +206,126 @@ export default function ActionDetailsPage({ params }) {
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)' }}>
-                                <th style={{ padding: '1rem' }}>{t('member')}</th>
-                                <th style={{ padding: '1rem', textAlign: 'center' }}>{t('present')}</th>
-                                <th style={{ padding: '1rem' }}>{t('remark')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {members.length === 0 ? (
-                                <tr>
-                                    <td colSpan="3" style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
-                                        {t('noMemberFoundClub')}
-                                    </td>
-                                </tr>
-                            ) : (
-                                members.map(member => {
-                                    const state = attendanceMap[member._id] || { present: false, remark: '' };
-                                    return (
-                                        <tr key={member._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
-                                                    {member.profileImage ? (
-                                                        <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
-                                                    ) : (
-                                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.8rem' }}>
-                                                            {(member.firstName || member.name || '?').charAt(0).toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                    <span style={{ fontWeight: 500 }}>{member.firstName} {member.lastName}</span>
-                                                    <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>{member.email}</span>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={state.present}
-                                                    onChange={(e) => handleAttendanceChange(member._id, 'present', e.target.checked)}
-                                                    style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary-color)' }}
-                                                />
-                                            </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <input
-                                                    type="text"
-                                                    value={state.remark}
-                                                    onChange={(e) => handleAttendanceChange(member._id, 'remark', e.target.value)}
-                                                    placeholder={t('addRemark')}
-                                                    className="input"
-                                                    style={{ padding: '0.5rem', fontSize: '0.9rem', width: '100%' }}
-                                                />
-                                            </td>
+                    {clubs.map(club => {
+                        const clubMembers = members.filter(m => 
+                            (m.club?._id?.toString() || m.club?.toString()) === club._id.toString() ||
+                            (m.preferredClub?._id?.toString() || m.preferredClub?.toString()) === club._id.toString()
+                        );
+                        
+                        if (clubMembers.length === 0) return null;
+
+                        return (
+                            <div key={club._id} style={{ marginBottom: '2rem' }}>
+                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem 1.5rem', borderTop: '1px solid var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
+                                    <h4 style={{ color: 'var(--primary)', fontWeight: 700, margin: 0 }}>{club.name}</h4>
+                                </div>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                                    <thead>
+                                        <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.01)' }}>
+                                            <th style={{ padding: '0.8rem 1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>{t('member')}</th>
+                                            <th style={{ padding: '0.8rem 1.5rem', textAlign: 'center', fontSize: '0.85rem', opacity: 0.7 }}>{t('present')}</th>
+                                            <th style={{ padding: '0.8rem 1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>{t('remark')}</th>
                                         </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                                    </thead>
+                                    <tbody>
+                                        {clubMembers.map(member => {
+                                            const state = attendanceMap[member._id] || { present: false, remark: '' };
+                                            return (
+                                                <tr key={member._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <td style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
+                                                            {member.profileImage ? (
+                                                                <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
+                                                            ) : (
+                                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.8rem' }}>
+                                                                    {(member.firstName || member.name || '?').charAt(0).toUpperCase()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{member.firstName} {member.lastName}</span>
+                                                            <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{member.email}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '0.8rem 1.5rem', textAlign: 'center' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={state.present}
+                                                            onChange={(e) => handleAttendanceChange(member._id, 'present', e.target.checked)}
+                                                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '0.8rem 1.5rem' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={state.remark}
+                                                            onChange={(e) => handleAttendanceChange(member._id, 'remark', e.target.value)}
+                                                            placeholder={t('addRemark')}
+                                                            className="input"
+                                                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', width: '100%' }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        );
+                    })}
+
+                    {/* Unassigned members */}
+                    {members.filter(m => !m.club && !m.preferredClub).length > 0 && (
+                        <div style={{ marginBottom: '2rem' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem 1.5rem', borderTop: '1px solid var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
+                                <h4 style={{ color: '#94a3b8', fontWeight: 700, margin: 0 }}>Sans Club / Hors Club</h4>
+                            </div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                                <tbody>
+                                    {members.filter(m => !m.club && !m.preferredClub).map(member => {
+                                        const state = attendanceMap[member._id] || { present: false, remark: '' };
+                                        return (
+                                            <tr key={member._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
+                                                        {member.profileImage ? (
+                                                            <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.8rem' }}>
+                                                                {(member.firstName || member.name || '?').charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{member.firstName} {member.lastName}</span>
+                                                        <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{member.email}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '0.8rem 1.5rem', textAlign: 'center' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={state.present}
+                                                        onChange={(e) => handleAttendanceChange(member._id, 'present', e.target.checked)}
+                                                        style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                                    />
+                                                </td>
+                                                <td style={{ padding: '0.8rem 1.5rem' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={state.remark}
+                                                        onChange={(e) => handleAttendanceChange(member._id, 'remark', e.target.value)}
+                                                        placeholder={t('addRemark')}
+                                                        className="input"
+                                                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', width: '100%' }}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>

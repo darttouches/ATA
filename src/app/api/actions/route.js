@@ -21,11 +21,14 @@ export async function GET(req) {
             if (sessionUser) {
                 const user = await User.findById(sessionUser.userId || sessionUser._id || sessionUser.id).select('club role');
                 if (user) {
-                    if (user.club) {
-                        club = user.club;
-                    } else if (user.role === 'president') {
-                        const ownedClub = await Club.findOne({ chief: user._id });
-                        if (ownedClub) club = ownedClub._id;
+                    // Admins and National Board members see all actions by default (club remains null)
+                    if (user.role !== 'admin' && user.role !== 'national') {
+                        if (user.club) {
+                            club = user.club;
+                        } else if (user.role === 'president') {
+                            const ownedClub = await Club.findOne({ chief: user._id });
+                            if (ownedClub) club = ownedClub._id;
+                        }
                     }
                 }
             }
@@ -76,8 +79,7 @@ export async function POST(req) {
 
         let clubId = user.club;
 
-        // If user is a chef but club is not directly linked on user object, 
-        // look up which club they are chief of.
+        // If user is a chef but club is not directly linked on user object
         if (!clubId && user.role === 'president') {
             const ownedClub = await Club.findOne({ chief: user._id });
             if (ownedClub) {
@@ -85,15 +87,19 @@ export async function POST(req) {
             }
         }
 
-        if (!clubId && user.role !== 'admin') {
-            console.log("User has no club assigned and is not admin");
+        const body = await req.json();
+
+        // Admins and National Board members can specify WHICH club the action belongs to
+        if ((user.role === 'admin' || user.role === 'national') && body.club) {
+            clubId = body.club;
+        }
+
+        if (!clubId && user.role !== 'admin' && user.role !== 'national') {
+            console.log("User has no club assigned and is not authorized to create global actions");
             return NextResponse.json({ success: false, error: 'User does not belong to a club' }, { status: 400 });
         }
 
-        const body = await req.json();
-        console.log("Request Body:", body);
-
-        // Filter out empty endDate if it's an empty string, to avoid Date cast error
+        // Filter out empty endDate
         if (body.endDate === '') {
             delete body.endDate;
         }

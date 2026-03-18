@@ -48,10 +48,15 @@ const Navbar = ({ user, serverLogo }) => {
         initPWA();
     }, []);
     useEffect(() => {
-        fetch('/api/admin/settings').then(res => res.json()).then(data => {
-            setLogo(prevLogo => !prevLogo && data.logo ? data.logo : prevLogo);
-            setAtaWavesPublished(data?.ataWaves?.isPublished || false);
-        }).catch(err => console.error(err));
+        fetch('/api/admin/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    setLogo(prevLogo => !prevLogo && data.logo ? data.logo : prevLogo);
+                    setAtaWavesPublished(data.ataWaves?.isPublished || false);
+                }
+            })
+            .catch(err => console.error("Error fetching settings:", err));
     }, []);
 
     useEffect(() => {

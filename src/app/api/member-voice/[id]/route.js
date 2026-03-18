@@ -38,3 +38,25 @@ export async function PATCH(req, { params }) {
         return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 });
     }
 }
+
+export async function DELETE(req, { params }) {
+    try {
+        const user = await getUser();
+        if (!user || user.role !== 'admin') {
+            return NextResponse.json({ error: 'Accès refusé. Seuls les administrateurs peuvent supprimer.' }, { status: 403 });
+        }
+
+        const { id } = await params;
+        await dbConnect();
+
+        const voiceRemoved = await MemberVoice.findByIdAndDelete(id);
+        if (!voiceRemoved) {
+            return NextResponse.json({ error: 'Message non trouvé' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, message: 'Message supprimé' });
+    } catch (error) {
+        console.error('MemberVoice DELETE Error:', error);
+        return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 });
+    }
+}

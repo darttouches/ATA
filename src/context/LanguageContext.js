@@ -110,6 +110,10 @@ export const translations = {
         birthdayTitle: "C'est la fête ! 🎂",
         birthdaySubtitle: "Joyeux anniversaire à notre membre exceptionnel :",
         birthdaySubtitlePlural: "Joyeux anniversaire à nos membres exceptionnels :",
+        birthdaySubtitleDesc: "Célébrons ensemble nos membres exceptionnels !",
+        noBirthdayToday: "Aucun anniversaire aujourd'hui !",
+        comeBackTomorrow: "Revenez demain pour célébrer nos membres.",
+        itsTheirDay: "Aujourd'hui, c'est son jour !",
         president: "Président",
         nationalBoardMember: "Membre Bureau National",
         eventsFormations: "Événements & Formations",
@@ -651,6 +655,10 @@ export const translations = {
         birthdayTitle: "It's a party! 🎂",
         birthdaySubtitle: "Happy birthday to our exceptional member:",
         birthdaySubtitlePlural: "Happy birthday to our exceptional members:",
+        birthdaySubtitleDesc: "Let's celebrate our exceptional members together!",
+        noBirthdayToday: "No birthdays today!",
+        comeBackTomorrow: "Come back tomorrow to celebrate our members.",
+        itsTheirDay: "Today is their day!",
         president: "President",
         nationalBoardMember: "National Board Member",
         eventsFormations: "Events & Training",
@@ -1171,6 +1179,10 @@ export const translations = {
         birthdayTitle: "إنه وقت الاحتفال! 🎂",
         birthdaySubtitle: "عيد ميلاد سعيد لعضونا المتميز:",
         birthdaySubtitlePlural: "عيد ميلاد سعيد لأعضائنا المتميزين:",
+        birthdaySubtitleDesc: "دعونا نحتفل معاً بأعضائنا المتميزين!",
+        noBirthdayToday: "لا توجد أعياد ميلاد اليوم!",
+        comeBackTomorrow: "عد غداً للاحتفال بأعضائنا.",
+        itsTheirDay: "اليوم هو يومهم المميز!",
         president: "الرئيس",
         nationalBoardMember: "عضو مكتب وطني",
         eventsFormations: "الفعاليات والتكوينات",
@@ -1608,15 +1620,16 @@ export const translations = {
 };
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const savedLang = localStorage.getItem('language');
-            if (savedLang && ['fr', 'en', 'ar'].includes(savedLang)) {
-                return savedLang;
-            }
+    const [language, setLanguage] = useState('fr'); // Default to fr for SSR
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        const savedLang = localStorage.getItem('language');
+        if (savedLang && ['fr', 'en', 'ar'].includes(savedLang)) {
+            setLanguage(savedLang);
         }
-        return 'fr';
-    });
+    }, []);
 
     const changeLanguage = (lang) => {
         setLanguage(lang);
@@ -1649,7 +1662,9 @@ export const LanguageProvider = ({ children }) => {
 
     return (
         <LanguageContext.Provider value={{ language, changeLanguage, t, formatDynamicText }}>
-            {children}
+            <div style={{ visibility: mounted ? 'visible' : 'hidden' }}>
+                {children}
+            </div>
         </LanguageContext.Provider>
     );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, User, UserX, Calendar, Filter, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { MessageSquare, User, UserX, Calendar, Filter, CheckCircle2, Clock, AlertCircle, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function VoiceManagementPage() {
@@ -36,6 +36,24 @@ export default function VoiceManagementPage() {
             });
             if (res.ok) {
                 setVoices(voices.map(v => v._id === id ? { ...v, status: newStatus } : v));
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const deleteVoice = async (id) => {
+        if (!confirm(t('confirmDeleteAction') || 'Êtes-vous sûr de vouloir supprimer ce message ?')) return;
+        
+        try {
+            const res = await fetch(`/api/member-voice/${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setVoices(voices.filter(v => v._id !== id));
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Erreur lors de la suppression');
             }
         } catch (err) {
             console.error(err);
@@ -164,6 +182,27 @@ export default function VoiceManagementPage() {
                                         <option value="en_cours" style={{ background: '#1e293b', color: 'white' }}>{t('pending')}</option>
                                         <option value="traite" style={{ background: '#1e293b', color: 'white' }}>{t('approved')}</option>
                                     </select>
+                                    
+                                    <button 
+                                        onClick={() => deleteVoice(voice._id)}
+                                        style={{
+                                            padding: '6px',
+                                            borderRadius: '8px',
+                                            background: 'rgba(239, 68, 68, 0.1)',
+                                            color: '#ef4444',
+                                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: '0.2s'
+                                        }}
+                                        title={t('delete')}
+                                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
                             </div>
 
