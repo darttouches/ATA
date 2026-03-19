@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { ArrowLeft, Video, ShieldAlert, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Video, ShieldAlert, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function MeetingRoom() {
@@ -178,8 +178,8 @@ export default function MeetingRoom() {
         );
     }
 
-    const displayName = user.firstName ? `${user.firstName} ${user.lastName}` : (user.name || 'ATA Member');
-    const jitsiUrl = `https://meet.jit.si/${meeting.roomName}#config.prejoinPageEnabled=false&userInfo.displayName="${encodeURIComponent(displayName)}"&userInfo.email="${encodeURIComponent(user.email)}"`;
+    const displayName = user?.firstName ? `${user.firstName} ${user.lastName}` : (user?.name || 'ATA Member');
+    const jitsiUrl = `https://meet.jit.si/${meeting?.roomName || 'ata-general'}#config.prejoinPageEnabled=false&userInfo.displayName="${encodeURIComponent(displayName)}"&userInfo.email="${encodeURIComponent(user?.email || '')}"`;
 
     return (
         <div style={{ padding: '0 1rem' }}>

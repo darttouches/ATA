@@ -12,6 +12,7 @@ export default function CreateMeeting() {
     const [loading, setLoading] = useState(false);
     const [clubs, setClubs] = useState([]);
     const [users, setUsers] = useState([]);
+    const [errorUsers, setErrorUsers] = useState(false);
     
     const [formData, setFormData] = useState({
         title: '',
@@ -24,13 +25,23 @@ export default function CreateMeeting() {
     });
 
     const fetchData = useCallback(async () => {
-        const [clubsRes, usersRes] = await Promise.all([
-            fetch('/api/clubs'),
-            fetch('/api/members')
-        ]);
-        
-        if (clubsRes.ok) setClubs(await clubsRes.json());
-        if (usersRes.ok) setUsers(await usersRes.json());
+        try {
+            const [clubsRes, usersRes] = await Promise.all([
+                fetch('/api/clubs'),
+                fetch('/api/members')
+            ]);
+            
+            if (clubsRes.ok) setClubs(await clubsRes.json());
+            if (usersRes.ok) {
+                setUsers(await usersRes.json());
+                setErrorUsers(false);
+            } else {
+                setErrorUsers(true);
+            }
+        } catch (err) {
+            console.error(err);
+            setErrorUsers(true);
+        }
     }, []);
 
     useEffect(() => {
@@ -225,7 +236,9 @@ export default function CreateMeeting() {
                                         {user.clubName && <span style={{ fontSize: '0.7rem', opacity: 0.6, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>{user.clubName}</span>}
                                     </label>
                                 )) : (
-                                    <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>Chargement des membres...</div>
+                                    <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
+                                        {errorUsers ? "Erreur de chargement des membres." : "Chargement des membres..."}
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -13,24 +13,27 @@ export async function GET() {
 
         await dbConnect();
 
-        const users = await User.find({ isActive: { $ne: false } })
+        // Get all users who are approved/active (adjust filter to your schema)
+        const users = await User.find({ status: 'approved' })
             .select('firstName lastName name email role club profileImage')
             .sort({ firstName: 1, lastName: 1 })
             .lean();
 
+        console.log(`Found ${users.length} approved members`);
+
         // Attach club name for display
         const clubIds = [...new Set(users.map(u => u.club).filter(Boolean))];
-        const clubs = await Club.find({ _id: { $in: clubIds } }).select('name').lean();
+        const clubs = clubIds.length > 0 ? await Club.find({ _id: { $in: clubIds } }).select('name').lean() : [];
         const clubMap = Object.fromEntries(clubs.map(c => [c._id.toString(), c.name]));
 
         const enriched = users.map(u => ({
             ...u,
-            clubName: u.club ? clubMap[u.club.toString()] : null
+            clubName: u.club ? (clubMap[u.club.toString()] || 'Club inconnu') : null
         }));
 
         return NextResponse.json(enriched);
     } catch (error) {
-        console.error('Members API error:', error);
-        return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+        console.error('Members API Error Detail:', error);
+        return NextResponse.json({ error: 'Erreur serveur lors de la récupération des membres', details: error.message }, { status: 500 });
     }
 }
