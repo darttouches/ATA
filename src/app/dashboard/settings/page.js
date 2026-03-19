@@ -30,6 +30,13 @@ export default function AdminSettings() {
         description: ''
     });
 
+    // Meeting TA State
+    const [meetingTAData, setMeetingTAData] = useState({
+        isPublished: true,
+        authorizedRoles: ['admin', 'national', 'president'],
+        authorizedUsers: []
+    });
+
     // Background Music State
     const [bgMusicData, setBgMusicData] = useState({
         playlist: [{ id: 'default', name: 'Musique Par Défaut', url: '/music/background.mp3' }],
@@ -47,6 +54,7 @@ export default function AdminSettings() {
             if (data.footer) setFooterData(data.footer);
             if (data.ataWaves) setAtaWavesData(data.ataWaves);
             if (data.bgMusic) setBgMusicData(data.bgMusic);
+            if (data.meetingTA) setMeetingTAData(data.meetingTA);
         }
     }, []);
 
@@ -125,7 +133,8 @@ export default function AdminSettings() {
                 logoUrl: logo,
                 footer: footerData,
                 ataWaves: ataWavesData,
-                bgMusic: bgMusicData
+                bgMusic: bgMusicData,
+                meetingTA: meetingTAData
             }),
         });
 
@@ -133,7 +142,7 @@ export default function AdminSettings() {
             setSuccess(true);
             // Dispatch custom event to notify other components (like BackgroundMusic)
             window.dispatchEvent(new CustomEvent('settings-updated', { 
-                detail: { logo, footer: footerData, ataWaves: ataWavesData, bgMusic: bgMusicData } 
+                detail: { logo, footer: footerData, ataWaves: ataWavesData, bgMusic: bgMusicData, meetingTA: meetingTAData } 
             }));
             setTimeout(() => setSuccess(false), 3000);
         }
@@ -334,6 +343,86 @@ export default function AdminSettings() {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '1.5rem' }}
+                    onClick={handleSave}
+                    disabled={loading}
+                >
+                    {success ? <><Check size={18} /> {t('changesSaved')}</> : <><Save size={18} /> {t('saveAllChanges')}</>}
+                </button>
+            </div>
+
+            {/* Réunion TA Management Section */}
+            <div className="card" style={{ marginTop: '2rem' }}>
+                <h3>{t('meetingTA')}</h3>
+                <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
+                    Gérer qui peut créer et organiser des réunions sur la plateforme.
+                </p>
+
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={meetingTAData.isPublished}
+                            onChange={(e) => setMeetingTAData({...meetingTAData, isPublished: e.target.checked})}
+                            style={{ width: '18px', height: '18px' }}
+                        />
+                        <span style={{ fontWeight: 600 }}>Activer l'outil Réunion TA pour les membres autorisés</span>
+                    </label>
+
+                    <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                        <h4 style={{ marginBottom: '1rem' }}>{t('authorizedRoles')}</h4>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                            {['admin', 'national', 'president'].map(role => (
+                                <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={meetingTAData.authorizedRoles.includes(role)}
+                                        onChange={(e) => {
+                                            const newRoles = e.target.checked 
+                                                ? [...meetingTAData.authorizedRoles, role]
+                                                : meetingTAData.authorizedRoles.filter(r => r !== role);
+                                            setMeetingTAData({...meetingTAData, authorizedRoles: newRoles});
+                                        }}
+                                    />
+                                    <span>{t(role) || role}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
+                            {t('authorizedUsers')}
+                        </label>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '1rem' }}>
+                            Autorisez des membres spécifiques en plus des rôles sélectionnés ci-dessus.
+                        </p>
+                        
+                        <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                            {allUsers.length > 0 ? allUsers.map(user => (
+                                <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={meetingTAData.authorizedUsers.includes(user._id)}
+                                        onChange={(e) => {
+                                            const newUsers = e.target.checked 
+                                                ? [...meetingTAData.authorizedUsers, user._id]
+                                                : meetingTAData.authorizedUsers.filter(id => id !== user._id);
+                                            setMeetingTAData({...meetingTAData, authorizedUsers: newUsers});
+                                        }}
+                                    />
+                                    <span>{user.firstName ? `${user.firstName} ${user.lastName}` : user.name}</span>
+                                    {user.role !== 'membre' && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'var(--primary)', borderRadius: '4px', marginLeft: 'auto' }}>{t(user.role) || user.role}</span>}
+                                </label>
+                            )) : (
+                                <div style={{ opacity: 0.5, textAlign: 'center', padding: '10px' }}>Chargement des utilisateurs...</div>
+                            )}
                         </div>
                     </div>
                 </div>

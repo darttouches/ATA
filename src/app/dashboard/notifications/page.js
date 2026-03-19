@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, BellOff, ExternalLink, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { Bell, BellOff, ExternalLink, Check, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function NotificationsPage() {
@@ -9,6 +9,19 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [user, setUser] = useState(null);
+
+    const fetchUser = useCallback(async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch user:', err);
+        }
+    }, []);
 
     const fetchNotifications = useCallback(async () => {
         setLoading(true);
@@ -30,8 +43,9 @@ export default function NotificationsPage() {
     }, [t]);
 
     useEffect(() => {
+        fetchUser();
         fetchNotifications();
-    }, [fetchNotifications]);
+    }, [fetchUser, fetchNotifications]);
 
     const markAsRead = async (id) => {
         try {
@@ -45,6 +59,20 @@ export default function NotificationsPage() {
             }
         } catch (err) {
             console.error('Failed to mark as read:', err);
+        }
+    };
+
+    const deleteNotification = async (id) => {
+        if (!window.confirm('Voulez-vous vraiment supprimer cette notification ?')) return;
+        try {
+            const res = await fetch(`/api/notifications?id=${id}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                setNotifications(notifications.filter(n => n._id !== id));
+            }
+        } catch (err) {
+            console.error('Failed to delete notification:', err);
         }
     };
 
@@ -144,6 +172,29 @@ export default function NotificationsPage() {
                                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(124, 58, 237, 0.1)'}
                                     >
                                         <Check size={18} />
+                                    </button>
+                                )}
+                                {user?.role === 'admin' && (
+                                    <button
+                                        onClick={() => deleteNotification(notification._id)}
+                                        style={{
+                                            background: 'rgba(239, 68, 68, 0.1)',
+                                            border: 'none',
+                                            color: '#ef4444',
+                                            width: '36px',
+                                            height: '36px',
+                                            borderRadius: '50%',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        title="Supprimer"
+                                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                                    >
+                                        <Trash2 size={18} />
                                     </button>
                                 )}
                                 {notification.link && (

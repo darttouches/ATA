@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Users, FileText, Settings, Shield, LogOut,
-    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home
+    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './DashboardSidebar.module.css';
@@ -16,6 +16,7 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
     const [unreadChats, setUnreadChats] = useState(0);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [canManageAtaWaves, setCanManageAtaWaves] = useState(false);
+    const [canAccessMeetingTA, setCanAccessMeetingTA] = useState(false);
 
     const isActive = (path) => pathname === path;
 
@@ -49,6 +50,12 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
         fetch('/api/admin/settings').then(res => res.json()).then(data => {
             if (user?.role === 'admin' || data?.ataWaves?.authorizedUsers?.includes(user?._id) || data?.ataWaves?.authorizedUsers?.includes(user?._id?.toString())) {
                 setCanManageAtaWaves(true);
+            }
+
+            const m = data.meetingTA;
+            if (user?.role === 'admin' || 
+                (m?.isPublished && (m?.authorizedRoles?.includes(user?.role) || m?.authorizedUsers?.includes(user?._id) || m?.authorizedUsers?.includes(user?._id?.toString())))) {
+                setCanAccessMeetingTA(true);
             }
         });
         
@@ -151,6 +158,11 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                     <Link href="/dashboard/voice" className={`${styles.link} ${isActive('/dashboard/voice') ? styles.activeLink : ''}`} onClick={onClose}>
                         <Mic size={18} /> {t('memberVoice')}
                     </Link>
+                    {canAccessMeetingTA && (
+                        <Link href="/dashboard/meetings" className={`${styles.link} ${isActive('/dashboard/meetings') ? styles.activeLink : ''}`} onClick={onClose}>
+                            <Video size={18} /> {t('meetingTA')}
+                        </Link>
+                    )}
                     <Link href="/dashboard" className={`${styles.link} ${isActive('/dashboard') ? styles.activeLink : ''}`} onClick={onClose}>
                         <LayoutDashboard size={18} /> {t('dashboardOverview')}
                     </Link>

@@ -38,3 +38,33 @@ export async function PATCH(req) {
         return NextResponse.json({ error: 'Erreur' }, { status: 500 });
     }
 }
+
+export async function DELETE(req) {
+    try {
+        const user = await getUser();
+        if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
+
+        await dbConnect();
+        const notification = await Notification.findById(id);
+
+        if (!notification) {
+            return NextResponse.json({ error: 'Notification introuvable' }, { status: 404 });
+        }
+
+        // ONLY allow deletion if user is an admin
+        if (user.role !== 'admin') {
+            return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 });
+        }
+
+        await Notification.findByIdAndDelete(id);
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Notification DELETE Error:', error);
+        return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    }
+}
