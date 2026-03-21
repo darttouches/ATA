@@ -5,18 +5,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Users, FileText, Settings, Shield, LogOut,
-    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video
+    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video, Gamepad2
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './DashboardSidebar.module.css';
 
 export default function DashboardSidebar({ user, isOpen, onClose }) {
-    const { t } = useLanguage();
+    const { language, t } = useLanguage();
     const pathname = usePathname();
     const [unreadChats, setUnreadChats] = useState(0);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [canManageAtaWaves, setCanManageAtaWaves] = useState(false);
     const [canAccessMeetingTA, setCanAccessMeetingTA] = useState(false);
+    const [gamesConfig, setGamesConfig] = useState(null);
+    const [canAccessGames, setCanAccessGames] = useState(false);
 
     const isActive = (path) => pathname === path;
 
@@ -46,18 +48,27 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
         
         const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
         
-        // Check if user can manage ATA Waves
-        fetch('/api/admin/settings').then(res => res.json()).then(data => {
-            if (user?.role === 'admin' || data?.ataWaves?.authorizedUsers?.includes(user?._id) || data?.ataWaves?.authorizedUsers?.includes(user?._id?.toString())) {
-                setCanManageAtaWaves(true);
-            }
+        // Check settings for access
+        fetch('/api/admin/settings')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (!data) return;
+                
+                if (user?.role === 'admin' || data?.ataWaves?.authorizedUsers?.includes(user?._id) || data?.ataWaves?.authorizedUsers?.includes(user?._id?.toString())) {
+                    setCanManageAtaWaves(true);
+                }
 
-            const m = data.meetingTA;
-            if (user?.role === 'admin' || 
-                (m?.isPublished && (m?.authorizedRoles?.includes(user?.role) || m?.authorizedUsers?.includes(user?._id) || m?.authorizedUsers?.includes(user?._id?.toString())))) {
-                setCanAccessMeetingTA(true);
-            }
-        });
+                const m = data.meetingTA;
+                if (m?.isPublished && (user?.role === 'admin' || m?.authorizedRoles?.includes(user?.role) || m?.authorizedUsers?.includes(user?._id) || m?.authorizedUsers?.includes(user?._id?.toString()))) {
+                    setCanAccessMeetingTA(true);
+                }
+
+                const g = data.games;
+                setGamesConfig(g);
+                if (g?.isPublished && (user?.role === 'admin' || g?.authorizedRoles?.includes(user?.role) || g?.authorizedUsers?.includes(user?._id) || g?.authorizedUsers?.includes(user?._id?.toString()))) {
+                    setCanAccessGames(true);
+                }
+            });
         
         return () => clearInterval(interval);
     }, [fetchUnreadCount, user?._id, user?.role]);
@@ -166,6 +177,11 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                     <Link href="/dashboard" className={`${styles.link} ${isActive('/dashboard') ? styles.activeLink : ''}`} onClick={onClose}>
                         <LayoutDashboard size={18} /> {t('dashboardOverview')}
                     </Link>
+                    {canAccessGames && (
+                        <Link href="/games" className={`${styles.link} ${isActive('/games') ? styles.activeLink : ''}`} onClick={onClose} style={{ color: '#ef4444' }}>
+                            <Gamepad2 size={18} /> {gamesConfig?.sidebarLabel?.[language] || gamesConfig?.sidebarLabel?.fr || t('games') || 'Espace Jeux'}
+                        </Link>
+                    )}
 
                     {user.role === 'admin' && (
                         <>

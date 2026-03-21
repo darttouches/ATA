@@ -44,6 +44,31 @@ export default function AdminSettings() {
         volume: 0.5
     });
 
+    // Games State
+    const [gamesData, setGamesData] = useState({
+        isPublished: true,
+        sidebarLabel: { fr: 'Jeux de Société', en: 'Board Games', ar: 'ألعاب الطاولة' },
+        authorizedRoles: ['admin', 'national', 'president', 'bureau', 'membre'],
+        authorizedUsers: [],
+        loupGarou: {
+            isPublished: true,
+            modes: 'both' // 'presence', 'online', 'both'
+        },
+        xo: {
+            isPublished: true,
+            modes: 'both' // 'presence', 'online', 'both'
+        },
+        barbechni: {
+            isPublished: true,
+            modes: 'both',
+            minPlayers: 3,
+            maxPlayers: 15,
+            allowQuestion: true,
+            allowReclamation: true,
+            allowAnonymityVote: true
+        }
+    });
+
     const [allUsers, setAllUsers] = useState([]);
 
     const fetchSettings = useCallback(async () => {
@@ -55,6 +80,7 @@ export default function AdminSettings() {
             if (data.ataWaves) setAtaWavesData(data.ataWaves);
             if (data.bgMusic) setBgMusicData(data.bgMusic);
             if (data.meetingTA) setMeetingTAData(data.meetingTA);
+            if (data.games) setGamesData(data.games);
         }
     }, []);
 
@@ -134,7 +160,8 @@ export default function AdminSettings() {
                 footer: footerData,
                 ataWaves: ataWavesData,
                 bgMusic: bgMusicData,
-                meetingTA: meetingTAData
+                meetingTA: meetingTAData,
+                games: gamesData
             }),
         });
 
@@ -142,7 +169,7 @@ export default function AdminSettings() {
             setSuccess(true);
             // Dispatch custom event to notify other components (like BackgroundMusic)
             window.dispatchEvent(new CustomEvent('settings-updated', { 
-                detail: { logo, footer: footerData, ataWaves: ataWavesData, bgMusic: bgMusicData, meetingTA: meetingTAData } 
+                detail: { logo, footer: footerData, ataWaves: ataWavesData, bgMusic: bgMusicData, meetingTA: meetingTAData, games: gamesData } 
             }));
             setTimeout(() => setSuccess(false), 3000);
         }
@@ -424,6 +451,217 @@ export default function AdminSettings() {
                                 <div style={{ opacity: 0.5, textAlign: 'center', padding: '10px' }}>Chargement des utilisateurs...</div>
                             )}
                         </div>
+                    </div>
+                </div>
+
+                <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '1.5rem' }}
+                    onClick={handleSave}
+                    disabled={loading}
+                >
+                    {success ? <><Check size={18} /> {t('changesSaved')}</> : <><Save size={18} /> {t('saveAllChanges')}</>}
+                </button>
+            </div>
+
+            {/* Games Management Section */}
+            <div className="card" style={{ marginTop: '2rem' }}>
+                <h3>Gestion des Jeux</h3>
+                <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
+                    Configurer l'accès aux jeux de société et les modes disponibles.
+                </p>
+
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={gamesData.isPublished}
+                            onChange={(e) => setGamesData({...gamesData, isPublished: e.target.checked})}
+                            style={{ width: '18px', height: '18px' }}
+                        />
+                        <span style={{ fontWeight: 600 }}>Afficher l'onglet "Jeux" dans la barre latérale</span>
+                    </label>
+
+                    <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                        <h4 style={{ marginBottom: '1rem' }}>Libellé du bouton (Sidebar)</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                            <div>
+                                <label style={{ fontSize: '0.7rem', display: 'block', opacity: 0.6 }}>Français</label>
+                                <input className="card" style={{ width: '100%', fontSize: '0.8rem' }} value={gamesData.sidebarLabel.fr} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, fr: e.target.value}})} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.7rem', display: 'block', opacity: 0.6 }}>Anglais</label>
+                                <input className="card" style={{ width: '100%', fontSize: '0.8rem' }} value={gamesData.sidebarLabel.en} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, en: e.target.value}})} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.7rem', display: 'block', opacity: 0.6 }}>Arabe</label>
+                                <input className="card" style={{ width: '100%', fontSize: '0.8rem', textAlign: 'right' }} value={gamesData.sidebarLabel.ar} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, ar: e.target.value}})} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Qui peut accéder aux jeux ?</label>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '0.5rem' }}>Rôles autorisés :</p>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '10px', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', marginBottom: '1rem' }}>
+                            {['admin', 'national', 'president', 'bureau', 'membre', 'sympathisant'].map(role => (
+                                <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={gamesData.authorizedRoles.includes(role)}
+                                        onChange={(e) => {
+                                            const newRoles = e.target.checked 
+                                                ? [...gamesData.authorizedRoles, role]
+                                                : gamesData.authorizedRoles.filter(r => r !== role);
+                                            setGamesData({...gamesData, authorizedRoles: newRoles});
+                                        }}
+                                    />
+                                    <span>{t(role) || role}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '0.5rem' }}>Membres spécifiques autorisés :</p>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                            {allUsers.length > 0 ? allUsers.map(user => (
+                                <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={gamesData.authorizedUsers?.includes(user._id)}
+                                        onChange={(e) => {
+                                            const currentUsers = gamesData.authorizedUsers || [];
+                                            const newUsers = e.target.checked 
+                                                ? [...currentUsers, user._id]
+                                                : currentUsers.filter(id => id !== user._id);
+                                            setGamesData({...gamesData, authorizedUsers: newUsers});
+                                        }}
+                                    />
+                                    <span style={{ fontSize: '0.9rem' }}>{user.firstName ? `${user.firstName} ${user.lastName}` : user.name}</span>
+                                    {user.role !== 'membre' && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'var(--primary)', borderRadius: '4px', marginLeft: 'auto' }}>{t(user.role) || user.role}</span>}
+                                </label>
+                            )) : (
+                                <div style={{ opacity: 0.5, textAlign: 'center', padding: '10px' }}>Chargement des utilisateurs...</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>🐺 Paramètres Loup-Garou</h4>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={gamesData.loupGarou?.isPublished || false}
+                                onChange={(e) => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || {}), isPublished: e.target.checked}})}
+                            />
+                            <span>Activer le jeu Loup-Garou</span>
+                        </label>
+                        
+                        {(gamesData.loupGarou?.isPublished || false) && (
+                            <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
+                                <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Modes de jeu autorisés :</div>
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="presence" checked={gamesData.loupGarou?.modes === 'presence'} onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), modes: e.target.value}})} />
+                                        Présentiel
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="online" checked={gamesData.loupGarou?.modes === 'online'} onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), modes: e.target.value}})} />
+                                        En Ligne
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="both" checked={gamesData.loupGarou?.modes === 'both'} onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), modes: e.target.value}})} />
+                                        Les Deux
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--card-border)', marginTop: '1rem' }}>
+                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>⭕ Paramètres XO (4x4)</h4>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={gamesData.xo?.isPublished || false}
+                                onChange={(e) => setGamesData({...gamesData, xo: {...(gamesData.xo || {}), isPublished: e.target.checked}})}
+                            />
+                            <span>Activer le jeu XO</span>
+                        </label>
+                        
+                        {(gamesData.xo?.isPublished || false) && (
+                            <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
+                                <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Modes de jeu autorisés :</div>
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="presence" checked={gamesData.xo?.modes === 'presence'} onChange={e => setGamesData({...gamesData, xo: {...(gamesData.xo || { isPublished: true }), modes: e.target.value}})} />
+                                        Présentiel
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="online" checked={gamesData.xo?.modes === 'online'} onChange={e => setGamesData({...gamesData, xo: {...(gamesData.xo || { isPublished: true }), modes: e.target.value}})} />
+                                        En Ligne
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="both" checked={gamesData.xo?.modes === 'both'} onChange={e => setGamesData({...gamesData, xo: {...(gamesData.xo || { isPublished: true }), modes: e.target.value}})} />
+                                        Les Deux
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--card-border)', marginTop: '1rem' }}>
+                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>🕵️ Paramètres Barbechni !</h4>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={gamesData.barbechni?.isPublished || false}
+                                onChange={(e) => setGamesData({...gamesData, barbechni: {...(gamesData.barbechni || {}), isPublished: e.target.checked}})}
+                            />
+                            <span>Activer le jeu Barbechni !</span>
+                        </label>
+                        
+                        {(gamesData.barbechni?.isPublished || false) && (
+                            <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
+                                <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Configuration :</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '1rem' }}>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem' }}>Joueurs Min.</label>
+                                        <input type="number" className="card" value={gamesData.barbechni.minPlayers} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, minPlayers: parseInt(e.target.value)}})} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem' }}>Joueurs Max.</label>
+                                        <input type="number" className="card" value={gamesData.barbechni.maxPlayers} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, maxPlayers: parseInt(e.target.value)}})} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <input type="checkbox" checked={gamesData.barbechni.allowQuestion} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowQuestion: e.target.checked}})} /> Question
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <input type="checkbox" checked={gamesData.barbechni.allowReclamation} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowReclamation: e.target.checked}})} /> Réclamation
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <input type="checkbox" checked={gamesData.barbechni.allowAnonymityVote} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowAnonymityVote: e.target.checked}})} /> Vote d'anonymat
+                                    </label>
+                                </div>
+
+                                <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Modes autorisés :</div>
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="presence" checked={gamesData.barbechni?.modes === 'presence'} onChange={e => setGamesData({...gamesData, barbechni: {...(gamesData.barbechni || { isPublished: true }), modes: e.target.value}})} />
+                                        Présentiel
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="online" checked={gamesData.barbechni?.modes === 'online'} onChange={e => setGamesData({...gamesData, barbechni: {...(gamesData.barbechni || { isPublished: true }), modes: e.target.value}})} />
+                                        En Ligne
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="radio" value="both" checked={gamesData.barbechni?.modes === 'both'} onChange={e => setGamesData({...gamesData, barbechni: {...(gamesData.barbechni || { isPublished: true }), modes: e.target.value}})} />
+                                        Les Deux
+                                    </label>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

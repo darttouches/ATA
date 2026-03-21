@@ -49,7 +49,14 @@ const Navbar = ({ user, serverLogo }) => {
     }, []);
     useEffect(() => {
         fetch('/api/admin/settings')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) return null;
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return res.json();
+                }
+                return null;
+            })
             .then(data => {
                 if (data) {
                     setLogo(prevLogo => !prevLogo && data.logo ? data.logo : prevLogo);
