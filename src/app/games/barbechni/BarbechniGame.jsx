@@ -382,7 +382,14 @@ export default function BarbechniGame({ user }) {
                              <div style={{textAlign: 'left', marginBottom: '10px'}}>
                                  {players.map((p, i) => (
                                      <div key={i} style={{marginBottom: '5px', display: 'flex', gap: '10px', alignItems: 'center'}}>
-                                         <div style={{width: '30px', height: '30px', borderRadius: '50%', background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{p.icon}</div>
+                                         <div style={{width: '35px', height: '35px', borderRadius: '50%', overflow: 'hidden', background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                                             {p.photo ? (
+                                                 <img src={(p.photo.startsWith('http') || p.photo.startsWith('/')) ? p.photo : `/${p.photo}`} 
+                                                      style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                                                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                                             ) : null}
+                                             <div style={{display: p.photo ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center'}}>{p.icon}</div>
+                                         </div>
                                          <select className={styles.input} style={{marginBottom: 0, flex: 1}} value={p._id} onChange={e => {
                                              const u = availableUsers.find(au => au._id === e.target.value);
                                              const newPlayers = [...players];
@@ -470,7 +477,14 @@ export default function BarbechniGame({ user }) {
                         <div className={styles.cardGrid} style={{marginTop: '30px'}}>
                             {room.players.map(p => (
                                 <div key={p._id} className={styles.playerCard} style={{borderColor: p.color}}>
-                                    <div className={styles.cardIcon}>{p.icon}</div>
+                                    <div className={styles.cardIcon} style={{background: p.color, overflow: 'hidden'}}>
+                                        {p.photo ? (
+                                            <img src={(p.photo.startsWith('http') || p.photo.startsWith('/')) ? p.photo : `/${p.photo}`} 
+                                                 style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                                                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                                        ) : null}
+                                        <div style={{display: p.photo ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center'}}>{p.icon}</div>
+                                    </div>
                                     <h4>{p.name}</h4>
                                     <span style={{fontSize: '0.8rem', opacity: 0.6}}>{p.club}</span>
                                 </div>
@@ -651,8 +665,16 @@ export default function BarbechniGame({ user }) {
                         <div>{(room.currentCardIndex || 0) + 1} / {(room.cards || []).length}</div>
                     </div>
 
-                    <div style={{textAlign: 'center', marginBottom: '40px'}}>
-                        <h2 style={{color: '#7c3aed'}}>{t.to} {recipient?.name || '...'}</h2>
+                    <div style={{textAlign: 'center', marginBottom: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px'}}>
+                        <div style={{width: '80px', height: '80px', borderRadius: '50%', background: recipient?.color || '#7c3aed', overflow: 'hidden', padding: '3px', border: '3px solid #7c3aed'}}>
+                            {recipient?.photo ? (
+                                <img src={(recipient.photo.startsWith('http') || recipient.photo.startsWith('/')) ? recipient.photo : `/${recipient.photo}`} 
+                                     style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} 
+                                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                            ) : null}
+                            <div style={{display: recipient?.photo ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem'}}>{recipient?.icon || '👤'}</div>
+                        </div>
+                        <h2 style={{color: '#7c3aed', margin: 0}}>{t.to} {recipient?.name || '...'}</h2>
                     </div>
 
                     <div className={styles.writingBox} style={{border: '3px solid #7c3aed'}}>
@@ -670,7 +692,14 @@ export default function BarbechniGame({ user }) {
                                 </div>
                             ) : (
                                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px'}}>
-                                    <img src={sender?.photo || '/default-user.png'} style={{width: '40px', height: '40px', borderRadius: '50%'}} />
+                                    <div style={{width: '45px', height: '45px', borderRadius: '50%', overflow: 'hidden', border: `2px solid ${sender?.color || '#7c3aed'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: sender?.color || '#1e293b'}}>
+                                        {sender?.photo ? (
+                                            <img src={(sender.photo.startsWith('http') || sender.photo.startsWith('/')) ? sender.photo : `/${sender.photo}`} 
+                                                 style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                                                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                                        ) : null}
+                                        <div style={{display: sender?.photo ? 'none' : 'flex', fontSize: '1.2rem'}}>{sender?.icon || '👤'}</div>
+                                    </div>
                                     <span>{t.from} <strong>{sender?.name || '...'}</strong></span>
                                 </div>
                             )}
