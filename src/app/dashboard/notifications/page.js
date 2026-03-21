@@ -140,7 +140,14 @@ export default function NotificationsPage() {
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.25rem' }}>
                                     {!notification.isRead && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></div>}
-                                    <h3 style={{ fontSize: '1.05rem', margin: 0 }}>{notification.title}</h3>
+                                    <h3 style={{ fontSize: '1.05rem', margin: 0 }}>
+                                        {notification.title}
+                                        {user?.role === 'admin' && notification.recipient?.name && (
+                                            <span style={{fontSize: '0.8rem', opacity: 0.6, marginLeft: '10px', fontWeight: 'normal', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '10px'}}>
+                                                Destinataire: {notification.recipient.name}
+                                            </span>
+                                        )}
+                                    </h3>
                                 </div>
                                 <p style={{ fontSize: '0.95rem', opacity: 0.8, marginBottom: '0.5rem', lineHeight: '1.4' }}>{notification.message}</p>
                                 <div style={{ fontSize: '0.8rem', opacity: 0.5, display: 'flex', alignItems: 'center', gap: '5px' }}>

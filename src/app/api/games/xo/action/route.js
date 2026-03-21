@@ -72,19 +72,18 @@ export async function POST(req) {
             const tr = parseInt(r);
             const tc = parseInt(c);
             if (player.reserveCount <= 0) return NextResponse.json({ success: false, error: 'Pas de pièces en réserve' }, { status: 400 });
+            if (board[tr][tc] === player.symbol) return NextResponse.json({ success: false, error: 'Impossible de placer sur votre propre pièce' }, { status: 400 });
+            
             if (board[tr][tc] !== null) {
-                if (board[tr][tc] === player.symbol) return NextResponse.json({ success: false, error: 'Déjà occupé' }, { status: 400 });
-                // Eject
+                // Eject opponent
                 const occupantSymbol = board[tr][tc];
-                board[tr][tc] = null;
                 const otherPlayer = room.players.find(p => p.symbol === occupantSymbol);
                 if (otherPlayer) otherPlayer.reserveCount += 1;
-                room.currentTurn = occupantSymbol; // Force opponent's turn
-            } else {
-                board[tr][tc] = player.symbol;
-                player.reserveCount -= 1;
-                room.currentTurn = player.symbol === 'X' ? 'O' : 'X';
             }
+            
+            board[tr][tc] = player.symbol;
+            player.reserveCount -= 1;
+            room.currentTurn = player.symbol === 'X' ? 'O' : 'X';
         } 
         else if (action === 'move') {
             const fr = parseInt(from.r);
@@ -92,25 +91,17 @@ export async function POST(req) {
             const tr = parseInt(to.r);
             const tc = parseInt(to.c);
             if (board[fr][fc] !== player.symbol) return NextResponse.json({ success: false, error: 'Pas votre pièce' }, { status: 400 });
+            if (board[tr][tc] === player.symbol) return NextResponse.json({ success: false, error: 'Impossible de se déplacer sur votre propre pièce' }, { status: 400 });
+            
             if (board[tr][tc] !== null) {
-                 if (board[tr][tc] === player.symbol) return NextResponse.json({ success: false, error: 'Déjà occupé' }, { status: 400 });
-                 // Eject
+                 // Eject opponent
                  const occupantSymbol = board[tr][tc];
                  const otherPlayer = room.players.find(p => p.symbol === occupantSymbol);
                  if (otherPlayer) otherPlayer.reserveCount += 1;
             }
+            
             board[tr][tc] = player.symbol;
             board[fr][fc] = null;
-            room.currentTurn = player.symbol === 'X' ? 'O' : 'X';
-        }
-        else if (action === 'eject') {
-            const tr = parseInt(r);
-            const tc = parseInt(c);
-            if (board[tr][tc] === null || board[tr][tc] === player.symbol) return NextResponse.json({ success: false, error: 'Pas de pièce adverse' }, { status: 400 });
-            const occupantSymbol = board[tr][tc];
-            const otherPlayer = room.players.find(p => p.symbol === occupantSymbol);
-            if (otherPlayer) otherPlayer.reserveCount += 1;
-            board[tr][tc] = null;
             room.currentTurn = player.symbol === 'X' ? 'O' : 'X';
         }
 

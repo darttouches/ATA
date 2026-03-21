@@ -12,11 +12,14 @@ export async function GET() {
         const userId = user.userId || user.id || user._id;
         console.log('Fetching notifications for recipient ID:', userId);
 
-        const totalInDb = await Notification.countDocuments();
-        console.log('Total notifications in database:', totalInDb);
-
-        const notifications = await Notification.find({ recipient: userId }).sort({ createdAt: -1 });
-        console.log(`Found ${notifications.length} notifications for this user`);
+        let notifications;
+        if (user.role === 'admin') {
+            notifications = await Notification.find().populate('recipient', 'name email').sort({ createdAt: -1 });
+        } else {
+            notifications = await Notification.find({ recipient: userId }).sort({ createdAt: -1 });
+        }
+        
+        console.log(`Found ${notifications.length} notifications`);
 
         return NextResponse.json(notifications);
     } catch (error) {

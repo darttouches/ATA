@@ -38,6 +38,7 @@ export default function LoupGarouGame({ user }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCustomRoleForm, setShowCustomRoleForm] = useState(false);
   const [sessionCustomRoles, setSessionCustomRoles] = useState([]);
+  const [joinRoomCode, setJoinRoomCode] = useState('');
   const [customRoleData, setCustomRoleData] = useState({
     name: { fr: '', en: '', ar: '' },
     description: { fr: '', en: '', ar: '' },
@@ -59,7 +60,12 @@ export default function LoupGarouGame({ user }) {
             if (data.success && data.data) {
                 setGameRoom(data.data);
                 setMode('online');
-                setGameState('board');
+                // Check if user is MJ or just a player
+                if (data.data.creatorId === (user?.userId || user?._id)) {
+                    setGameState('board'); 
+                } else {
+                    setGameState('invited');
+                }
             }
         } catch (err) {
             console.error("Error checking active game:", err);
@@ -168,6 +174,34 @@ export default function LoupGarouGame({ user }) {
     }
     setError(null);
     setGameState(selectedMode === "online" ? "setup-online" : "setup-presence");
+  };
+
+  const handleJoinByCode = async (e) => {
+    e.preventDefault();
+    const code = joinRoomCode.trim().toUpperCase();
+    if (!code) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+        const res = await fetch(`/api/games/loup-garou/current?roomCode=${code}`);
+        const data = await res.json();
+        if (data.success && data.data) {
+            setGameRoom(data.data);
+            setMode('online');
+            if (data.data.creatorId === (user?.userId || user?._id)) {
+                setGameState('board'); 
+            } else {
+                setGameState('invited');
+            }
+        } else {
+            setError("Code invalide ou vous n'êtes pas sur la liste des joueurs !");
+        }
+    } catch(err) {
+        setError("Erreur serveur.");
+    } finally {
+        setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -340,6 +374,26 @@ export default function LoupGarouGame({ user }) {
                     <Lock size={14} inline="true" /> Connectez-vous pour créer une partie en ligne.
                 </p>
             )}
+            
+            {user && (
+                <div style={{marginTop: '30px', padding: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px'}}>
+                    <h3 style={{fontSize: '1rem', marginBottom: '15px'}}>Rejoindre une partie existante</h3>
+                    <form onSubmit={handleJoinByCode} style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
+                        <input 
+                            className={styles.input} 
+                            style={{margin: 0, maxWidth: '200px', textAlign: 'center', letterSpacing: '2px', textTransform: 'uppercase'}} 
+                            placeholder="CODE..."
+                            value={joinRoomCode}
+                            onChange={(e) => setJoinRoomCode(e.target.value.toUpperCase())}
+                            maxLength={6}
+                        />
+                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={loading || !joinRoomCode.trim()}>
+                            {loading ? "..." : "Rejoindre"}
+                        </button>
+                    </form>
+                </div>
+            )}
+
             {!isPresenceAllowed && !isOnlineAllowed && (
                 <p style={{marginTop: '30px', color: '#ef4444', fontWeight: 'bold'}}>
                     Ce jeu est actuellement désactivé par l'administration.
@@ -361,6 +415,23 @@ export default function LoupGarouGame({ user }) {
             <button className={styles.btn} onClick={() => { if(confirm(t('quit') + " ?")) window.location.href='/games' }}>{t('quit') || 'Quitter'}</button>
           </div>
           
+          {user && mode === 'online' && (
+                <form onSubmit={handleJoinByCode} style={{padding: '15px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', border: '1px solid rgba(59, 130, 246, 0.4)', flexWrap: 'wrap', justifyContent: 'center'}}>
+                    <strong style={{color: '#60a5fa', margin: 0}}>Avez-vous un code d'invitation ?</strong>
+                    <input 
+                        className={styles.input} 
+                        style={{margin: 0, width: '150px', letterSpacing: '2px', textTransform: 'uppercase'}} 
+                        placeholder="CODE..."
+                        value={joinRoomCode}
+                        onChange={(e) => setJoinRoomCode(e.target.value.toUpperCase())}
+                        maxLength={6}
+                    />
+                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={loading || !joinRoomCode.trim()} style={{margin: 0, padding: '10px 20px', fontSize: '0.9rem'}}>
+                        {loading ? "..." : "Rejoindre la salle"}
+                    </button>
+                </form>
+          )}
+
           <div className={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px'}} style={{display: 'flex', gap: '30px', flexWrap: 'wrap'}}>
             
             {/* Left Column: Player Management */}
@@ -501,21 +572,28 @@ export default function LoupGarouGame({ user }) {
                 ))}
               </div>
 
-              <button 
-                onClick={startDistribution} 
-                className={`${styles.btn} ${styles.btnPrimary}`} 
-                style={{
-                    width: '100%', 
-                    marginTop: '30px', 
-                    padding: '20px', 
-                    fontSize: '1.2rem',
-                    opacity: (loading || players.length < 8 || players.length !== rolePool.length) ? 0.5 : 1,
-                    cursor: (loading || players.length < 8 || players.length !== rolePool.length) ? 'not-allowed' : 'pointer'
-                }}
-                disabled={loading || players.length < 8 || players.length !== rolePool.length}
-              >
-                {loading ? "Chargement..." : (players.length < 8 ? `Min. 8 joueurs requis (${players.length}/8)` : "Démarrer la partie")} <ArrowRight />
-              </button>
+              {(() => {
+                const MIN_PLAYERS = gamesConfig?.loupGarou?.minPlayers || 3;
+                const isReady = players.length >= MIN_PLAYERS && players.length === rolePool.length;
+                
+                return (
+                  <button 
+                    onClick={startDistribution} 
+                    className={`${styles.btn} ${styles.btnPrimary}`} 
+                    style={{
+                        width: '100%', 
+                        marginTop: '30px', 
+                        padding: '20px', 
+                        fontSize: '1.2rem',
+                        opacity: (loading || !isReady) ? 0.5 : 1,
+                        cursor: (loading || !isReady) ? 'not-allowed' : 'pointer'
+                    }}
+                    disabled={loading || !isReady}
+                  >
+                    {loading ? "Chargement..." : (players.length < MIN_PLAYERS ? `Min. ${MIN_PLAYERS} joueurs requis (${players.length}/${MIN_PLAYERS})` : "Démarrer la partie")} <ArrowRight />
+                  </button>
+                );
+              })()}
               {error && <p style={{color: '#ff4444', marginTop: '10px', fontSize: '0.8rem'}}>{error}</p>}
             </div>
 
@@ -583,6 +661,29 @@ export default function LoupGarouGame({ user }) {
                 <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setGameState("board")}>
                     Je suis le Maître du Jeu (Ouvrir le plateau)
                 </button>
+            </div>
+        </div>
+    );
+  }
+
+  if (gameState === "invited") {
+    return (
+        <div className={styles.loupGarouWrapper}>
+            <div className={styles.container} style={{textAlign: 'center', marginTop: '10vh'}}>
+                <div className={styles.setupCard} style={{maxWidth: '500px', margin: '0 auto', padding: '40px', background: 'rgba(30, 27, 75, 0.8)', border: '1px solid #60a5fa'}}>
+                    <ShieldCheck size={60} style={{color: '#60a5fa', marginBottom: '20px'}} />
+                    <h2 style={{fontSize: '2rem', marginBottom: '20px'}}>Invitation au Loup-Garou !</h2>
+                    <p style={{marginBottom: '30px', opacity: 0.8, fontSize: '1.2rem', lineHeight: '1.5'}}>
+                        Le Maître du Jeu vous attend dans une partie secrète.<br/>
+                        Êtes-vous prêt à découvrir votre identité ?
+                    </p>
+                    <button className={`${styles.btn} ${styles.btnPrimary}`} style={{width: '100%', fontSize: '1.2rem', padding: '15px'}} onClick={() => setGameState("board")}>
+                        Participer à la partie
+                    </button>
+                    <button className={styles.btn} style={{width: '100%', marginTop: '15px'}} onClick={() => {
+                        window.location.href='/dashboard';
+                    }}>Ignorer</button>
+                </div>
             </div>
         </div>
     );
@@ -788,11 +889,23 @@ export default function LoupGarouGame({ user }) {
                     }
                 }}>{t('quit') || 'Quitter'}</button>
                 {isMaster && mode === 'online' && (
-                    <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
-                        const url = window.location.origin + '/games/loup-garou';
-                        navigator.clipboard.writeText(url);
-                        alert("Lien partagé ! Les joueurs sélectionnés verront leur carte en se connectant.");
-                    }}>Partager lien</button>
+                    <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={async () => {
+                        try {
+                            const res = await fetch('/api/games/loup-garou/invite', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ roomId: gameRoom._id })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                alert("🔔 " + data.message + (data.debug?.failures?.length > 0 ? "\n\nErreurs internes :\n" + JSON.stringify(data.debug.failures) : ""));
+                            } else {
+                                alert("Erreur : " + data.error);
+                            }
+                        } catch (err) {
+                            alert("Erreur serveur.");
+                        }
+                    }}>Inviter les joueurs (Notifications)</button>
                 )}
             </div>
         </div>

@@ -36,12 +36,12 @@ export default function XOGame({ user }) {
     // Online specific
     const [room, setRoom] = useState(null);
     const [roomCode, setRoomCode] = useState('');
-    const [mySymbol, setMySymbol] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('xo_mySymbol');
-        }
-        return null;
-    });
+    const [mySymbol, setMySymbol] = useState(null);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('xo_mySymbol');
+        if (saved) setMySymbol(saved);
+    }, []);
     const lastReactionId = useRef(null);
 
     useEffect(() => {
@@ -98,7 +98,7 @@ export default function XOGame({ user }) {
         if (winner || loading) return;
         
         if (mode === 'online') {
-            if (room.currentTurn !== mySymbol) return;
+            if (room?.currentTurn !== mySymbol) return;
             handleOnlineAction(r, c);
             return;
         }
@@ -106,43 +106,58 @@ export default function XOGame({ user }) {
         setError(null);
         let occupant = board[r][c];
 
-        if (phase === 'placement') {
-            if (occupant === null) {
-                const nextBoard = board.map(row => [...row]);
-                nextBoard[r][c] = currentPlayer;
-                const nextPlayers = { ...players };
-                nextPlayers[currentPlayer].reserve -= 1;
-                
-                setBoard(nextBoard);
-                setPlayers(nextPlayers);
-
-                const win = getWinningLine(nextBoard);
-                if (win) {
-                    setWinner(win.symbol);
-                    setWinningLine(win.line);
-                    setGameState("finished");
-                } else {
-                    const nextP = currentPlayer === 'X' ? 'O' : 'X';
-                    setCurrentPlayer(nextP);
-                    if (nextPlayers.X.reserve === 0 && nextPlayers.O.reserve === 0) {
-                        setPhase('movement');
-                    }
-                }
-            } else if (occupant !== currentPlayer) {
-                ejectPiece(r, c);
+        if (players[currentPlayer].reserve > 0) {
+            // Must PLACE a piece
+            if (occupant === currentPlayer) return; // Cannot place on own piece
+            
+            const nextBoard = board.map(row => [...row]);
+            const nextPlayers = JSON.parse(JSON.stringify(players));
+            
+            if (occupant !== null) {
+                // Eject opponent
+                nextPlayers[occupant].reserve += 1;
+            }
+            
+            nextBoard[r][c] = currentPlayer;
+            nextPlayers[currentPlayer].reserve -= 1;
+            
+            setBoard(nextBoard);
+            setPlayers(nextPlayers);
+            
+            const win = getWinningLine(nextBoard);
+            if (win) {
+                setWinner(win.symbol);
+                setWinningLine(win.line);
+                setGameState("finished");
+            } else {
+                setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
+                if (nextPlayers.X.reserve === 0 && nextPlayers.O.reserve === 0) setPhase('movement');
             }
         } else {
-            // Phase Movement
+            // Must MOVE a piece
             if (selectedCell) {
                 if (r === selectedCell.r && c === selectedCell.c) {
-                    setSelectedCell(null);
-                } else if (occupant === null) {
+                    setSelectedCell(null); // Deselect
+                } else if (occupant === currentPlayer) {
+                    setSelectedCell({ r, c }); // Select another ally piece
+                } else {
+                    // Target is empty or opponent
                     const nextBoard = board.map(row => [...row]);
+                    const nextPlayers = JSON.parse(JSON.stringify(players));
+                    
+                    if (occupant !== null) {
+                        // Eject opponent
+                        nextPlayers[occupant].reserve += 1;
+                    }
+                    
                     nextBoard[r][c] = currentPlayer;
-                    nextBoard[selectedCell.r][selectedCell.c] = null;
-                    const win = getWinningLine(nextBoard);
+                    nextBoard[selectedCell.r][selectedCell.c] = null; // Free old cell
+                    
                     setBoard(nextBoard);
+                    setPlayers(nextPlayers);
                     setSelectedCell(null);
+                    
+                    const win = getWinningLine(nextBoard);
                     if (win) {
                         setWinner(win.symbol);
                         setWinningLine(win.line);
@@ -150,47 +165,32 @@ export default function XOGame({ user }) {
                     } else {
                         setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
                     }
-                } else if (occupant !== currentPlayer) {
-                    ejectPiece(r, c);
-                } else {
-                    setSelectedCell({ r, c });
                 }
             } else {
                 if (occupant === currentPlayer) {
                     setSelectedCell({ r, c });
-                } else if (occupant !== null && occupant !== currentPlayer) {
-                    ejectPiece(r, c);
-                } else if (occupant === null && players[currentPlayer].reserve > 0) {
-                    // Re-place from reserve
-                    const nextBoard = board.map(row => [...row]);
-                    nextBoard[r][c] = currentPlayer;
-                    const nextPlayers = { ...players };
-                    nextPlayers[currentPlayer].reserve -= 1;
-                    setBoard(nextBoard);
-                    setPlayers(nextPlayers);
-                    const win = getWinningLine(nextBoard);
-                    if (win) {
-                        setWinner(win.symbol);
-                        setWinningLine(win.line);
-                        setGameState("finished");
-                    } else {
-                        setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
-                    }
                 }
             }
         }
     };
 
-    const ejectPiece = (r, c) => {
-        const occupantSymbol = board[r][c];
-        const nextBoard = board.map(row => [...row]);
-        nextBoard[r][c] = null;
-        const nextPlayers = { ...players };
-        nextPlayers[occupantSymbol].reserve += 1;
-        setBoard(nextBoard);
-        setPlayers(nextPlayers);
+    const resetGame = () => {
+        setBoard([
+            [null, null, null, null],
+            [null, null, null, null],
+            [null, null, null, null],
+            [null, null, null, null]
+        ]);
+        setPlayers({
+            X: { ...players.X, reserve: 4 },
+            O: { ...players.O, reserve: 4 }
+        });
+        setCurrentPlayer('X');
+        setPhase('placement');
         setSelectedCell(null);
-        setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
+        setWinner(null);
+        setWinningLine([]);
+        setError(null);
     };
 
     // --- Online Actions ---
@@ -199,36 +199,31 @@ export default function XOGame({ user }) {
         setError(null);
         let actionParams = {};
         
-        let occupant = board[r][c];
+        const occupant = board[r][c];
 
-        if (phase === 'placement') {
-            if (occupant === null) {
-                actionParams = { action: 'place', r, c };
-            } else if (occupant !== mySymbol) {
-                actionParams = { action: 'eject', r, c };
-            }
+        if (players[mySymbol].reserve > 0) {
+            // Must PLACE
+            if (occupant === mySymbol) return; // Cannot place on own piece
+            actionParams = { action: 'place', r, c };
         } else {
+            // Must MOVE
             if (selectedCell) {
-                if (occupant === null) {
+                if (r === selectedCell.r && c === selectedCell.c) {
+                    setSelectedCell(null);
+                    return;
+                } else if (occupant === mySymbol) {
+                    setSelectedCell({ r, c }); // Select another piece
+                    return;
+                } else {
                     actionParams = { action: 'move', from: selectedCell, to: { r, c } };
                     setSelectedCell(null);
-                } else if (occupant !== mySymbol) {
-                    actionParams = { action: 'eject', r, c };
-                    setSelectedCell(null);
-                } else {
-                    setSelectedCell({ r, c });
-                    return;
                 }
             } else {
                 if (occupant === mySymbol) {
                     setSelectedCell({ r, c });
                     return;
-                } else if (occupant !== null && occupant !== mySymbol) {
-                    actionParams = { action: 'eject', r, c };
-                } else if (occupant === null && players[mySymbol].reserve > 0) {
-                    actionParams = { action: 'place', r, c };
                 } else {
-                    return;
+                    return; // Ignore clicking empty or enemy before selection
                 }
             }
         }
@@ -427,7 +422,7 @@ export default function XOGame({ user }) {
                         <div className={styles.gameLogo}>Configuration</div>
                     </div>
                     
-                    <div className={{display: 'flex', gap: '30px', flexWrap: 'wrap', justifyContent: 'center'}}>
+                    <div style={{display: 'flex', gap: '30px', flexWrap: 'wrap', justifyContent: 'center'}}>
                         {mode === 'presence' ? (
                             <div className={styles.setupCard} style={{maxWidth: '500px', margin: '50px auto'}}>
                                 <h3 style={{marginBottom: '30px'}}>Entrez les noms</h3>

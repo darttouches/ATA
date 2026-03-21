@@ -12,14 +12,24 @@ export async function GET(req) {
             return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
         }
 
+        const reqUserId = user.userId || user._id;
+        
+        const url = new URL(req.url);
+        const roomCode = url.searchParams.get('roomCode');
+        
+        const query = { status: 'playing' };
+        
+        if (roomCode) {
+            query.roomCode = roomCode.toUpperCase();
+        }
+        
+        query.$or = [
+            { creatorId: reqUserId },
+            { "players.userId": reqUserId }
+        ];
+
         // Find a room where player is registered and status is playing
-        const activeRoom = await GameRoom.findOne({
-            $or: [
-                { creatorId: user._id },
-                { "players.userId": user._id }
-            ],
-            status: 'playing'
-        });
+        const activeRoom = await GameRoom.findOne(query);
 
         if (!activeRoom) {
             return NextResponse.json({ success: true, data: null });

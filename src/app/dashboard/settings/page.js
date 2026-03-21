@@ -559,7 +559,7 @@ export default function AdminSettings() {
                         {(gamesData.loupGarou?.isPublished || false) && (
                             <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
                                 <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Modes de jeu autorisés :</div>
-                                <div style={{ display: 'flex', gap: '20px' }}>
+                                <div style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                                         <input type="radio" value="presence" checked={gamesData.loupGarou?.modes === 'presence'} onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), modes: e.target.value}})} />
                                         Présentiel
@@ -572,6 +572,19 @@ export default function AdminSettings() {
                                         <input type="radio" value="both" checked={gamesData.loupGarou?.modes === 'both'} onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), modes: e.target.value}})} />
                                         Les Deux
                                     </label>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <label style={{ fontWeight: 600 }}>Nombre minimum de joueurs :</label>
+                                    <input 
+                                        type="number" 
+                                        className="card" 
+                                        style={{ width: '80px', padding: '5px 10px', fontSize: '0.9rem' }} 
+                                        min="3" 
+                                        max="30"
+                                        value={gamesData.loupGarou?.minPlayers || 8}
+                                        onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), minPlayers: parseInt(e.target.value) || 3}})}
+                                    />
                                 </div>
                             </div>
                         )}
