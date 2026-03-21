@@ -314,6 +314,42 @@ export default function LoupGarouGame({ user }) {
     }, 800);
   };
 
+  const handleEndGame = async () => {
+    if (confirm("Êtes-vous sûr de vouloir terminer cette partie définitivement ?")) {
+        if (mode === 'online' && gameRoom?._id) {
+            await fetch('/api/games/loup-garou/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: gameRoom._id, field: 'status', value: 'finished' })
+            });
+        }
+        setGameRoom(null);
+        
+        if (gamesConfig && gamesConfig.loupGarou.modes === 'presence') {
+            setGameState('setup-presence');
+        } else if (gamesConfig && gamesConfig.loupGarou.modes === 'online') {
+            setGameState('setup-online');
+        } else {
+            setGameState('mode-selection');
+        }
+    }
+  };
+
+  const handleNewGameFromBoard = async () => {
+    if (confirm("Clôturer la partie actuelle et configurer une nouvelle manche avec les mêmes joueurs ?")) {
+        if (mode === 'online' && gameRoom?._id) {
+            await fetch('/api/games/loup-garou/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: gameRoom._id, field: 'status', value: 'finished' })
+            });
+        }
+        setGameRoom(null);
+        // We keep local 'players' intact so the MJ doesn't have to re-select everyone!
+        setGameState(mode === 'online' ? "setup-online" : "setup-presence");
+    }
+  };
+
   const filteredMembers = availableMembers.filter(m => 
     m.name.toLowerCase().includes(searchMember.toLowerCase()) || 
     m.email.toLowerCase().includes(searchMember.toLowerCase())
@@ -681,8 +717,15 @@ export default function LoupGarouGame({ user }) {
                         Participer à la partie
                     </button>
                     <button className={styles.btn} style={{width: '100%', marginTop: '15px'}} onClick={() => {
-                        window.location.href='/dashboard';
-                    }}>Ignorer</button>
+                        setGameRoom(null);
+                        if (gamesConfig && gamesConfig.loupGarou.modes === 'presence') {
+                            setGameState('setup-presence');
+                        } else if (gamesConfig && gamesConfig.loupGarou.modes === 'online') {
+                            setGameState('setup-online');
+                        } else {
+                            setGameState('mode-selection');
+                        }
+                    }}>Ignorer (Créer une nouvelle partie)</button>
                 </div>
             </div>
         </div>
@@ -709,7 +752,13 @@ export default function LoupGarouGame({ user }) {
             {isMaster ? (
                 /* Online Mode MJ Dashboard */
                 <div className={styles.setupCard} style={{textAlign: 'left', padding: '30px'}}>
-                    <h3>Gestion de la partie</h3>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px'}}>
+                        <h3 style={{margin: 0}}>Gestion de la partie</h3>
+                        <div style={{display: 'flex', gap: '10px'}}>
+                            <button className={styles.btnSmall} style={{background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #60a5fa', color: '#60a5fa'}} onClick={handleNewGameFromBoard}>Nouvelle manche</button>
+                            <button className={styles.btnSmall} style={{background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#ef4444'}} onClick={handleEndGame}>Clôturer le jeu</button>
+                        </div>
+                    </div>
                     <p style={{opacity: 0.7, marginBottom: '20px'}}>En tant que MJ, vous voyez tout. Cliquez sur une carte pour voir le rôle (4s).</p>
                     
                     <div className={styles.dashboardGrid} style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px'}}>
@@ -800,7 +849,13 @@ export default function LoupGarouGame({ user }) {
             ) : mode === 'presence' ? (
                 /* Presence Mode MJ Dashboard (Device is shared) */
                 <div className={styles.setupCard} style={{textAlign: 'left', padding: '30px'}}>
-                    <h3 style={{display: 'flex', alignItems: 'center', gap: '10px'}}><ShieldCheck /> Tableau du Maître du Jeu</h3>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px'}}>
+                        <h3 style={{display: 'flex', alignItems: 'center', gap: '10px', margin: 0}}><ShieldCheck /> Tableau du Maître du Jeu</h3>
+                        <div style={{display: 'flex', gap: '10px'}}>
+                            <button className={styles.btnSmall} style={{background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #60a5fa', color: '#60a5fa'}} onClick={handleNewGameFromBoard}>Nouvelle manche</button>
+                            <button className={styles.btnSmall} style={{background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#ef4444'}} onClick={handleEndGame}>Clôturer le jeu</button>
+                        </div>
+                    </div>
                     <p style={{opacity: 0.7, marginBottom: '20px'}}>Cliquez sur une carte pour voir le rôle temporairement (4s).</p>
                     
                     <div className={styles.dashboardGrid} style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px'}}>

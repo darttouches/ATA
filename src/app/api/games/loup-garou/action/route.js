@@ -24,14 +24,21 @@ export async function POST(req) {
             return NextResponse.json({ success: false, error: 'Action réservée au Maître du Jeu' }, { status: 403 });
         }
 
+        // Update game state directly
+        if (field === 'status') {
+            room.status = value;
+            await room.save();
+            return NextResponse.json({ success: true, data: room });
+        }
+
         // Update player field
-        if (room.players && room.players[playerIndex]) {
+        if (playerIndex !== undefined && room.players && room.players[playerIndex]) {
             room.players[playerIndex][field] = value;
             await room.save();
             return NextResponse.json({ success: true, data: room });
         }
 
-        return NextResponse.json({ success: false, error: 'Joueur non trouvé' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'Requête action invalide' }, { status: 400 });
 
     } catch (error) {
         console.error('Error updating game room:', error);
