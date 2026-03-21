@@ -16,11 +16,17 @@ export async function GET(req) {
         
         const url = new URL(req.url);
         const roomCode = url.searchParams.get('roomCode');
+        const roomId = url.searchParams.get('roomId');
         
-        const query = { status: 'playing' };
+        let query = {};
         
-        if (roomCode) {
+        if (roomId) {
+            query._id = roomId;
+        } else if (roomCode) {
             query.roomCode = roomCode.toUpperCase();
+            query.status = 'playing';
+        } else {
+            query.status = 'playing';
         }
         
         query.$or = [
@@ -28,7 +34,6 @@ export async function GET(req) {
             { "players.userId": reqUserId }
         ];
 
-        // Find a room where player is registered and status is playing
         const activeRoom = await GameRoom.findOne(query);
 
         if (!activeRoom) {

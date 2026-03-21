@@ -44,6 +44,22 @@ const GameRoomSchema = new mongoose.Schema({
         }
     }],
     rolePool: [String], // List of roleIds included in this session
+    chat: [{
+        senderId: String,
+        senderName: String,
+        message: String,
+        type: { type: String, enum: ['text', 'audio', 'system'], default: 'text' },
+        isDirectToMj: { type: Boolean, default: false }, // If true, only MJ and sender can see it
+        createdAt: { type: Date, default: Date.now }
+    }],
+    voteState: {
+        isActive: { type: Boolean, default: false },
+        votes: [{
+            voterId: String,
+            targetId: String // who they voted against
+        }],
+        title: String // e.g. "Le village vote"
+    },
     createdAt: {
         type: Date,
         default: Date.now,

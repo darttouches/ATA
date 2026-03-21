@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./loup-garou.module.css";
+import PlayerChatPanel from "./PlayerChatPanel";
 import { 
   Users, 
   Monitor, 
@@ -46,6 +47,13 @@ export default function LoupGarouGame({ user }) {
     canHaveMultiple: false,
     team: TEAMS.VILLAGE
   });
+  const [boardTab, setBoardTab] = useState("game"); // "game" or "chat" for mobile toggle
+
+  // Derived state
+  const myPlayer = mode === 'online' ? gameRoom?.players?.find(p => p.userId?.toString() === (user?.userId || user?._id)?.toString()) : null;
+  const isMaster = user && gameRoom?.creatorId?.toString() === (user?.userId || user?._id)?.toString();
+  const isAlivePlayer = myPlayer ? myPlayer.isAlive : true;
+  const currentGamePlayers = mode === 'online' ? (gameRoom?.players || []) : players;
 
   // --- Auth Check ---
   const isAuthorized = !!user;
@@ -211,18 +219,104 @@ export default function LoupGarouGame({ user }) {
             try {
                 const res = await fetch(`/api/games/loup-garou/current?roomId=${gameRoom._id}`);
                 if (!res.ok) return;
-                const contentType = res.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    const data = await res.json();
-                    if (data.success && data.data) {
-                        setGameRoom(data.data);
-                    }
+                const data = await res.json();
+                if (data.success && data.data) {
+                    setGameRoom(data.data);
                 }
             } catch(e) {}
-        }, 3000); // Poll every 3 seconds
+        }, 3000);
     }
     return () => clearInterval(interval);
   }, [gameState, mode, gameRoom?._id]);
+
+  // Helpers & Actions
+  const chatMessages = gameRoom?.chat || [];
+  const generalChat = chatMessages.filter(m => !m.isDirectToMj);
+  const privateMessages = chatMessages.filter(m => m.isDirectToMj);
+  const myPrivateMessages = isMaster
+      ? privateMessages               
+      : privateMessages.filter(m => m.senderId === (user?.userId || user?._id)?.toString());
+
+  const sendChat = async (message, isDirectToMj = false, type = 'text') => {
+      if (!gameRoom?._id || (!isAlivePlayer && !isMaster)) return;
+      await fetch('/api/games/loup-garou/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              roomId: gameRoom._id,
+              field: 'send_chat',
+              value: {
+                  senderId: (user?.userId || user?._id)?.toString(),
+                  senderName: user?.name || myPlayer?.name || 'Joueur',
+                  message,
+                  type,
+                  isDirectToMj
+              }
+          })
+      });
+  };
+
+  const startVote = async () => {
+      if (!isMaster || !gameRoom?._id) return;
+      await fetch('/api/games/loup-garou/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              roomId: gameRoom._id,
+              field: 'vote_state',
+              value: { isActive: true, votes: [], title: 'Le village vote !' }
+          })
+      });
+  };
+
+  const closeVote = async () => {
+      if (!isMaster || !gameRoom?._id) return;
+      const votes = gameRoom?.voteState?.votes || [];
+      const tally = {};
+      votes.forEach(v => { tally[v.targetId] = (tally[v.targetId] || 0) + 1; });
+      const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+      const mostVotedId = sorted[0]?.[0];
+      
+      if (mostVotedId) {
+          const idx = currentGamePlayers.findIndex(p => p.userId?.toString() === mostVotedId);
+          if (idx > -1) {
+              await fetch('/api/games/loup-garou/action', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ roomId: gameRoom._id, playerIndex: idx, field: 'isAlive', value: false })
+              });
+          }
+      }
+
+      await fetch('/api/games/loup-garou/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              roomId: gameRoom._id,
+              field: 'vote_state',
+              value: { isActive: false, votes: [], title: '' }
+          })
+      });
+  };
+
+  const submitVote = async (targetId) => {
+      await fetch('/api/games/loup-garou/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: gameRoom._id, field: 'submit_vote', value: targetId })
+      });
+  };
+
+  // Auto-close vote when everyone voted
+  useEffect(() => {
+    if (gameState === 'board' && isMaster && gameRoom?.voteState?.isActive) {
+        const alivePlayers = (gameRoom?.players || []).filter(p => p.isAlive);
+        const votes = gameRoom.voteState.votes || [];
+        if (votes.length >= alivePlayers.length && alivePlayers.length > 0) {
+            closeVote();
+        }
+    }
+  }, [gameRoom?.voteState, gameState, isMaster]);
 
   const addManualPlayer = (e) => {
     e.preventDefault();
@@ -450,6 +544,26 @@ export default function LoupGarouGame({ user }) {
             <div className={styles.gameLogo}>Configuration</div>
             <button className={styles.btn} onClick={() => { if(confirm(t('quit') + " ?")) window.location.href='/games' }}>{t('quit') || 'Quitter'}</button>
           </div>
+
+          {user?.role === 'admin' && (
+              <div style={{background: 'rgba(239, 68, 68, 0.2)', padding: '10px 20px', borderRadius: '8px', border: '1px solid #ef4444', textAlign: 'center', marginBottom: '20px'}}>
+                  <span style={{color: '#ef4444', fontWeight: 'bold', marginRight: '15px'}}>Outil Admin: Déblocage d'Urgence</span>
+                  <button className={`${styles.btnSmall}`} style={{background: '#ef4444'}} onClick={async () => {
+                      if(confirm("ATTENTION: Ceci fermera TOUTES les parties de Loup-Garou en cours sur le serveur pour tous les utilisateurs. Continuer?")) {
+                          const res = await fetch('/api/games/loup-garou/action', {
+                              method: 'POST',
+                              headers: {'Content-Type': 'application/json'},
+                              body: JSON.stringify({ roomId: 'FORCE_CLEAN' })
+                          });
+                          const data = await res.json();
+                          if(data.success) {
+                              alert("Toutes les parties ont été clôturées ! (" + data.count + " nettoyées). Vous êtes débloqué.");
+                              window.location.reload();
+                          }
+                      }
+                  }}>HARD RESET SERVEUR</button>
+              </div>
+          )}
           
           {user && mode === 'online' && (
                 <form onSubmit={handleJoinByCode} style={{padding: '15px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', border: '1px solid rgba(59, 130, 246, 0.4)', flexWrap: 'wrap', justifyContent: 'center'}}>
@@ -733,241 +847,218 @@ export default function LoupGarouGame({ user }) {
   }
 
   if (gameState === "board") {
-    if (mode === 'online' && !gameRoom) return <div className={styles.setupCard}>Chargement de la partie...</div>;
+    if (mode === 'online' && !gameRoom) return <div className={styles.setupCard} style={{margin:'20px'}}>Chargement de la partie...</div>;
 
-    const isMaster = user && gameRoom?.creatorId === (user?.userId || user?._id);
-    const myPlayer = mode === 'online' ? gameRoom?.players?.find(p => p.userId === (user?.userId || user?._id)) : null;
-    const currentGamePlayers = (mode === 'online' ? (gameRoom?.players || []) : players);
+    const myRole = ROLES.find(r => r.id === myPlayer?.roleId);
 
     return (
-      <div className={styles.loupGarouWrapper}>
+      <div className={`${styles.loupGarouWrapper} ${styles.boardView}`}>
         <div className={styles.container}>
-            <div className={styles.topBar}>
-                <div className={styles.gameLogo}>{isMaster || mode === 'presence' ? "Maître du Jeu" : "Ma Carte"}</div>
-                <div style={{background: 'rgba(255,255,255,0.1)', padding: '5px 15px', borderRadius: '20px', fontSize: '0.8rem'}}>
-                    {mode === 'online' ? `ROOM: ${gameRoom?.roomCode}` : 'MODE PRÉSENTIEL'}
+
+          {/* TOP BAR */}
+          <div className={styles.topBar}>
+            <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
+              <div className={styles.gameLogo} style={{fontSize: '0.9rem', color:'#fff'}}>
+                {isMaster ? '🎩 MK' : (isAlivePlayer ? '🐺 EN JEU' : '💀 ÉLIMINÉ')}
+              </div>
+              <div style={{background: 'rgba(255,255,255,0.08)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem', opacity:0.8}}>
+                #{gameRoom?.roomCode}
+              </div>
+            </div>
+            
+            <div style={{display: 'flex', gap: '8px'}}>
+              {isMaster && (
+                <>
+                  <button className={styles.btnSmall} style={{background: 'rgba(59,130,246,0.2)', border:'1px solid #60a5fa', color:'#60a5fa'}} onClick={handleNewGameFromBoard}>🔄 Relancer</button>
+                  <button className={styles.btnSmall} style={{background: 'rgba(239,68,68,0.2)', border:'1px solid #ef4444', color:'#ef4444'}} onClick={handleEndGame}>⏹ Fermer</button>
+                </>
+              )}
+              <button className={styles.btnSmall} onClick={() => { if(confirm('Quitter ?')) window.location.href='/games'; }}>Quitter</button>
+            </div>
+          </div>
+
+          <div className={styles.gameLayout} style={mode === 'presence' ? {gridTemplateColumns: '1fr'} : {}}>
+            
+            {/* LEFT SIDE: Dashboard (Independent Scroll) */}
+            <div className={styles.dashboardColumn} style={{ display: (mode === 'online' && typeof window !== 'undefined' && window.innerWidth < 1025 && boardTab === 'chat') ? 'none' : 'flex' }}>
+              {isMaster || mode === 'presence' ? (
+                /* MJ Dashboard */
+                <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                  <div className={styles.setupCard} style={{textAlign: 'left', padding: '15px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom:'15px'}}>
+                      <h3 style={{margin: 0, fontSize: '1.1rem'}}>🃏 Joueurs ({currentGamePlayers.filter(p=>p.isAlive).length} en vie)</h3>
+                      {mode === 'online' && (
+                        <div style={{display: 'flex', gap: '8px'}}>
+                          {gameRoom?.voteState?.isActive ? (
+                            <button className={styles.btnSmall} style={{background: '#ef4444'}} onClick={closeVote}>Clore le vote</button>
+                          ) : (
+                            <button className={styles.btnSmall} style={{background: 'rgba(251,191,36,0.3)', border:'1px solid #fbbf24', color:'#fbbf24'}} onClick={startVote}>Lancer vote</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {mode === 'online' && gameRoom?.voteState?.isActive && (
+                      <div style={{background:'rgba(251,191,36,0.08)', padding:'10px', borderRadius:'10px', fontSize:'0.8rem', color:'#fbbf24', border:'1px solid rgba(251,191,36,0.15)', marginBottom:'15px'}}>
+                        ⚖️ {gameRoom.voteState.title || 'Vote en cours'} : <strong>{gameRoom.voteState.votes?.length||0} voix</strong>
+                      </div>
+                    )}
+
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px'}}>
+                      {currentGamePlayers.map((p, idx) => {
+                        const role = mode === 'online' ? ROLES.find(r => r.id === p.roleId) : p.role;
+                        const isDead = !p.isAlive;
+                        const voteCount = mode === 'online' ? (gameRoom?.voteState?.votes?.filter(v => v.targetId === p.userId?.toString()).length || 0) : 0;
+                        return (
+                          <div key={idx} className={`${styles.mjCard} ${p.isRevealed ? styles.mjCardFlipped : ''}`} style={{opacity: isDead ? 0.4 : 1, height:'170px'}} onClick={() => {
+                            if (p.isRevealed || isDead) return;
+                            if (mode === 'online') {
+                                fetch('/api/games/loup-garou/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({roomId: gameRoom._id, playerIndex: idx, field:'isRevealed', value: true}) });
+                                setGameRoom(prev => { const u = JSON.parse(JSON.stringify(prev)); if (u.players?.[idx]) u.players[idx].isRevealed = true; return u; });
+                                setTimeout(() => {
+                                  fetch('/api/games/loup-garou/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({roomId: gameRoom._id, playerIndex: idx, field:'isRevealed', value: false}) });
+                                  setGameRoom(prev => { const u = JSON.parse(JSON.stringify(prev)); if (u.players?.[idx]) u.players[idx].isRevealed = false; return u; });
+                                }, 4000);
+                            } else {
+                                setPlayers(prev => { const u = [...prev]; u[idx].isRevealed = true; return u; });
+                                setTimeout(() => setPlayers(prev => { const u = [...prev]; u[idx].isRevealed = false; return u; }), 4000);
+                            }
+                          }}>
+                            <div className={styles.mjCardInner}>
+                              <div className={styles.mjCardFront} style={{padding:'8px', display:'flex', flexDirection:'column'}}>
+                                {isDead && <div className={styles.deadOverlay} style={{fontSize:'1.1rem'}}>💀 MORT</div>}
+                                <div className={styles.mjCardName} style={{fontSize:'0.85rem'}}>{p.name}</div>
+                                <div className={styles.mjCardTeam} style={{color: role?.team===TEAMS.WOLVES?'#ef4444':'#60a5fa', fontSize:'0.55rem'}}>
+                                  {role?.team?.toUpperCase()}
+                                </div>
+                                {voteCount > 0 && <div style={{fontSize:'0.6rem', marginTop:'3px', color:'#fbbf24', fontWeight:700}}>⚖️ {voteCount} voix</div>}
+                                <div style={{marginTop: 'auto', display:'flex', gap:'3px'}} onClick={e => e.stopPropagation()}>
+                                  <button className={styles.btnSmall} style={{flex:1, background: isDead ? '#22c55e' : '#ef4444', padding: '4px', fontSize: '0.6rem'}}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      const newVal = !p.isAlive;
+                                      if (mode === 'online') {
+                                        fetch('/api/games/loup-garou/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({roomId: gameRoom._id, playerIndex: idx, field:'isAlive', value: newVal}) });
+                                        setGameRoom(prev => { const u = JSON.parse(JSON.stringify(prev)); if (u.players?.[idx]) u.players[idx].isAlive = newVal; return u; });
+                                      } else {
+                                        setPlayers(prev => { const u = [...prev]; u[idx].isAlive = newVal; return u; });
+                                      }
+                                    }}>
+                                    {isDead ? 'Res' : 'Mort'}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className={styles.mjCardBack}>
+                                <div style={{fontSize: '1.4rem'}}>{role?.icon}</div>
+                                <div style={{fontWeight: 'bold', fontSize: '0.7rem'}}>{role?.name?.[language]||role?.name?.fr}</div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                /* Player Dashboard (Online only) */
+                <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
+                  <div className={styles.setupCard} style={{textAlign: 'center', padding: '15px'}}>
+                    {myPlayer ? (
+                      <>
+                        <div style={{fontSize: '1.1rem', fontWeight: 700, marginBottom: '10px'}}>{myPlayer.name}</div>
+                        <div className={`${styles.cardContainer} ${styles.cardFlipped}`} style={{height: '220px', width: '150px', margin: '0 auto 10px'}}>
+                          <div className={styles.cardInner}>
+                            <div className={styles.cardBack} style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'8px', padding:'15px', border:'2px solid #3b82f6'}}>
+                              <div style={{fontSize: '3rem'}}>{myRole?.icon}</div>
+                              <div style={{fontWeight: 'bold', fontSize: '1.1rem'}}>{myRole?.name?.[language] || myRole?.name?.fr}</div>
+                              <div style={{fontSize: '0.75rem', opacity: 0.8, lineHeight: '1.3', color:'#444'}}>{myRole?.description?.[language] || myRole?.description?.fr}</div>
+                              <div style={{fontWeight: 'bold', color: myRole?.team === TEAMS.WOLVES ? '#ef4444' : '#3b82f6', fontSize: '0.8rem', marginTop:'auto'}}>{myRole?.team?.toUpperCase()}</div>
+                            </div>
+                          </div>
+                        </div>
+                        {!isAlivePlayer && <div style={{background:'rgba(239,68,68,0.15)', padding:'8px', borderRadius:'10px', color:'#ef4444', fontWeight:'bold', border:'1px solid #ef4444', fontSize:'0.9rem'}}>💀 ÉLIMINÉ</div>}
+                      </>
+                    ) : <div style={{opacity:0.6, padding:'40px'}}>En attente de votre rôle...</div>}
+                  </div>
+
+                  {/* VOTE TOOLS for Players */}
+                  {gameRoom?.voteState?.isActive && (
+                    <div className={styles.setupCard} style={{textAlign: 'left', padding: '15px', background:'rgba(251,191,36,0.05)', border:'1px solid rgba(251,191,36,0.15)'}}>
+                       <div style={{fontWeight: 'bold', color: '#fbbf24', marginBottom: '12px', fontSize:'0.9rem'}}>⚖️ {gameRoom.voteState.title || 'Vote en cours'}</div>
+                       {isAlivePlayer ? (
+                         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px'}}>
+                           {currentGamePlayers.filter(p => p.isAlive && p.userId?.toString() !== (user?.userId||user?._id)?.toString()).map((p, i) => {
+                             const myVote = gameRoom.voteState.votes?.find(v => v.voterId === (user?.userId||user?._id)?.toString());
+                             const voted = myVote?.targetId === p.userId?.toString();
+                             return (
+                               <button key={i} onClick={() => submitVote(p.userId?.toString())}
+                                 style={{padding:'10px', borderRadius:'10px', border:`1px solid ${voted?'#fbbf24':'rgba(255,255,255,0.05)'}`, background:voted?'rgba(251,191,36,0.2)':'rgba(255,255,255,0.03)', cursor:'pointer', color:'white', textAlign:'center', fontSize:'0.8rem', transition:'all 0.2s'}}>
+                                 {voted ? '✅ ' : ''}{p.name}
+                               </button>
+                             );
+                           })}
+                         </div>
+                       ) : <div style={{opacity:0.5, fontSize:'0.8rem', textAlign:'center'}}>Les morts ne votent pas.</div>}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {isMaster ? (
-                /* Online Mode MJ Dashboard */
-                <div className={styles.setupCard} style={{textAlign: 'left', padding: '30px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px'}}>
-                        <h3 style={{margin: 0}}>Gestion de la partie</h3>
-                        <div style={{display: 'flex', gap: '10px'}}>
-                            <button className={styles.btnSmall} style={{background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #60a5fa', color: '#60a5fa'}} onClick={handleNewGameFromBoard}>Nouvelle manche</button>
-                            <button className={styles.btnSmall} style={{background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#ef4444'}} onClick={handleEndGame}>Clôturer le jeu</button>
-                        </div>
-                    </div>
-                    <p style={{opacity: 0.7, marginBottom: '20px'}}>En tant que MJ, vous voyez tout. Cliquez sur une carte pour voir le rôle (4s).</p>
-                    
-                    <div className={styles.dashboardGrid} style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px'}}>
-                        {currentGamePlayers.map((p, idx) => {
-                            const role = ROLES.find(r => r.id === p.roleId);
-                            const isDead = !p.isAlive;
-                            
-                            return (
-                                <div key={idx} className={`${styles.mjCard} ${p.isRevealed ? styles.mjCardFlipped : ''}`} onClick={() => {
-                                    if (p.isRevealed) return;
-                                    
-                                    // Update Server if Online
-                                    fetch('/api/games/loup-garou/action', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ roomId: gameRoom._id, playerIndex: idx, field: 'isRevealed', value: true })
-                                    });
-
-                                    setGameRoom(prev => {
-                                        if (!prev) return prev;
-                                        const updated = JSON.parse(JSON.stringify(prev));
-                                        if (updated.players?.[idx]) updated.players[idx].isRevealed = true;
-                                        return updated;
-                                    });
-                                    
-                                    setTimeout(() => {
-                                        // Update Server to hide
-                                        fetch('/api/games/loup-garou/action', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ roomId: gameRoom._id, playerIndex: idx, field: 'isRevealed', value: false })
-                                        });
-
-                                        setGameRoom(prev => {
-                                            if (!prev) return prev;
-                                            const updated = JSON.parse(JSON.stringify(prev));
-                                            if (updated.players?.[idx]) {
-                                                updated.players[idx].isRevealed = false;
-                                            }
-                                            return updated;
-                                        });
-                                    }, 4000);
-                                }}>
-                                    <div className={styles.mjCardInner}>
-                                        <div className={styles.mjCardFront} style={{ opacity: isDead ? 0.6 : 1 }}>
-                                            {isDead && <div className={styles.deadOverlay}>MORT</div>}
-                                            <div className={styles.mjCardName}>{p.name}</div>
-                                            <div className={styles.mjCardTeam} style={{color: role?.team === TEAMS.WOLVES ? '#ef4444' : '#60a5fa'}}>
-                                                {role?.team?.toUpperCase()}
-                                            </div>
-                                            <div style={{marginTop: 'auto', display: 'flex', gap: '5px'}} onClick={e => e.stopPropagation()}>
-                                                <button 
-                                                    className={styles.btnSmall}
-                                                    style={{background: isDead ? '#22c55e' : '#ef4444', padding: '5px 10px', fontSize: '0.7rem'}}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const newValue = !p.isAlive;
-                                                        
-                                                        // Update Server
-                                                        fetch('/api/games/loup-garou/action', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ roomId: gameRoom._id, playerIndex: idx, field: 'isAlive', value: newValue })
-                                                        });
-
-                                                        setGameRoom(prev => {
-                                                            if (!prev) return prev;
-                                                            const updated = JSON.parse(JSON.stringify(prev));
-                                                            if (updated.players?.[idx]) updated.players[idx].isAlive = newValue;
-                                                            return updated;
-                                                        });
-                                                    }}
-                                                >
-                                                    {isDead ? "VIE" : "MORT"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className={styles.mjCardBack}>
-                                            <div style={{fontSize: '2rem'}}>{role?.icon}</div>
-                                            <div style={{fontWeight: 'bold', fontSize: '1rem'}}>{role?.name?.[language] || role?.name?.fr}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            ) : mode === 'presence' ? (
-                /* Presence Mode MJ Dashboard (Device is shared) */
-                <div className={styles.setupCard} style={{textAlign: 'left', padding: '30px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px'}}>
-                        <h3 style={{display: 'flex', alignItems: 'center', gap: '10px', margin: 0}}><ShieldCheck /> Tableau du Maître du Jeu</h3>
-                        <div style={{display: 'flex', gap: '10px'}}>
-                            <button className={styles.btnSmall} style={{background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #60a5fa', color: '#60a5fa'}} onClick={handleNewGameFromBoard}>Nouvelle manche</button>
-                            <button className={styles.btnSmall} style={{background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#ef4444'}} onClick={handleEndGame}>Clôturer le jeu</button>
-                        </div>
-                    </div>
-                    <p style={{opacity: 0.7, marginBottom: '20px'}}>Cliquez sur une carte pour voir le rôle temporairement (4s).</p>
-                    
-                    <div className={styles.dashboardGrid} style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px'}}>
-                        {players.map((p, idx) => {
-                            const isDead = !p.isAlive;
-                            return (
-                                <div key={idx} className={`${styles.mjCard} ${p.isRevealed ? styles.mjCardFlipped : ''}`} onClick={() => {
-                                    if (p.isRevealed) return;
-                                    const newPlayers = [...players];
-                                    newPlayers[idx].isRevealed = true;
-                                    setPlayers(newPlayers);
-                                    
-                                    setTimeout(() => {
-                                        setPlayers(prev => {
-                                            const updated = [...prev];
-                                            if (updated[idx]) updated[idx].isRevealed = false;
-                                            return updated;
-                                        });
-                                    }, 4000);
-                                }}>
-                                    <div className={styles.mjCardInner}>
-                                        <div className={styles.mjCardFront} style={{ opacity: isDead ? 0.6 : 1 }}>
-                                            {isDead && <div className={styles.deadOverlay} style={{fontSize: '1rem'}}>MORT</div>}
-                                            <div className={styles.mjCardName}>{p.name}</div>
-                                            <div style={{marginTop: 'auto', display: 'flex', gap: '5px'}} onClick={e => e.stopPropagation()}>
-                                                <button 
-                                                    className={styles.btnSmall}
-                                                    style={{background: isDead ? '#22c55e' : '#ef4444', padding: '2px 8px', fontSize: '0.6rem'}}
-                                                    onClick={() => {
-                                                        const newPlayers = [...players];
-                                                        newPlayers[idx].isAlive = !newPlayers[idx].isAlive;
-                                                        setPlayers(newPlayers);
-                                                    }}
-                                                >
-                                                    {isDead ? "VIE" : "MORT"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className={styles.mjCardBack}>
-                                            <div style={{fontSize: '2rem'}}>{p.role?.icon}</div>
-                                            <div style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{p.role?.name?.[language] || p.role?.name?.fr}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            ) : myPlayer ? (
-                /* Online Mode Player View */
-                <div style={{textAlign: 'center'}}>
-                    <h2 style={{fontSize: '2rem', marginBottom: '30px'}}>{myPlayer.name}, Voici ton secret...</h2>
-                    <div className={`${styles.cardContainer} ${styles.cardFlipped}`}>
-                        <div className={styles.cardInner}>
-                            <div className={styles.cardFront}>
-                                <Users size={60} style={{opacity: 0.3}} />
-                                <div style={{marginTop: '20px', fontWeight: 'bold'}}>TOUCHES D'ART</div>
-                            </div>
-                            <div className={styles.cardBack}>
-                                <div className={styles.roleEmoji}>{ROLES.find(r => r.id === myPlayer.roleId)?.icon}</div>
-                                <div className={styles.roleName}>
-                                    {ROLES.find(r => r.id === myPlayer.roleId)?.name?.[language] || ROLES.find(r => r.id === myPlayer.roleId)?.name?.fr}
-                                </div>
-                                <div className={styles.roleDesc}>
-                                    {ROLES.find(r => r.id === myPlayer.roleId)?.description?.[language] || ROLES.find(r => r.id === myPlayer.roleId)?.description?.fr}
-                                </div>
-                                <div style={{marginTop: 'auto', fontWeight: 'bold', color: ROLES.find(r => r.id === myPlayer.roleId)?.team === TEAMS.WOLVES ? '#ef4444' : '#3b82f6'}}>
-                                    {ROLES.find(r => r.id === myPlayer.roleId)?.team?.toUpperCase()}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <p style={{marginTop: '40px', opacity: 0.6, fontSize: '0.9rem'}}>Chaque joueur voit uniquement sa carte.</p>
-                </div>
-            ) : (
-                <div className={styles.setupCard}>
-                    <h3>En attente...</h3>
-                    <p>Le Maître du Jeu n'a pas encore distribué les rôles ou vous n'êtes pas dans cette partie.</p>
-                </div>
+            {/* RIGHT SIDE: Chat (Independent Scroll) - Only in Online mode */}
+            {mode === 'online' && (
+              <div className={styles.chatColumn} style={{ display: (typeof window !== 'undefined' && window.innerWidth < 1025 && boardTab === 'game') ? 'none' : 'flex' }}>
+                <PlayerChatPanel
+                  generalChat={generalChat}
+                  myPrivateMessages={myPrivateMessages}
+                  isAlive={isAlivePlayer || isMaster}
+                  sendChat={sendChat}
+                  isMaster={isMaster}
+                  myId={(user?.userId||user?._id)?.toString()}
+                />
+                
+                {isMaster && (
+                  <button className={styles.btnSmall} style={{width:'100%', padding:'10px', background:'rgba(59,130,246,0.05)', color:'#60a5fa', border:'1px dashed rgba(96,165,250,0.3)', borderRadius:'10px', marginTop:'5px'}} 
+                    onClick={async () => {
+                      const res = await fetch('/api/games/loup-garou/invite', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({roomId:gameRoom._id}) });
+                      const d = await res.json();
+                      alert(d.success ? '🔔 Invitation renvoyée' : 'Erreur');
+                    }}>
+                    Relancer les notifications
+                  </button>
+                )}
+              </div>
             )}
 
-            <div style={{marginTop: '40px', display: 'flex', gap: '20px', justifyContent: 'center'}}>
-                <button className={styles.btn} onClick={() => {
-                    if (confirm(t('quit') + " ?")) {
-                        window.location.href = '/games';
-                    }
-                }}>{t('quit') || 'Quitter'}</button>
-                {isMaster && mode === 'online' && (
-                    <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={async () => {
-                        try {
-                            const res = await fetch('/api/games/loup-garou/invite', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ roomId: gameRoom._id })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                                alert("🔔 " + data.message + (data.debug?.failures?.length > 0 ? "\n\nErreurs internes :\n" + JSON.stringify(data.debug.failures) : ""));
-                            } else {
-                                alert("Erreur : " + data.error);
-                            }
-                        } catch (err) {
-                            alert("Erreur serveur.");
-                        }
-                    }}>Inviter les joueurs (Notifications)</button>
-                )}
+          </div>
+
+          {/* Mobile Bottom Navigation - Only in Online mode */}
+          {mode === 'online' && (
+            <div className="mobile-nav" style={{display:'none', padding:'8px 15px', background:'rgba(15,23,42,0.9)', backdropFilter:'blur(10px)', borderTop:'1px solid rgba(255,255,255,0.1)', justifyContent:'space-around'}}>
+                <button onClick={() => setBoardTab('game')} style={{flex:1, padding:'10px', border:'none', background:'none', color:boardTab==='game'?'#6366f1':'#94a3b8', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', fontSize:'0.7rem'}}>
+                  <div style={{fontSize:'1.2rem'}}>🎮</div> JEU
+                </button>
+                <button onClick={() => setBoardTab('chat')} style={{flex:1, padding:'10px', border:'none', background:'none', color:boardTab==='chat'?'#6366f1':'#94a3b8', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', fontSize:'0.7rem'}}>
+                  <div style={{fontSize:'1.2rem'}}>💬</div> CHAT
+                </button>
             </div>
+          )}
+
+          <style jsx>{`
+             @media (max-width: 1024px) {
+                .mobile-nav { display: ${mode === 'online' ? 'flex' : 'none'} !important; }
+             }
+             @media (min-width: 1025px) {
+                .${styles.dashboardColumn} { display: flex !important; }
+                .${styles.chatColumn} { display: ${mode === 'online' ? 'flex' : 'none'} !important; }
+             }
+          `}</style>
+
         </div>
       </div>
     );
   }
 
-  return <div>Loading...</div>;
+  return null;
 }
 

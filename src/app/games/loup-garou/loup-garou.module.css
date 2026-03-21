@@ -7,9 +7,55 @@
   font-family: 'Outfit', sans-serif;
 }
 
+.loupGarouWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+}
+
+.boardView {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .container {
-  max-width: 1000px;
-  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.gameLayout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 15px;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .gameLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboardColumn, .chatColumn {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 15px;
+  padding-right: 5px;
+}
+
+/* Custom scrollbar */
+.dashboardColumn::-webkit-scrollbar, .chatColumn::-webkit-scrollbar {
+  width: 5px;
+}
+.dashboardColumn::-webkit-scrollbar-thumb, .chatColumn::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
 }
 
 .topBar {
