@@ -49,6 +49,20 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="fr" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              if (localStorage.getItem('desktopMode') === 'true') {
+                document.write('<meta name="viewport" content="width=1280, initial-scale=0.1">');
+                document.documentElement.classList.add('force-desktop');
+              } else {
+                document.write('<meta name="viewport" content="width=device-width, initial-scale=1">');
+              }
+            } catch (e) {}
+          })();
+        `}} />
+      </head>
       <body className={inter.className}>
         <LanguageProvider>
           <Navbar user={user} serverLogo={logo} />

@@ -405,7 +405,7 @@ export default function AdminSettings() {
                     <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
                         <h4 style={{ marginBottom: '1rem' }}>{t('authorizedRoles')}</h4>
                         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                            {['admin', 'national', 'president'].map(role => (
+                            {['admin', 'national', 'president', 'bureau', 'membre'].map(role => (
                                 <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <input 
                                         type="checkbox" 

@@ -119,8 +119,38 @@ export default function Footer() {
                 </div>
 
                 {/* Copyright Bar */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 0', textAlign: 'center', fontSize: '0.85rem', opacity: 0.5 }}>
-                    <p>{settings.copyright || `© ${new Date().getFullYear()} Touches D'Art. All rights reserved.`}</p>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.5rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', fontSize: '0.85rem' }}>
+                    <p style={{ opacity: 0.5, margin: 0 }}>{settings.copyright || `© ${new Date().getFullYear()} Touches D'Art. All rights reserved.`}</p>
+                    
+                    {/* Desktop Mode Toggle */}
+                    <button 
+                        onClick={() => {
+                            const current = localStorage.getItem('desktopMode') === 'true';
+                            localStorage.setItem('desktopMode', !current);
+                            window.location.reload();
+                        }}
+                        style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: '#fff',
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    >
+                        {typeof window !== 'undefined' && localStorage.getItem('desktopMode') === 'true' ? (
+                            <>📱 Version Mobile</>
+                        ) : (
+                            <>💻 Version Ordinateur</>
+                        )}
+                    </button>
                 </div>
             </div>
         </footer>
