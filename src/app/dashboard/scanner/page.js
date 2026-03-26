@@ -205,91 +205,90 @@ export default function QRScannerPage() {
             const res = await fetch(`/api/user/card/${qrid}`);
             const data = await res.json();
 
-            if (res.ok) {
-                if (data.success) {
-                    const scanTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                    const userName = data.data.firstName ? `${data.data.firstName} ${data.data.lastName}` : (data.data.name || 'Membre');
-                    const existingUserIndex = scannedUsersRef.current.findIndex(u => u._id === data.data._id);
+            if (res.ok && data) {
+                const userData = data; // the API returns the user object directly
+                const scanTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                const userName = userData.firstName ? `${userData.firstName} ${userData.lastName}` : (userData.name || 'Membre');
+                const existingUserIndex = scannedUsersRef.current.findIndex(u => u._id === userData._id);
                     
-                    let isValid = false;
-                    let feedback = "";
-                    
-                    if (existingUserIndex >= 0) {
-                        const user = scannedUsersRef.current[existingUserIndex];
-                        const history = user.history || [];
-                        const latestAction = history.length > 0 ? history[history.length - 1] : null;
+                let isValid = false;
+                let feedback = "";
+                
+                if (existingUserIndex >= 0) {
+                    const user = scannedUsersRef.current[existingUserIndex];
+                    const history = user.history || [];
+                    const latestAction = history.length > 0 ? history[history.length - 1] : null;
 
-                        if (scanMode === 'enter') {
-                            if (latestAction && !latestAction.exit) {
-                                isValid = false;
-                                feedback = `Refusé : ${userName} est déjà entré !`;
-                            } else {
-                                isValid = true;
-                                feedback = `✅ Entrée : ${userName}`;
-                            }
-                        } else { // scanMode === 'exit'
-                            if (!latestAction || latestAction.exit) {
-                                isValid = false;
-                                feedback = `Refusé : ${userName} n'est pas entré (ou est déjà sorti).`;
-                            } else {
-                                isValid = true;
-                                feedback = `👋 Sortie : ${userName}`;
-                            }
-                        }
-                    } else {
-                        if (scanMode === 'exit') {
+                    if (scanMode === 'enter') {
+                        if (latestAction && !latestAction.exit) {
                             isValid = false;
-                            feedback = `Refusé : ${userName} n'a jamais été scanné à l'entrée !`;
+                            feedback = `Refusé : ${userName} est déjà entré !`;
                         } else {
                             isValid = true;
                             feedback = `✅ Entrée : ${userName}`;
                         }
-                    }
-
-                    if (isValid) {
-                        setScanResult('success');
-                        setFeedbackMessage(feedback);
-                        setScannedUsers(prev => {
-                            const idx = prev.findIndex(u => u._id === data.data._id);
-                            if (idx >= 0) {
-                                const updatedList = [...prev];
-                                const user = { ...updatedList[idx] };
-                                const history = [...(user.history || [])];
-                                
-                                if (scanMode === 'enter') {
-                                    history.push({ enter: scanTime, exit: null });
-                                } else {
-                                    history[history.length - 1].exit = scanTime;
-                                }
-                                user.history = history;
-                                updatedList[idx] = user;
-                                
-                                // Move user to top of the list for visibility
-                                const userElement = updatedList.splice(idx, 1)[0];
-                                return [userElement, ...updatedList];
-                            } else {
-                                return [{
-                                    _id: data.data._id,
-                                    firstName: data.data.firstName,
-                                    lastName: data.data.lastName,
-                                    name: data.data.firstName && data.data.lastName ? `${data.data.firstName} ${data.data.lastName}` : (data.data.name || 'Membre'),
-                                    email: data.data.email,
-                                    phone: data.data.whatsapp || data.data.phone || 'Non renseigné',
-                                    club: data.data.club?.name || 'Non rattaché',
-                                    history: [{ enter: scanTime, exit: null }]
-                                }, ...prev];
-                            }
-                        });
-                    } else {
-                        setScanResult('error');
-                        setFeedbackMessage(feedback);
+                    } else { // scanMode === 'exit'
+                        if (!latestAction || latestAction.exit) {
+                            isValid = false;
+                            feedback = `Refusé : ${userName} n'est pas entré (ou est déjà sorti).`;
+                        } else {
+                            isValid = true;
+                            feedback = `👋 Sortie : ${userName}`;
+                        }
                     }
                 } else {
+                    if (scanMode === 'exit') {
+                        isValid = false;
+                        feedback = `Refusé : ${userName} n'a jamais été scanné à l'entrée !`;
+                    } else {
+                        isValid = true;
+                        feedback = `✅ Entrée : ${userName}`;
+                    }
+                }
+
+                if (isValid) {
+                    setScanResult('success');
+                    setFeedbackMessage(feedback);
+                    setScannedUsers(prev => {
+                        const idx = prev.findIndex(u => u._id === userData._id);
+                        if (idx >= 0) {
+                            const updatedList = [...prev];
+                            const user = { ...updatedList[idx] };
+                            const history = [...(user.history || [])];
+                            
+                            if (scanMode === 'enter') {
+                                history.push({ enter: scanTime, exit: null });
+                            } else {
+                                history[history.length - 1].exit = scanTime;
+                            }
+                            user.history = history;
+                            updatedList[idx] = user;
+                            
+                            // Move user to top of the list for visibility
+                            const userElement = updatedList.splice(idx, 1)[0];
+                            return [userElement, ...updatedList];
+                        } else {
+                            return [{
+                                _id: userData._id,
+                                userId: userData._id,
+                                name: userName,
+                                firstName: userData.firstName || '',
+                                lastName: userData.lastName || '',
+                                email: userData.email || '',
+                                phone: userData.whatsapp || userData.phone || 'Non renseigné',
+                                club: userData.club?.name || 'Non rattaché',
+                                type: 'Membre',
+                                history: [{ enter: scanTime, exit: null }]
+                            }, ...prev];
+                        }
+                    });
+                } else {
                     setScanResult('error');
-                    setFeedbackMessage("QR Code invalide ou Membre introuvable.");
+                    setFeedbackMessage(feedback);
                 }
             } else {
-                throw new Error(data.error || 'Erreur lors de la récupération des infos.');
+                const errorData = data || {};
+                throw new Error(errorData.error || "Utilisateur non trouvé ou accès refusé.");
             }
         } catch (err) {
             setScanResult('error');
@@ -844,6 +843,52 @@ export default function QRScannerPage() {
                             >
                                 <Plus className="w-5 h-5" /> Visiteur
                             </button>
+                        </div>
+
+                        {/* Manual Member Selection */}
+                        <div className="mt-6 pt-6 border-t border-gray-100">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">Recherche Manuelle (Sans Scan)</p>
+                            <div className="relative">
+                                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Nom ou Prénom du membre..." 
+                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                                    onFocus={() => setIsDropdownOpen(true)}
+                                    onChange={(e) => {
+                                        const term = e.target.value.toLowerCase();
+                                        // Simple local filter if needed or just show the dropdown
+                                        setIsDropdownOpen(true);
+                                    }}
+                                />
+                                {isDropdownOpen && (
+                                    <div className="absolute z-40 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto p-2 animate-in fade-in zoom-in-95 duration-200 scrollbar-hide">
+                                        {availableMembers.length === 0 ? (
+                                            <div className="p-4 text-center text-gray-400 text-xs">Aucun membre trouvé</div>
+                                        ) : (
+                                            availableMembers.map(m => (
+                                                <button 
+                                                    key={m._id} 
+                                                    onClick={() => {
+                                                        setIsDropdownOpen(false);
+                                                        // Simulate a scan result with the member's ID
+                                                        handleScanResult(m._id);
+                                                    }}
+                                                    className="w-full text-left p-3 hover:bg-blue-50 rounded-xl transition-colors flex items-center gap-3 group"
+                                                >
+                                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                        {m.firstName?.[0] || m.name?.[0] || '?'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-gray-800">{m.firstName} {m.lastName}</div>
+                                                        <div className="text-[10px] text-gray-500">{m.email || 'Pas d\'email'}</div>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
