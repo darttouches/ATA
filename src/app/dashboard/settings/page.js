@@ -44,6 +44,13 @@ export default function AdminSettings() {
         volume: 0.5
     });
 
+    // Scanner State
+    const [scannerData, setScannerData] = useState({
+        isPublished: true,
+        authorizedRoles: ['admin', 'president'],
+        authorizedUsers: []
+    });
+
     // Games State
     const [gamesData, setGamesData] = useState({
         isPublished: true,
@@ -80,6 +87,7 @@ export default function AdminSettings() {
             if (data.ataWaves) setAtaWavesData(data.ataWaves);
             if (data.bgMusic) setBgMusicData(data.bgMusic);
             if (data.meetingTA) setMeetingTAData(data.meetingTA);
+            if (data.scanner) setScannerData(data.scanner);
             if (data.games) setGamesData(data.games);
         }
     }, []);
@@ -161,6 +169,7 @@ export default function AdminSettings() {
                 ataWaves: ataWavesData,
                 bgMusic: bgMusicData,
                 meetingTA: meetingTAData,
+                scanner: scannerData,
                 games: gamesData
             }),
         });
@@ -197,6 +206,7 @@ export default function AdminSettings() {
                                 src={logo}
                                 alt="Logo Preview"
                                 fill
+                                sizes="120px"
                                 style={{ objectFit: 'contain', padding: '10px' }}
                             />
                         ) : (
@@ -251,7 +261,7 @@ export default function AdminSettings() {
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Logo ATA Waves</label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <div style={{ width: '80px', height: '80px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
-                                    {ataWavesData.logo ? <Image src={ataWavesData.logo} alt="ATA Waves" fill style={{ objectFit: 'contain', padding: '5px' }} /> : <Upload opacity={0.3} />}
+                                    {ataWavesData.logo ? <Image src={ataWavesData.logo} alt="ATA Waves" fill sizes="80px" style={{ objectFit: 'contain', padding: '5px' }} /> : <Upload opacity={0.3} />}
                                 </div>
                                 <label className="btn btn-secondary" style={{ cursor: 'pointer', fontSize: '0.8rem' }}>
                                     {loading ? 'Chargement...' : 'Changer de Logo'}
@@ -442,6 +452,86 @@ export default function AdminSettings() {
                                                 ? [...meetingTAData.authorizedUsers, user._id]
                                                 : meetingTAData.authorizedUsers.filter(id => id !== user._id);
                                             setMeetingTAData({...meetingTAData, authorizedUsers: newUsers});
+                                        }}
+                                    />
+                                    <span>{user.firstName ? `${user.firstName} ${user.lastName}` : user.name}</span>
+                                    {user.role !== 'membre' && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'var(--primary)', borderRadius: '4px', marginLeft: 'auto' }}>{t(user.role) || user.role}</span>}
+                                </label>
+                            )) : (
+                                <div style={{ opacity: 0.5, textAlign: 'center', padding: '10px' }}>Chargement des utilisateurs...</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '1.5rem' }}
+                    onClick={handleSave}
+                    disabled={loading}
+                >
+                    {success ? <><Check size={18} /> {t('changesSaved')}</> : <><Save size={18} /> {t('saveAllChanges')}</>}
+                </button>
+            </div>
+
+            {/* Scanner Management Section */}
+            <div className="card" style={{ marginTop: '2rem' }}>
+                <h3>Outil Scanner</h3>
+                <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
+                    Gérer la visibilité et l'accès à l'outil de scanner d'évènements.
+                </p>
+
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={scannerData.isPublished}
+                            onChange={(e) => setScannerData({...scannerData, isPublished: e.target.checked})}
+                            style={{ width: '18px', height: '18px' }}
+                        />
+                        <span style={{ fontWeight: 600 }}>Activer l'outil Scanner pour les membres autorisés</span>
+                    </label>
+
+                    <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                        <h4 style={{ marginBottom: '1rem' }}>Rôles autorisés</h4>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                            {['admin', 'national', 'president', 'bureau', 'membre'].map(role => (
+                                <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={scannerData.authorizedRoles.includes(role)}
+                                        onChange={(e) => {
+                                            const newRoles = e.target.checked 
+                                                ? [...scannerData.authorizedRoles, role]
+                                                : scannerData.authorizedRoles.filter(r => r !== role);
+                                            setScannerData({...scannerData, authorizedRoles: newRoles});
+                                        }}
+                                    />
+                                    <span>{t(role) || role}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Utilisateurs spécifiques
+                        </label>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '1rem' }}>
+                            Autorisez des membres spécifiques en plus des rôles sélectionnés ci-dessus.
+                        </p>
+                        
+                        <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                            {allUsers.length > 0 ? allUsers.map(user => (
+                                <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={scannerData.authorizedUsers.includes(user._id)}
+                                        onChange={(e) => {
+                                            const newUsers = e.target.checked 
+                                                ? [...scannerData.authorizedUsers, user._id]
+                                                : scannerData.authorizedUsers.filter(id => id !== user._id);
+                                            setScannerData({...scannerData, authorizedUsers: newUsers});
                                         }}
                                     />
                                     <span>{user.firstName ? `${user.firstName} ${user.lastName}` : user.name}</span>

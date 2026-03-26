@@ -11,6 +11,7 @@ export async function GET() {
     const bgMusic = await Settings.findOne({ key: 'bg_music' });
     const meetingTA = await Settings.findOne({ key: 'meeting_ta' });
     const games = await Settings.findOne({ key: 'games' });
+    const scanner = await Settings.findOne({ key: 'scanner' });
 
     const defaultBgMusic = {
         playlist: [{ id: 'default', name: 'Musique Par Défaut', url: '/music/background.mp3' }],
@@ -42,6 +43,12 @@ export async function GET() {
         }
     };
 
+    const defaultScanner = {
+        isPublished: true,
+        authorizedRoles: ['admin', 'president'],
+        authorizedUsers: []
+    };
+
     return NextResponse.json(
         {
             logo: logo?.value || null,
@@ -49,7 +56,8 @@ export async function GET() {
             ataWaves: ataWaves?.value || { isPublished: false, authorizedUsers: [] },
             bgMusic: bgMusic?.value || defaultBgMusic,
             meetingTA: meetingTA?.value || { isPublished: true, authorizedRoles: ['admin', 'national', 'president'], authorizedUsers: [] },
-            games: games?.value || defaultGames
+            games: games?.value || defaultGames,
+            scanner: scanner?.value || defaultScanner
         },
         { headers: { 'Cache-Control': 'no-store, max-age=0' } }
     );
@@ -60,7 +68,7 @@ export async function POST(req) {
         const user = await getUser();
         if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
-        const { logoUrl, footer, ataWaves, bgMusic, meetingTA, games } = await req.json();
+        const { logoUrl, footer, ataWaves, bgMusic, meetingTA, games, scanner } = await req.json();
         await dbConnect();
 
         if (logoUrl !== undefined) {
@@ -107,6 +115,14 @@ export async function POST(req) {
             await Settings.findOneAndUpdate(
                 { key: 'games' },
                 { value: games, updatedAt: Date.now() },
+                { upsert: true }
+            );
+        }
+
+        if (scanner !== undefined) {
+            await Settings.findOneAndUpdate(
+                { key: 'scanner' },
+                { value: scanner, updatedAt: Date.now() },
                 { upsert: true }
             );
         }

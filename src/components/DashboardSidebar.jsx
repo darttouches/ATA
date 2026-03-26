@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Users, FileText, Settings, Shield, LogOut,
-    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video, Gamepad2
+    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video, Gamepad2, Scan
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './DashboardSidebar.module.css';
@@ -19,6 +19,7 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
     const [canAccessMeetingTA, setCanAccessMeetingTA] = useState(false);
     const [gamesConfig, setGamesConfig] = useState(null);
     const [canAccessGames, setCanAccessGames] = useState(false);
+    const [canAccessScanner, setCanAccessScanner] = useState(false);
 
     const isActive = (path) => pathname === path;
 
@@ -67,6 +68,13 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                 setGamesConfig(g);
                 if (g?.isPublished && (user?.role === 'admin' || g?.authorizedRoles?.includes(user?.role) || g?.authorizedUsers?.includes(user?._id) || g?.authorizedUsers?.includes(user?._id?.toString()))) {
                     setCanAccessGames(true);
+                }
+
+                const s = data.scanner;
+                if (s?.isPublished && (user?.role === 'admin' || s?.authorizedRoles?.includes(user?.role) || s?.authorizedUsers?.includes(user?._id) || s?.authorizedUsers?.includes(user?._id?.toString()))) {
+                    setCanAccessScanner(true);
+                } else if (!s && (user?.role === 'admin' || user?.role === 'president')) { // fallback
+                    setCanAccessScanner(true);
                 }
             });
         
@@ -172,6 +180,11 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                     {canAccessMeetingTA && (
                         <Link href="/dashboard/meetings" className={`${styles.link} ${isActive('/dashboard/meetings') ? styles.activeLink : ''}`} onClick={onClose}>
                             <Video size={18} /> {t('meetingTA')}
+                        </Link>
+                    )}
+                    {canAccessScanner && (
+                        <Link href="/dashboard/scanner" className={`${styles.link} ${isActive('/dashboard/scanner') ? styles.activeLink : ''}`} onClick={onClose}>
+                            <Scan size={18} /> Scanner d'Évènements
                         </Link>
                     )}
                     <Link href="/dashboard" className={`${styles.link} ${isActive('/dashboard') ? styles.activeLink : ''}`} onClick={onClose}>
