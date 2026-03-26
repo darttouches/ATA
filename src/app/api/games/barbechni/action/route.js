@@ -5,7 +5,7 @@ import BarbechniRoom from '@/models/BarbechniRoom';
 export async function POST(req) {
     try {
         await dbConnect();
-        const { roomId, type, playerIndex, card, vote, fromId } = await req.json();
+        const { roomId, type, playerIndex, card, vote, fromId, secrets, playerId } = await req.json();
 
         const room = await BarbechniRoom.findById(roomId);
         if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
@@ -15,15 +15,26 @@ export async function POST(req) {
                 room.status = 'writing';
                 break;
             
-            case 'SUBMIT_CARD':
-                const newCard = {
-                    ...card,
-                    isAnonymous: true,
-                    votingActive: false,
-                    voteResults: { yes: [], no: [], total: 0 }
-                };
-                room.cards.push(newCard);
-                if (room.cards.length >= room.players.length) {
+            case 'SUBMIT_CARDS':
+                if (secrets && secrets.length > 0) {
+                    const newCards = secrets.map(sec => ({
+                        senderId: playerId,
+                        recipientId: sec.recipientId,
+                        type: sec.type,
+                        content: sec.content,
+                        isAnonymous: true,
+                        votingActive: false,
+                        voteResults: { yes: [], no: [], total: 0 }
+                    }));
+                    room.cards.push(...newCards);
+                }
+                
+                if (!room.finishedWritingPlayers) room.finishedWritingPlayers = [];
+                if (!room.finishedWritingPlayers.includes(playerId)) {
+                    room.finishedWritingPlayers.push(playerId);
+                }
+                
+                if (room.finishedWritingPlayers.length >= room.players.length) {
                     room.status = 'reading';
                 }
                 break;

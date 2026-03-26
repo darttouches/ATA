@@ -30,6 +30,7 @@ const barbechniRoomSchema = new mongoose.Schema({
         isGM: { type: Boolean, default: false }
     }],
     cards: [cardSchema],
+    finishedWritingPlayers: [{ type: String }],
     currentReadingPlayerIndex: { type: Number, default: 0 },
     currentCardIndex: { type: Number, default: 0 },
     settings: {

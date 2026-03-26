@@ -44,7 +44,7 @@ export default function GamesHub() {
     },
     {
       id: 'barbechni',
-      name: 'Barbechni ! (بربشني !)',
+      name: 'Barbechni !',
       description: 'Exprimez-vous ! Envoyez anonymement des questions ou réclamations et votez pour lever le voile sur les mystères.',
       icon: '🕵️',
       modes: ['En ligne', 'Présentiel'],
@@ -63,7 +63,7 @@ export default function GamesHub() {
     }
   ];
 
-  if (loading) return <div style={{padding: '50px', textAlign: 'center'}}>Chargement des jeux...</div>;
+  if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>Chargement des jeux...</div>;
 
   // Filter games based on config
   const games = allGames.filter(game => {
@@ -85,9 +85,9 @@ export default function GamesHub() {
   return (
     <div className={styles.gamesContainer}>
       <header className={styles.header}>
-        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: '20px'}}>
-             <h1 style={{margin: 0}}>🎲 Espace Games</h1>
-             <Link href="/dashboard" className={styles.quitBtn}>{t('quit') || 'Quitter'}</Link>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: '20px' }}>
+          <h1 style={{ margin: 0 }}>🎲 Espace Games</h1>
+          <Link href="/dashboard" className={styles.quitBtn}>{t('quit') || 'Quitter'}</Link>
         </div>
         <p>Jouez, interagissez et vivez l'aventure Touches D'Art à travers nos jeux originaux.</p>
       </header>
@@ -99,42 +99,42 @@ export default function GamesHub() {
               <div className={styles.gameContent}>
                 <div className={styles.gameIcon}>{game.icon}</div>
                 <div className={styles.gameInfo}>
-                    <div className={styles.badges}>
-                      <span className={`${styles.badge} ${styles.badgeComingSoon}`}>À venir</span>
-                    </div>
+                  <div className={styles.badges}>
+                    <span className={`${styles.badge} ${styles.badgeComingSoon}`}>À venir</span>
+                  </div>
                   <h2>{game.name}</h2>
                   <p>{game.description}</p>
                 </div>
               </div>
             ) : (
-                <Link href={game.path} className={styles.gameLink}>
-                    <div className={styles.cardDecoration} />
-                    <div className={styles.gameContent}>
-                        <div className={styles.gameIcon}>{game.icon}</div>
-                        <div className={styles.gameInfo}>
-                            <div className={styles.badges}>
-                                {game.modes.map((mode, i) => {
-                                    // Check if mode is allowed
-                                    const allowed = (game.id === 'loup-garou' ? gamesConfig?.loupGarou?.modes : (game.id === 'xo' ? gamesConfig?.xo?.modes : (game.id === 'barbechni' ? gamesConfig?.barbechni?.modes : 'both'))) || 'both';
-                                    const isModeVisible = 
-                                        allowed === 'both' || 
-                                        (allowed === 'online' && mode === 'En ligne') || 
-                                        (allowed === 'presence' && mode === 'Présentiel');
-                                    
-                                    if (!isModeVisible) return null;
+              <Link href={game.path} className={styles.gameLink}>
+                <div className={styles.cardDecoration} />
+                <div className={styles.gameContent}>
+                  <div className={styles.gameIcon}>{game.icon}</div>
+                  <div className={styles.gameInfo}>
+                    <div className={styles.badges}>
+                      {game.modes.map((mode, i) => {
+                        // Check if mode is allowed
+                        const allowed = (game.id === 'loup-garou' ? gamesConfig?.loupGarou?.modes : (game.id === 'xo' ? gamesConfig?.xo?.modes : (game.id === 'barbechni' ? gamesConfig?.barbechni?.modes : 'both'))) || 'both';
+                        const isModeVisible =
+                          allowed === 'both' ||
+                          (allowed === 'online' && mode === 'En ligne') ||
+                          (allowed === 'presence' && mode === 'Présentiel');
 
-                                    return (
-                                        <span key={i} className={`${styles.badge} ${mode === 'En ligne' ? styles.badgeOnline : styles.badgePresence}`}>
-                                            {mode === 'En ligne' ? <Monitor size={12} inline="true" /> : <MapPin size={12} inline="true" />} {mode}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                            <h2>{game.name}</h2>
-                            <p>{game.description}</p>
-                        </div>
+                        if (!isModeVisible) return null;
+
+                        return (
+                          <span key={i} className={`${styles.badge} ${mode === 'En ligne' ? styles.badgeOnline : styles.badgePresence}`}>
+                            {mode === 'En ligne' ? <Monitor size={12} inline="true" /> : <MapPin size={12} inline="true" />} {mode}
+                          </span>
+                        );
+                      })}
                     </div>
-                </Link>
+                    <h2>{game.name}</h2>
+                    <p>{game.description}</p>
+                  </div>
+                </div>
+              </Link>
             )}
           </div>
         ))}

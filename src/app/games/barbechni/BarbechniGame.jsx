@@ -56,7 +56,10 @@ const TRANSLATIONS = {
         anonymousMsg: "Message anonyme",
         from: "De :",
         to: "À :",
-        reply: "Votre réponse (optionnel)..."
+        reply: "Votre réponse (optionnel)...",
+        addCard: "Ajouter cette carte",
+        finishTurn: "Terminer",
+        addedCards: "Cartes ajoutées"
     },
     en: {
         title: "Barbechni !",
@@ -101,7 +104,10 @@ const TRANSLATIONS = {
         anonymousMsg: "Anonymous Message",
         from: "From:",
         to: "To:",
-        reply: "Your reply (optional)..."
+        reply: "Your reply (optional)...",
+        addCard: "Add this card",
+        finishTurn: "Finish",
+        addedCards: "Added cards"
     },
     ar: {
         title: "بربشني !",
@@ -146,7 +152,10 @@ const TRANSLATIONS = {
         anonymousMsg: "رسالة مجهولة",
         from: "من :",
         to: "إلى :",
-        reply: "ردك (اختياري)..."
+        reply: "ردك (اختياري)...",
+        addCard: "إضافة البطاقة",
+        finishTurn: "إنهاء",
+        addedCards: "البطاقات المضافة"
     }
 };
 
@@ -169,6 +178,7 @@ export default function BarbechniGame({ user }) {
         content: '',
         recipientId: ''
     });
+    const [currentWritingSecrets, setCurrentWritingSecrets] = useState([]);
     const [isCardHidden, setIsCardHidden] = useState(false);
     
     const t = TRANSLATIONS[lang];
@@ -261,8 +271,13 @@ export default function BarbechniGame({ user }) {
         }
     };
 
-    const submitOnlineCard = async () => {
-        if (!currentWritingSecret.content || !currentWritingSecret.recipientId) return;
+    const handleFinishTurnOnline = async () => {
+        const finalSecrets = [...currentWritingSecrets];
+        if (currentWritingSecret.content && currentWritingSecret.recipientId) {
+            finalSecrets.push(currentWritingSecret);
+        }
+        if (finalSecrets.length === 0) return; // Prevent submitting empty
+        
         setLoading(true);
         try {
             const res = await fetch('/api/games/barbechni/action', {
@@ -270,13 +285,9 @@ export default function BarbechniGame({ user }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     roomId: room._id,
-                    type: 'SUBMIT_CARD',
-                    card: {
-                        senderId: user._id,
-                        recipientId: currentWritingSecret.recipientId,
-                        type: currentWritingSecret.type,
-                        content: currentWritingSecret.content
-                    }
+                    type: 'SUBMIT_CARDS',
+                    playerId: user._id,
+                    secrets: finalSecrets
                 })
             });
             const data = await res.json();
@@ -519,7 +530,7 @@ export default function BarbechniGame({ user }) {
 
     if (room?.status === 'writing' || gameState === 'writing') {
         // Shared interface for cards
-        const onlineSubmitted = room?.cards?.some(c => c.senderId === user._id);
+        const onlineSubmitted = room?.finishedWritingPlayers?.includes(user._id);
         const currentTarget = mode === 'presence' ? players[currentWritingPlayerIndex] : user;
         
         return (
@@ -527,7 +538,7 @@ export default function BarbechniGame({ user }) {
                 <div className={styles.container}>
                     <div className={styles.topBar}>
                         <div className={styles.gameLogo}>{t.title}</div>
-                        {mode === 'presence' ? <div>{currentWritingPlayerIndex + 1} / {players.length}</div> : <div>{room.cards.length} / {room.players.length}</div>}
+                        {mode === 'presence' ? <div>{currentWritingPlayerIndex + 1} / {players.length}</div> : <div>{room.finishedWritingPlayers?.length || 0} / {room.players.length}</div>}
                     </div>
 
                     <div className={styles.writingBox}>
@@ -542,15 +553,21 @@ export default function BarbechniGame({ user }) {
                                 </div>
                                 {mode === 'presence' && currentWritingPlayerIndex < players.length - 1 && (
                                     <button className={styles.btnPrimary} style={{width: '100%', marginTop: '50px'}} onClick={() => {
+                                        const finalSecrets = [...currentWritingSecrets];
+                                        if (currentWritingSecret.content && currentWritingSecret.recipientId) {
+                                            finalSecrets.push(currentWritingSecret);
+                                        }
+
                                         const newPlayers = [...players];
                                         newPlayers[currentWritingPlayerIndex] = {
                                             ...newPlayers[currentWritingPlayerIndex],
-                                            tempSecret: currentWritingSecret
+                                            tempSecrets: finalSecrets
                                         };
                                         setPlayers(newPlayers);
                                         
                                         setCurrentWritingPlayerIndex(currentWritingPlayerIndex + 1);
                                         setIsCardHidden(false);
+                                        setCurrentWritingSecrets([]);
                                         setCurrentWritingSecret({type: 'question', content: '', recipientId: ''});
                                     }}>{t.passDevice} {players[currentWritingPlayerIndex + 1]?.name}</button>
                                 )}
@@ -558,9 +575,21 @@ export default function BarbechniGame({ user }) {
                                     <button className={styles.btnPrimary} style={{width: '100%', marginTop: '50px'}} onClick={async () => {
                                         // Finalize presence mode
                                         setLoading(true);
-                                        const finalCards = players.map(p => {
-                                            const secret = p._id === players[currentWritingPlayerIndex]._id ? currentWritingSecret : (p.tempSecret || {});
-                                            return {
+                                        const finalSecrets = [...currentWritingSecrets];
+                                        if (currentWritingSecret.content && currentWritingSecret.recipientId) {
+                                            finalSecrets.push(currentWritingSecret);
+                                        }
+
+                                        const newPlayers = [...players];
+                                        newPlayers[currentWritingPlayerIndex] = {
+                                            ...newPlayers[currentWritingPlayerIndex],
+                                            tempSecrets: finalSecrets
+                                        };
+                                        setPlayers(newPlayers);
+
+                                        const finalCards = newPlayers.flatMap(p => {
+                                            const secrets = p.tempSecrets || [];
+                                            return secrets.map(secret => ({
                                                 senderId: p._id,
                                                 recipientId: secret.recipientId,
                                                 type: secret.type,
@@ -568,13 +597,13 @@ export default function BarbechniGame({ user }) {
                                                 isAnonymous: true,
                                                 votingActive: false,
                                                 voteResults: { yes: [], no: [], total: 0 }
-                                            };
+                                            }));
                                         });
                                         
                                         setGameState('reading');
                                         setRoom({
                                             ...room, 
-                                            players: players.map(p => ({...p})), // Ensure players are saved in room
+                                            players: newPlayers.map(p => ({...p})), // Ensure players are saved in room
                                             cards: finalCards, 
                                             status: 'reading', 
                                             currentCardIndex: 0
@@ -587,6 +616,13 @@ export default function BarbechniGame({ user }) {
                             <>
                                 <h2>{isRtl ? 'اكتب بطاقتك' : 'Crée ta carte'}</h2>
                                 <h3 style={{color: '#7c3aed'}}>{currentTarget?.name}</h3>
+                                
+                                {currentWritingSecrets.length > 0 && (
+                                    <div style={{marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px'}}>
+                                        <h4>{t.addedCards} : {currentWritingSecrets.length}</h4>
+                                    </div>
+                                )}
+
                                 <div className={styles.typeSelector}>
                                     <button className={`${styles.typeBtn} ${currentWritingSecret.type === 'question' ? styles.active : ''}`} 
                                         onClick={() => setCurrentWritingSecret({...currentWritingSecret, type: 'question'})} style={{color: '#3b82f6'}}>
@@ -608,11 +644,20 @@ export default function BarbechniGame({ user }) {
                                     ))}
                                 </select>
 
-                                <button className={`${styles.btn} ${styles.btnPrimary}`} style={{width: '100%', marginTop: '20px'}} 
-                                    disabled={!currentWritingSecret.content || !currentWritingSecret.recipientId}
-                                    onClick={mode === 'online' ? submitOnlineCard : () => setIsCardHidden(true)}>
-                                    {t.ready}
-                                </button>
+                                <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
+                                    <button className={`${styles.btn}`} style={{flex: 1, border: '1px solid currentColor', opacity: (!currentWritingSecret.content || !currentWritingSecret.recipientId) ? 0.5 : 1}} 
+                                        disabled={!currentWritingSecret.content || !currentWritingSecret.recipientId}
+                                        onClick={() => {
+                                            setCurrentWritingSecrets([...currentWritingSecrets, currentWritingSecret]);
+                                            setCurrentWritingSecret({type: 'question', content: '', recipientId: ''});
+                                        }}>
+                                        {t.addCard}
+                                    </button>
+                                    <button className={`${styles.btn} ${styles.btnPrimary}`} style={{flex: 1}} 
+                                        onClick={mode === 'online' ? handleFinishTurnOnline : () => setIsCardHidden(true)}>
+                                        {t.finishTurn}
+                                    </button>
+                                </div>
                             </>
                         )}
                     </div>
