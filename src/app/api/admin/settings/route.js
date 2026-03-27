@@ -40,6 +40,10 @@ export async function GET() {
             allowQuestion: true,
             allowReclamation: true,
             allowAnonymityVote: true
+        },
+        wasaaa3: {
+            isPublished: true,
+            modes: 'presence' // only presentiel as requested
         }
     };
 

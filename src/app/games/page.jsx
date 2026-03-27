@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './games.module.css';
 import Link from 'next/link';
-import { Gamepad2, Users, Monitor, MapPin, Lock } from 'lucide-react';
+import { Gamepad2, Users, Monitor, MapPin, Lock, Zap, Trophy, Play } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function GamesHub() {
@@ -30,8 +30,7 @@ export default function GamesHub() {
       description: 'Un jeu de bluff et de stratégie où le village doit débusquer les loups-garous infiltrés avant qu\'il ne soit trop tard.',
       icon: '🐺',
       modes: ['En ligne', 'Présentiel'],
-      path: '/games/loup-garou',
-      color: '#ef4444'
+      path: '/games/loup-garou'
     },
     {
       id: 'xo',
@@ -39,8 +38,7 @@ export default function GamesHub() {
       description: 'Une version stratégique sur une grille 4x4. Placez, déplacez et éjectez les pièces adverse pour aligner 4 symboles !',
       icon: '⭕',
       modes: ['En ligne', 'Présentiel'],
-      path: '/games/xo',
-      color: '#3b82f6'
+      path: '/games/xo'
     },
     {
       id: 'barbechni',
@@ -48,8 +46,15 @@ export default function GamesHub() {
       description: 'Exprimez-vous ! Envoyez anonymement des questions ou réclamations et votez pour lever le voile sur les mystères.',
       icon: '🕵️',
       modes: ['En ligne', 'Présentiel'],
-      path: '/games/barbechni',
-      color: '#7c3aed'
+      path: '/games/barbechni'
+    },
+    {
+      id: 'wasaaa3',
+      name: 'Wasaaa3 ⚡',
+      description: 'Course effrénée ! Évitez les obstacles, collectez l\'énergie et survivez le plus longtemps possible avec votre propre avatar.',
+      icon: '🏃‍♂️',
+      modes: ['Présentiel'],
+      path: '/games/wasaaa3'
     },
     {
       id: 'soon-1',
@@ -58,29 +63,29 @@ export default function GamesHub() {
       icon: '🧩',
       modes: [],
       path: '#',
-      color: '#94a3b8',
       disabled: true
     }
   ];
 
   if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>Chargement des jeux...</div>;
 
-  // Filter games based on config
-  const games = allGames.filter(game => {
-    if (game.id === 'loup-garou') {
-      return gamesConfig?.loupGarou?.isPublished !== false;
-    }
-    if (game.id === 'xo') {
-      return gamesConfig?.xo?.isPublished !== false;
-    }
-    if (game.id === 'barbechni') {
-      return gamesConfig?.barbechni?.isPublished !== false;
-    }
-    return true;
-  });
+  // Filter and config map
+  const getGameConfig = (gameId) => {
+    const keyMap = {
+      'loup-garou': 'loupGarou',
+      'xo': 'xo',
+      'barbechni': 'barbechni',
+      'wasaaa3': 'wasaaa3'
+    };
+    const key = keyMap[gameId] || gameId;
+    return gamesConfig?.[key] || { isPublished: true, modes: 'both' };
+  };
 
-  // If globally disabled, maybe show a message or just empty grid?
-  // But usually access is controlled by the sidebar and direct link.
+  const games = allGames.filter(game => {
+    if (game.disabled) return true;
+    const config = getGameConfig(game.id);
+    return config.isPublished !== false;
+  });
 
   return (
     <div className={styles.gamesContainer}>
@@ -93,51 +98,53 @@ export default function GamesHub() {
       </header>
 
       <div className={styles.gamesGrid}>
-        {games.map((game) => (
-          <div key={game.id} className={`${styles.gameCard} ${game.disabled ? styles.disabled : ''}`}>
-            {game.disabled ? (
-              <div className={styles.gameContent}>
-                <div className={styles.gameIcon}>{game.icon}</div>
-                <div className={styles.gameInfo}>
-                  <div className={styles.badges}>
-                    <span className={`${styles.badge} ${styles.badgeComingSoon}`}>À venir</span>
-                  </div>
-                  <h2>{game.name}</h2>
-                  <p>{game.description}</p>
-                </div>
-              </div>
-            ) : (
-              <Link href={game.path} className={styles.gameLink}>
-                <div className={styles.cardDecoration} />
+        {games.map((game) => {
+          const config = getGameConfig(game.id);
+          const allowedModes = config.modes || 'both';
+
+          return (
+            <div key={game.id} className={`${styles.gameCard} ${game.disabled ? styles.disabled : ''}`}>
+              {game.disabled ? (
                 <div className={styles.gameContent}>
                   <div className={styles.gameIcon}>{game.icon}</div>
                   <div className={styles.gameInfo}>
                     <div className={styles.badges}>
-                      {game.modes.map((mode, i) => {
-                        // Check if mode is allowed
-                        const allowed = (game.id === 'loup-garou' ? gamesConfig?.loupGarou?.modes : (game.id === 'xo' ? gamesConfig?.xo?.modes : (game.id === 'barbechni' ? gamesConfig?.barbechni?.modes : 'both'))) || 'both';
-                        const isModeVisible =
-                          allowed === 'both' ||
-                          (allowed === 'online' && mode === 'En ligne') ||
-                          (allowed === 'presence' && mode === 'Présentiel');
-
-                        if (!isModeVisible) return null;
-
-                        return (
-                          <span key={i} className={`${styles.badge} ${mode === 'En ligne' ? styles.badgeOnline : styles.badgePresence}`}>
-                            {mode === 'En ligne' ? <Monitor size={12} inline="true" /> : <MapPin size={12} inline="true" />} {mode}
-                          </span>
-                        );
-                      })}
+                      <span className={`${styles.badge} ${styles.badgeComingSoon}`}>À venir</span>
                     </div>
                     <h2>{game.name}</h2>
                     <p>{game.description}</p>
                   </div>
                 </div>
-              </Link>
-            )}
-          </div>
-        ))}
+              ) : (
+                <Link href={game.path} className={styles.gameLink}>
+                  <div className={styles.gameContent}>
+                    <div className={styles.gameIcon}>{game.icon}</div>
+                    <div className={styles.gameInfo}>
+                      <div className={styles.badges}>
+                        {game.modes.map((mode, i) => {
+                          const isModeVisible =
+                            allowedModes === 'both' ||
+                            (allowedModes === 'online' && mode === 'En ligne') ||
+                            (allowedModes === 'presence' && mode === 'Présentiel');
+
+                          if (!isModeVisible) return null;
+
+                          return (
+                            <span key={i} className={`${styles.badge} ${mode === 'En ligne' ? styles.badgeOnline : styles.badgePresence}`}>
+                              {mode === 'En ligne' ? <Monitor size={12} /> : <MapPin size={12} />} {mode}
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <h2>{game.name}</h2>
+                      <p>{game.description}</p>
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

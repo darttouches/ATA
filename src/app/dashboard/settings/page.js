@@ -765,7 +765,25 @@ export default function AdminSettings() {
                                 </div>
                             </div>
                         )}
+                        <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--card-border)', marginTop: '1rem' }}>
+                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>⚡ Paramètres Wasaaa3</h4>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={gamesData.wasaaa3?.isPublished || false}
+                                onChange={(e) => setGamesData({...gamesData, wasaaa3: {...(gamesData.wasaaa3 || {}), isPublished: e.target.checked}})}
+                            />
+                            <span>Activer le jeu Wasaaa3</span>
+                        </label>
+                        
+                        {(gamesData.wasaaa3?.isPublished || false) && (
+                            <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
+                                <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Mode : Présentiel uniquement</div>
+                                <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Ce jeu nécessite la présence physique pour les scores.</p>
+                            </div>
+                        )}
                     </div>
+                </div>
                 </div>
 
                 <button
