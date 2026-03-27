@@ -88,8 +88,27 @@ export default function Wasaaa3() {
             }
         };
 
+        const handleTouch = (e) => {
+            if (gameState !== 'playing') return;
+            // Prevent scrolling/zoom while playing
+            if (e.cancelable) e.preventDefault();
+            
+            const touchX = e.touches[0].clientX;
+            const screenWidth = window.innerWidth;
+            
+            if (touchX < screenWidth / 2) {
+                if (gameRef.current.player.lane > 0) gameRef.current.player.lane--;
+            } else {
+                if (gameRef.current.player.lane < 2) gameRef.current.player.lane++;
+            }
+        };
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('touchstart', handleTouch, { passive: false });
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('touchstart', handleTouch);
+        };
     }, [gameState]);
 
     // Game Core
