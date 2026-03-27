@@ -43,7 +43,9 @@ export async function GET() {
         },
         wasaaa3: {
             isPublished: true,
-            modes: 'presence' // only presentiel as requested
+            modes: 'both', // 'presence', 'online', 'both'
+            authorizedRoles: ['admin', 'national', 'president', 'bureau', 'membre'],
+            authorizedUsers: []
         }
     };
 

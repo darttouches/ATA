@@ -85,3 +85,20 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }
+
+export async function DELETE(request) {
+    try {
+        const user = await getUser();
+        if (!user || user.role !== 'admin') {
+            return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        }
+
+        await dbConnect();
+        await GameScore.deleteMany({ gameId: 'wasaaa3' });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Error clearing wasaaa3 scores:', error);
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    }
+}

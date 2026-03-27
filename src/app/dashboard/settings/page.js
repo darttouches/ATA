@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, Save, Check, Plus, Trash2, Link as LinkIcon, Facebook, Instagram, Twitter, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { Upload, Save, Check, Plus, Trash2, Link as LinkIcon, Facebook, Instagram, Twitter, Linkedin, Youtube, Mail, Phone, MapPin, Zap } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
 
@@ -73,6 +73,12 @@ export default function AdminSettings() {
             allowQuestion: true,
             allowReclamation: true,
             allowAnonymityVote: true
+        },
+        wasaaa3: {
+            isPublished: true,
+            modes: 'both', // 'presence', 'online', 'both'
+            authorizedRoles: ['admin', 'national', 'president', 'bureau', 'membre'],
+            authorizedUsers: []
         }
     });
 
@@ -83,12 +89,21 @@ export default function AdminSettings() {
         if (res.ok) {
             const data = await res.json();
             if (data.logo) setLogo(data.logo);
-            if (data.footer) setFooterData(data.footer);
-            if (data.ataWaves) setAtaWavesData(data.ataWaves);
-            if (data.bgMusic) setBgMusicData(data.bgMusic);
-            if (data.meetingTA) setMeetingTAData(data.meetingTA);
-            if (data.scanner) setScannerData(data.scanner);
-            if (data.games) setGamesData(data.games);
+            if (data.footer) setFooterData(prev => ({ ...prev, ...data.footer }));
+            if (data.ataWaves) setAtaWavesData(prev => ({ ...prev, ...data.ataWaves }));
+            if (data.bgMusic) setBgMusicData(prev => ({ ...prev, ...data.bgMusic }));
+            if (data.meetingTA) setMeetingTAData(prev => ({ ...prev, ...data.meetingTA }));
+            if (data.scanner) setScannerData(prev => ({ ...prev, ...data.scanner }));
+            if (data.games) setGamesData(prev => {
+                const newData = { ...prev, ...data.games };
+                // Ensure nested game objects are also merged if they exist in data.games
+                if (data.games.sidebarLabel) newData.sidebarLabel = { ...prev.sidebarLabel, ...data.games.sidebarLabel };
+                if (data.games.loupGarou) newData.loupGarou = { ...prev.loupGarou, ...data.games.loupGarou };
+                if (data.games.xo) newData.xo = { ...prev.xo, ...data.games.xo };
+                if (data.games.barbechni) newData.barbechni = { ...prev.barbechni, ...data.games.barbechni };
+                if (data.games.wasaaa3) newData.wasaaa3 = { ...prev.wasaaa3, ...data.games.wasaaa3 };
+                return newData;
+            });
         }
     }, []);
 
@@ -185,6 +200,25 @@ export default function AdminSettings() {
         setLoading(false);
     };
 
+    const handleClearWasaaa3Scores = async () => {
+        if (!window.confirm("Êtes-vous sûr de vouloir vider le classement Top 10 de WASAA3 ? Cette action est irréversible.")) return;
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/games/wasaaa3/scores', { method: 'DELETE' });
+            if (res.ok) {
+                alert("Classement Top 10 vidé avec succès !");
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erreur technique lors de la suppression.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div style={{ maxWidth: '600px' }}>
             <h1 style={{ marginBottom: '2rem' }}>Paramètres de l'Association</h1>
@@ -247,7 +281,7 @@ export default function AdminSettings() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                         <input 
                             type="checkbox" 
-                            checked={ataWavesData.isPublished}
+                            checked={ataWavesData.isPublished || false}
                             onChange={(e) => setAtaWavesData({...ataWavesData, isPublished: e.target.checked})}
                             style={{ width: '18px', height: '18px' }}
                         />
@@ -295,7 +329,7 @@ export default function AdminSettings() {
                                 <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
                                     <input 
                                         type="checkbox" 
-                                        checked={ataWavesData.authorizedUsers.includes(user._id)}
+                                        checked={(ataWavesData.authorizedUsers || []).includes(user._id)}
                                         onChange={(e) => {
                                             const newUsers = e.target.checked 
                                                 ? [...ataWavesData.authorizedUsers, user._id]
@@ -336,7 +370,7 @@ export default function AdminSettings() {
                         <input 
                             type="range" 
                             min="0" max="1" step="0.1" 
-                            value={bgMusicData.volume} 
+                            value={bgMusicData.volume || 0} 
                             onChange={(e) => setBgMusicData({...bgMusicData, volume: parseFloat(e.target.value)})} 
                             style={{ width: '100%', accentColor: 'var(--primary)' }}
                         />
@@ -353,7 +387,7 @@ export default function AdminSettings() {
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {bgMusicData.playlist.map(track => (
+                            {(bgMusicData.playlist || []).map(track => (
                                 <div key={track.id} style={{ display: 'flex', alignItems: 'center', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '10px', cursor: 'pointer' }}>
                                         <input 
@@ -405,7 +439,7 @@ export default function AdminSettings() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                         <input 
                             type="checkbox" 
-                            checked={meetingTAData.isPublished}
+                            checked={meetingTAData.isPublished || false}
                             onChange={(e) => setMeetingTAData({...meetingTAData, isPublished: e.target.checked})}
                             style={{ width: '18px', height: '18px' }}
                         />
@@ -419,7 +453,7 @@ export default function AdminSettings() {
                                 <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <input 
                                         type="checkbox" 
-                                        checked={meetingTAData.authorizedRoles.includes(role)}
+                                        checked={(meetingTAData.authorizedRoles || []).includes(role)}
                                         onChange={(e) => {
                                             const newRoles = e.target.checked 
                                                 ? [...meetingTAData.authorizedRoles, role]
@@ -446,7 +480,7 @@ export default function AdminSettings() {
                                 <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
                                     <input 
                                         type="checkbox" 
-                                        checked={meetingTAData.authorizedUsers.includes(user._id)}
+                                        checked={(meetingTAData.authorizedUsers || []).includes(user._id)}
                                         onChange={(e) => {
                                             const newUsers = e.target.checked 
                                                 ? [...meetingTAData.authorizedUsers, user._id]
@@ -485,7 +519,7 @@ export default function AdminSettings() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                         <input 
                             type="checkbox" 
-                            checked={scannerData.isPublished}
+                            checked={scannerData.isPublished || false}
                             onChange={(e) => setScannerData({...scannerData, isPublished: e.target.checked})}
                             style={{ width: '18px', height: '18px' }}
                         />
@@ -499,7 +533,7 @@ export default function AdminSettings() {
                                 <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <input 
                                         type="checkbox" 
-                                        checked={scannerData.authorizedRoles.includes(role)}
+                                        checked={(scannerData.authorizedRoles || []).includes(role)}
                                         onChange={(e) => {
                                             const newRoles = e.target.checked 
                                                 ? [...scannerData.authorizedRoles, role]
@@ -526,7 +560,7 @@ export default function AdminSettings() {
                                 <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
                                     <input 
                                         type="checkbox" 
-                                        checked={scannerData.authorizedUsers.includes(user._id)}
+                                        checked={(scannerData.authorizedUsers || []).includes(user._id)}
                                         onChange={(e) => {
                                             const newUsers = e.target.checked 
                                                 ? [...scannerData.authorizedUsers, user._id]
@@ -565,7 +599,7 @@ export default function AdminSettings() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                         <input 
                             type="checkbox" 
-                            checked={gamesData.isPublished}
+                            checked={gamesData.isPublished || false}
                             onChange={(e) => setGamesData({...gamesData, isPublished: e.target.checked})}
                             style={{ width: '18px', height: '18px' }}
                         />
@@ -577,15 +611,15 @@ export default function AdminSettings() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                             <div>
                                 <label style={{ fontSize: '0.7rem', display: 'block', opacity: 0.6 }}>Français</label>
-                                <input className="card" style={{ width: '100%', fontSize: '0.8rem' }} value={gamesData.sidebarLabel.fr} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, fr: e.target.value}})} />
+                                <input className="card" style={{ width: '100%', fontSize: '0.8rem' }} value={gamesData.sidebarLabel?.fr || ''} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, fr: e.target.value}})} />
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.7rem', display: 'block', opacity: 0.6 }}>Anglais</label>
-                                <input className="card" style={{ width: '100%', fontSize: '0.8rem' }} value={gamesData.sidebarLabel.en} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, en: e.target.value}})} />
+                                <input className="card" style={{ width: '100%', fontSize: '0.8rem' }} value={gamesData.sidebarLabel?.en || ''} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, en: e.target.value}})} />
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.7rem', display: 'block', opacity: 0.6 }}>Arabe</label>
-                                <input className="card" style={{ width: '100%', fontSize: '0.8rem', textAlign: 'right' }} value={gamesData.sidebarLabel.ar} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, ar: e.target.value}})} />
+                                <input className="card" style={{ width: '100%', fontSize: '0.8rem', textAlign: 'right' }} value={gamesData.sidebarLabel?.ar || ''} onChange={e => setGamesData({...gamesData, sidebarLabel: {...gamesData.sidebarLabel, ar: e.target.value}})} />
                             </div>
                         </div>
                     </div>
@@ -598,7 +632,7 @@ export default function AdminSettings() {
                                 <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
                                     <input 
                                         type="checkbox" 
-                                        checked={gamesData.authorizedRoles.includes(role)}
+                                        checked={(gamesData.authorizedRoles || []).includes(role)}
                                         onChange={(e) => {
                                             const newRoles = e.target.checked 
                                                 ? [...gamesData.authorizedRoles, role]
@@ -672,7 +706,7 @@ export default function AdminSettings() {
                                         style={{ width: '80px', padding: '5px 10px', fontSize: '0.9rem' }} 
                                         min="3" 
                                         max="30"
-                                        value={gamesData.loupGarou?.minPlayers || 8}
+                                        value={gamesData.loupGarou?.minPlayers || 3}
                                         onChange={e => setGamesData({...gamesData, loupGarou: {...(gamesData.loupGarou || { isPublished: true }), minPlayers: parseInt(e.target.value) || 3}})}
                                     />
                                 </div>
@@ -729,22 +763,22 @@ export default function AdminSettings() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '1rem' }}>
                                     <div>
                                         <label style={{ fontSize: '0.8rem' }}>Joueurs Min.</label>
-                                        <input type="number" className="card" value={gamesData.barbechni.minPlayers} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, minPlayers: parseInt(e.target.value)}})} />
+                                        <input type="number" className="card" value={gamesData.barbechni?.minPlayers || 3} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, minPlayers: parseInt(e.target.value) || 3}})} />
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '0.8rem' }}>Joueurs Max.</label>
-                                        <input type="number" className="card" value={gamesData.barbechni.maxPlayers} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, maxPlayers: parseInt(e.target.value)}})} />
+                                        <input type="number" className="card" value={gamesData.barbechni?.maxPlayers || 15} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, maxPlayers: parseInt(e.target.value) || 15}})} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '1rem' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                        <input type="checkbox" checked={gamesData.barbechni.allowQuestion} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowQuestion: e.target.checked}})} /> Question
+                                        <input type="checkbox" checked={gamesData.barbechni?.allowQuestion || false} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowQuestion: e.target.checked}})} /> Question
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                        <input type="checkbox" checked={gamesData.barbechni.allowReclamation} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowReclamation: e.target.checked}})} /> Réclamation
+                                        <input type="checkbox" checked={gamesData.barbechni?.allowReclamation || false} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowReclamation: e.target.checked}})} /> Réclamation
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                        <input type="checkbox" checked={gamesData.barbechni.allowAnonymityVote} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowAnonymityVote: e.target.checked}})} /> Vote d'anonymat
+                                        <input type="checkbox" checked={gamesData.barbechni?.allowAnonymityVote || false} onChange={e => setGamesData({...gamesData, barbechni: {...gamesData.barbechni, allowAnonymityVote: e.target.checked}})} /> Vote d'anonymat
                                     </label>
                                 </div>
 
@@ -765,25 +799,102 @@ export default function AdminSettings() {
                                 </div>
                             </div>
                         )}
-                        <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--card-border)', marginTop: '1rem' }}>
-                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>⚡ Paramètres Wasaaa3</h4>
+                    </div>
+
+                    <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', marginTop: '1rem' }}>
+                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Zap size={18} style={{ color: '#10b981' }} /> Paramètres Wasaaa3
+                        </h4>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '1rem' }}>
                             <input 
                                 type="checkbox" 
                                 checked={gamesData.wasaaa3?.isPublished || false}
                                 onChange={(e) => setGamesData({...gamesData, wasaaa3: {...(gamesData.wasaaa3 || {}), isPublished: e.target.checked}})}
                             />
-                            <span>Activer le jeu Wasaaa3</span>
+                            <span style={{ fontWeight: 600 }}>Activer le jeu Wasaaa3</span>
                         </label>
                         
                         {(gamesData.wasaaa3?.isPublished || false) && (
                             <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
-                                <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Mode : Présentiel uniquement</div>
-                                <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Ce jeu nécessite la présence physique pour les scores.</p>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Configuration des modes :</div>
+                                    <div style={{ display: 'flex', gap: '20px', marginBottom: '1rem' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                            <input type="radio" value="presence" checked={gamesData.wasaaa3?.modes === 'presence'} onChange={e => setGamesData({...gamesData, wasaaa3: {...(gamesData.wasaaa3 || { isPublished: true }), modes: e.target.value}})} />
+                                            Présentiel
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                            <input type="radio" value="online" checked={gamesData.wasaaa3?.modes === 'online'} onChange={e => setGamesData({...gamesData, wasaaa3: {...(gamesData.wasaaa3 || { isPublished: true }), modes: e.target.value}})} />
+                                            En Ligne
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                            <input type="radio" value="both" checked={gamesData.wasaaa3?.modes === 'both'} onChange={e => setGamesData({...gamesData, wasaaa3: {...(gamesData.wasaaa3 || { isPublished: true }), modes: e.target.value}})} />
+                                            Les Deux
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Qui peut accéder au jeu WASAA3 ?</div>
+                                    <p style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.5rem' }}>Rôles autorisés (par-dessus l'accès global) :</p>
+                                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '6px', marginBottom: '1rem' }}>
+                                        {['admin', 'national', 'president', 'bureau', 'membre'].map(role => (
+                                            <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={gamesData.wasaaa3?.authorizedRoles?.includes(role)}
+                                                    onChange={(e) => {
+                                                        const currentRoles = gamesData.wasaaa3?.authorizedRoles || [];
+                                                        const newRoles = e.target.checked 
+                                                            ? [...currentRoles, role]
+                                                            : currentRoles.filter(r => r !== role);
+                                                        setGamesData({...gamesData, wasaaa3: {...gamesData.wasaaa3, authorizedRoles: newRoles}});
+                                                    }}
+                                                />
+                                                <span>{t(role) || role}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    <p style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.5rem' }}>Membres spécifiques :</p>
+                                    <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                                        {allUsers.length > 0 ? allUsers.map(user => (
+                                            <label key={user._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={gamesData.wasaaa3?.authorizedUsers?.includes(user._id)}
+                                                    onChange={(e) => {
+                                                        const currentUsers = gamesData.wasaaa3?.authorizedUsers || [];
+                                                        const newUsers = e.target.checked 
+                                                            ? [...currentUsers, user._id]
+                                                            : currentUsers.filter(id => id !== user._id);
+                                                        setGamesData({...gamesData, wasaaa3: {...gamesData.wasaaa3, authorizedUsers: newUsers}});
+                                                    }}
+                                                />
+                                                <span style={{ fontSize: '0.85rem' }}>{user.firstName ? `${user.firstName} ${user.lastName}` : user.name}</span>
+                                            </label>
+                                        )) : (
+                                            <div style={{ opacity: 0.5, textAlign: 'center', padding: '10px' }}>Chargement...</div>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <button 
+                                        className="btn btn-secondary" 
+                                        style={{ width: '100%', borderColor: 'rgba(244, 63, 94, 0.3)', color: '#f43f5e', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                        onClick={handleClearWasaaa3Scores}
+                                        disabled={loading}
+                                    >
+                                        <Trash2 size={16} /> Vider le classement Top 10 (Présentiel)
+                                    </button>
+                                    <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '5px', textAlign: 'center' }}>
+                                        Ceci supprimera tous les scores enregistrés pour le mode présentiel.
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
-                </div>
                 </div>
 
                 <button
@@ -810,7 +921,7 @@ export default function AdminSettings() {
                         <textarea
                             className="card"
                             style={{ width: '100%', minHeight: '80px', border: '1px solid var(--card-border)' }}
-                            value={footerData.description}
+                            value={footerData.description || ''}
                             onChange={e => setFooterData({ ...footerData, description: e.target.value })}
                             placeholder={t('footerDescriptionPlaceholder')}
                         />
@@ -822,8 +933,7 @@ export default function AdminSettings() {
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}><MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} /> {t('addressLocal')}</label>
                             <input
                                 className="card"
-                                style={{ width: '100%', border: '1px solid var(--card-border)' }}
-                                value={footerData.address}
+                                         value={footerData.address || ''}
                                 onChange={e => setFooterData({ ...footerData, address: e.target.value })}
                             />
                         </div>
@@ -832,7 +942,7 @@ export default function AdminSettings() {
                             <input
                                 className="card"
                                 style={{ width: '100%', border: '1px solid var(--card-border)' }}
-                                value={footerData.email}
+                                value={footerData.email || ''}
                                 onChange={e => setFooterData({ ...footerData, email: e.target.value })}
                             />
                         </div>
@@ -841,7 +951,7 @@ export default function AdminSettings() {
                             <input
                                 className="card"
                                 style={{ width: '100%', border: '1px solid var(--card-border)' }}
-                                value={footerData.phone}
+                                value={footerData.phone || ''}
                                 onChange={e => setFooterData({ ...footerData, phone: e.target.value })}
                             />
                         </div>
@@ -850,7 +960,7 @@ export default function AdminSettings() {
                             <input
                                 className="card"
                                 style={{ width: '100%', border: '1px solid var(--card-border)' }}
-                                value={footerData.copyright}
+                                value={footerData.copyright || ''}
                                 onChange={e => setFooterData({ ...footerData, copyright: e.target.value })}
                                 placeholder="© 2024 Touches D'Art"
                             />
@@ -865,7 +975,7 @@ export default function AdminSettings() {
                                 <select
                                     className="card"
                                     style={{ width: '150px', border: '1px solid var(--card-border)', background: '#11224E', color: 'white' }}
-                                    value={social.platform}
+                                    value={social.platform || 'facebook'}
                                     onChange={e => {
                                         const newSocials = [...footerData.socials];
                                         newSocials[index].platform = e.target.value;
@@ -881,7 +991,7 @@ export default function AdminSettings() {
                                 <input
                                     className="card"
                                     style={{ flex: 1, border: '1px solid var(--card-border)' }}
-                                    value={social.url}
+                                    value={social.url || ''}
                                     onChange={e => {
                                         const newSocials = [...footerData.socials];
                                         newSocials[index].url = e.target.value;
@@ -917,7 +1027,7 @@ export default function AdminSettings() {
                                 <input
                                     className="card"
                                     style={{ flex: 1, border: '1px solid var(--card-border)' }}
-                                    value={link.text}
+                                    value={link.text || ''}
                                     onChange={e => {
                                         const newLinks = [...footerData.quickLinks];
                                         newLinks[index].text = e.target.value;
@@ -928,7 +1038,7 @@ export default function AdminSettings() {
                                 <input
                                     className="card"
                                     style={{ flex: 1, border: '1px solid var(--card-border)' }}
-                                    value={link.url}
+                                    value={link.url || ''}
                                     onChange={e => {
                                         const newLinks = [...footerData.quickLinks];
                                         newLinks[index].url = e.target.value;
