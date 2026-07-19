@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import styles from './login.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -56,6 +56,7 @@ function LoginForm() {
     };
 
     return (
+        <>
         <div className={styles.container}>
             <div className={styles.formCard}>
                 <h1 className={styles.title}>{t('loginTitle')}</h1>
@@ -134,6 +135,38 @@ function LoginForm() {
                 </div>
             </div>
         </div>
+
+        {/* Fixed small circular button to join the association */}
+        <Link href="/join" title="Rejoindre l'association" style={{
+            position: 'fixed',
+            bottom: '80px',
+            right: '25px',
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            background: '#11224E',
+            border: '2px solid rgba(99,179,237,0.4)',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9998,
+            color: '#63b3ed',
+            transition: 'all 0.2s ease',
+            textDecoration: 'none'
+        }}
+        onMouseOver={e => {
+            e.currentTarget.style.background = '#1a3a7a';
+            e.currentTarget.style.transform = 'scale(1.1)';
+        }}
+        onMouseOut={e => {
+            e.currentTarget.style.background = '#11224E';
+            e.currentTarget.style.transform = 'scale(1)';
+        }}
+        >
+            <UserPlus size={20} />
+        </Link>
+        </>
     );
 }
 
