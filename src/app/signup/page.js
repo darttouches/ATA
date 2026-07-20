@@ -28,6 +28,12 @@ export default function Signup() {
     const [uploading, setUploading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    
+    // Interview post-signup flow
+    const [isRegistered, setIsRegistered] = useState(false);
+    const [interviewDate, setInterviewDate] = useState('');
+    const [interviewCode, setInterviewCode] = useState('');
+    const [loadingInterview, setLoadingInterview] = useState(false);
 
     useEffect(() => {
         const fetchClubs = async () => {
@@ -97,13 +103,89 @@ export default function Signup() {
             }
 
             // Success
-            router.push('/login?registered=true');
+            setIsRegistered(true);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
     };
+
+    const handleRequestInterview = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoadingInterview(true);
+        try {
+            const res = await fetch('/api/onboarding/interview/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    interviewDate
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Erreur serveur');
+            
+            setInterviewCode(data.code);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoadingInterview(false);
+        }
+    };
+
+    if (isRegistered) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.formCard} style={{ maxWidth: '600px', textAlign: 'center' }}>
+                    <h1 className={styles.title} style={{ color: '#10b981', marginBottom: '1rem' }}>Inscription Validée !</h1>
+                    
+                    {!interviewCode ? (
+                        <>
+                            <p style={{ color: '#cbd5e1', marginBottom: '2rem' }}>
+                                Avant de finaliser votre inscription, vous devez passer un <strong>entretien avec notre robot</strong>. Veuillez choisir la date et l'heure (au minimum 2 jours à l'avance).
+                            </p>
+                            {error && <div className={styles.error}>{error}</div>}
+                            <form onSubmit={handleRequestInterview} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <div className={styles.inputGroup} style={{ width: '100%', maxWidth: '300px' }}>
+                                    <label className={styles.label}>Date de l'entretien</label>
+                                    <input 
+                                        type="datetime-local" 
+                                        className={styles.input} 
+                                        required 
+                                        value={interviewDate}
+                                        onChange={(e) => setInterviewDate(e.target.value)}
+                                        min={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary" style={{ width: '100%', maxWidth: '300px', marginTop: '1rem', justifyContent: 'center' }} disabled={loadingInterview}>
+                                    {loadingInterview ? 'Génération...' : 'Obtenir mon code'}
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        <>
+                            <p style={{ color: '#cbd5e1', marginBottom: '2rem' }}>
+                                Votre créneau a été réservé avec succès.<br/>Voici votre code d'accès à la salle d'entretien virtuelle. <strong>Conservez-le précieusement !</strong>
+                            </p>
+                            <div style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed var(--primary)', padding: '2rem', borderRadius: '12px', marginBottom: '2rem' }}>
+                                <h1 style={{ fontSize: '3rem', letterSpacing: '8px', color: 'white', margin: 0 }}>
+                                    {interviewCode}
+                                </h1>
+                            </div>
+                            <button onClick={() => window.location.href = '/interview-room'} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                                Aller à la salle d'entretien
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>

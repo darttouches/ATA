@@ -26,6 +26,13 @@ export default function JoinPage() {
     const [typedText, setTypedText] = useState('');
     const [typeError, setTypeError] = useState('');
     
+    // Interview request state
+    const [interviewForm, setInterviewForm] = useState({
+        firstName: '', lastName: '', email: '', phone: '', interviewDate: ''
+    });
+    const [loadingInterview, setLoadingInterview] = useState(false);
+    const [generatedCode, setGeneratedCode] = useState('');
+    
     const synth = useRef(null);
 
     useEffect(() => {
@@ -328,6 +335,28 @@ export default function JoinPage() {
             const shuffled = [...allRules].sort(() => 0.5 - Math.random());
             setTestRules(shuffled.slice(0, 3));
             setStep(7); // Send them back to reading all rules or stay at 8? Sending back to 7 makes them re-read.
+        }
+    };
+
+    const handleInterviewRequest = async (e) => {
+        e.preventDefault();
+        setTypeError('');
+        setLoadingInterview(true);
+        try {
+            const res = await fetch('/api/onboarding/interview/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(interviewForm)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || "Erreur serveur");
+            
+            setGeneratedCode(data.code);
+            setStep(10);
+        } catch (err) {
+            setTypeError(err.message);
+        } finally {
+            setLoadingInterview(false);
         }
     };
 

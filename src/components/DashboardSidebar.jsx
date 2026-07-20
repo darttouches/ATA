@@ -241,6 +241,9 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                             <Link href="/dashboard/recruitment" className={`${styles.link} ${isActive('/dashboard/recruitment') ? styles.activeLink : ''}`} onClick={onClose}>
                                 <UserPlus size={18} /> {t('recruitmentManagement') || 'Gestion Recrutement'}
                             </Link>
+                            <Link href="/dashboard/interviews" className={`${styles.link} ${isActive('/dashboard/interviews') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <MessageSquare size={18} /> {t('interviewManagement') || 'Entretiens (Robot)'}
+                            </Link>
                         </>
                     )}
 
