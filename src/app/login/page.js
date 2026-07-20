@@ -20,6 +20,40 @@ function LoginForm() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/admin/settings')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data?.recruitment) {
+                    const { isOpen, startDate, endDate } = data.recruitment;
+                    if (!isOpen) {
+                        setIsRecruitmentOpen(false);
+                        return;
+                    }
+                    
+                    const now = new Date();
+                    if (startDate && new Date(startDate) > now) {
+                        setIsRecruitmentOpen(false);
+                        return;
+                    }
+                    
+                    // If endDate exists, we want to allow recruitment on that day up until midnight.
+                    // By just doing new Date(endDate) < now, a date like "2026-07-20" becomes 00:00.
+                    // So we can set it to the end of that day.
+                    if (endDate) {
+                        const end = new Date(endDate);
+                        end.setHours(23, 59, 59, 999);
+                        if (end < now) {
+                            setIsRecruitmentOpen(false);
+                            return;
+                        }
+                    }
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -134,15 +168,17 @@ function LoginForm() {
                     <Link href="/signup" className={styles.link}>{t('signupAction')}</Link>
                 </div>
                 
-                <div className={styles.joinSection}>
-                    <p className={styles.joinText}>
-                        Vous souhaitez devenir membre officiel de l'association ?
-                    </p>
-                    <Link href="/join" className={styles.joinBtn}>
-                        <UserPlus size={18} />
-                        <span>Faire une demande d'adhésion</span>
-                    </Link>
-                </div>
+                {isRecruitmentOpen && (
+                    <div className={styles.joinSection}>
+                        <p className={styles.joinText}>
+                            Vous souhaitez devenir membre officiel de l'association ?
+                        </p>
+                        <Link href="/join" className={styles.joinBtn}>
+                            <UserPlus size={18} />
+                            <span>Faire une demande d'adhésion</span>
+                        </Link>
+                    </div>
+                )}
             </div>
         </div>
         </>

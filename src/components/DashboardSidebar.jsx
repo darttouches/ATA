@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Users, FileText, Settings, Shield, LogOut,
-    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video, Gamepad2, Scan
+    Bell, MessageSquare, AlertCircle, User, Calendar, BarChart3, Mic, X, Home, Video, Gamepad2, Scan, UserPlus
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './DashboardSidebar.module.css';
@@ -237,6 +237,9 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                             </Link>
                             <Link href="/dashboard/settings" className={`${styles.link} ${isActive('/dashboard/settings') ? styles.activeLink : ''}`} onClick={onClose}>
                                 <Settings size={18} /> {t('generalSettings')}
+                            </Link>
+                            <Link href="/dashboard/recruitment" className={`${styles.link} ${isActive('/dashboard/recruitment') ? styles.activeLink : ''}`} onClick={onClose}>
+                                <UserPlus size={18} /> {t('recruitmentManagement') || 'Gestion Recrutement'}
                             </Link>
                         </>
                     )}
