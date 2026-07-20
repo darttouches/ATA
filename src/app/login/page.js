@@ -133,39 +133,18 @@ function LoginForm() {
                     {t('noAccountYet')}
                     <Link href="/signup" className={styles.link}>{t('signupAction')}</Link>
                 </div>
+                
+                <div className={styles.joinSection}>
+                    <p className={styles.joinText}>
+                        Vous souhaitez devenir membre officiel de l'association ?
+                    </p>
+                    <Link href="/join" className={styles.joinBtn}>
+                        <UserPlus size={18} />
+                        <span>Faire une demande d'adhésion</span>
+                    </Link>
+                </div>
             </div>
         </div>
-
-        {/* Fixed small circular button to join the association */}
-        <Link href="/join" title="Rejoindre l'association" style={{
-            position: 'fixed',
-            bottom: '80px',
-            right: '25px',
-            width: '44px',
-            height: '44px',
-            borderRadius: '50%',
-            background: '#11224E',
-            border: '2px solid rgba(99,179,237,0.4)',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9998,
-            color: '#63b3ed',
-            transition: 'all 0.2s ease',
-            textDecoration: 'none'
-        }}
-        onMouseOver={e => {
-            e.currentTarget.style.background = '#1a3a7a';
-            e.currentTarget.style.transform = 'scale(1.1)';
-        }}
-        onMouseOut={e => {
-            e.currentTarget.style.background = '#11224E';
-            e.currentTarget.style.transform = 'scale(1)';
-        }}
-        >
-            <UserPlus size={20} />
-        </Link>
         </>
     );
 }
