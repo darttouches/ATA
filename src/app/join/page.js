@@ -588,13 +588,91 @@ export default function JoinPage() {
             case 9:
                 return (
                     <div className={styles.messageBubble}>
-                        <h2>{getText('finalFormTitle')}</h2>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px', textAlign: 'center' }}>
-                            <p style={{ color: '#94a3b8' }}>Vous avez terminé le parcours d'intégration ! Cliquez ci-dessous pour accéder au formulaire officiel de l'association.</p>
-                            <button onClick={() => window.location.href = '/signup'} className={`${styles.btn} ${styles.btnPrimary}`} style={{width: '100%', justifyContent: 'center', padding: '15px', fontSize: '1.1rem'}}>
-                                {getText('submit')} 
+                        <h2 style={{ fontSize: '1.3rem', color: 'white', marginBottom: '0.75rem' }}>🎉 Félicitations !</h2>
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                            Vous avez validé toutes les étapes. Pour finaliser, renseignez vos informations et choisissez une date d'entretien virtuel (min. 2 jours à l'avance).
+                        </p>
+                        <form onSubmit={handleInterviewRequest} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                <input
+                                    type="text"
+                                    className={styles.inputField}
+                                    placeholder="Prénom"
+                                    required
+                                    value={interviewForm.firstName}
+                                    onChange={e => setInterviewForm({...interviewForm, firstName: e.target.value})}
+                                />
+                                <input
+                                    type="text"
+                                    className={styles.inputField}
+                                    placeholder="Nom"
+                                    required
+                                    value={interviewForm.lastName}
+                                    onChange={e => setInterviewForm({...interviewForm, lastName: e.target.value})}
+                                />
+                            </div>
+                            <input
+                                type="tel"
+                                className={styles.inputField}
+                                placeholder="Numéro de téléphone"
+                                required
+                                value={interviewForm.phone}
+                                onChange={e => setInterviewForm({...interviewForm, phone: e.target.value})}
+                            />
+                            <input
+                                type="email"
+                                className={styles.inputField}
+                                placeholder="Adresse email"
+                                required
+                                value={interviewForm.email}
+                                onChange={e => setInterviewForm({...interviewForm, email: e.target.value})}
+                            />
+                            <div style={{ marginTop: '0.25rem' }}>
+                                <label style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.4rem' }}>
+                                    📅 Date et heure de l'entretien (2 ou 3 jours minimum)
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    className={styles.inputField}
+                                    required
+                                    value={interviewForm.interviewDate}
+                                    onChange={e => setInterviewForm({...interviewForm, interviewDate: e.target.value})}
+                                    min={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                                />
+                            </div>
+                            {typeError && <p className={styles.errorText}>{typeError}</p>}
+                            <button
+                                type="submit"
+                                className={`${styles.btn} ${styles.btnPrimary}`}
+                                style={{ justifyContent: 'center', marginTop: '0.5rem' }}
+                                disabled={loadingInterview}
+                            >
+                                {loadingInterview ? '⏳ Génération du code...' : '✅ Confirmer et obtenir mon code'}
                             </button>
+                        </form>
+                    </div>
+                );
+            case 10:
+                return (
+                    <div className={styles.messageBubble} style={{ textAlign: 'center' }}>
+                        <h2 style={{ color: '#10b981', marginBottom: '0.5rem' }}>✅ Demande confirmée !</h2>
+                        <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Votre rendez-vous d'entretien est enregistré.<br/>
+                            <strong>Conservez précieusement ce code.</strong> Il vous permettra d'accéder à votre salle d'entretien à la date choisie.
+                        </p>
+                        <div style={{ background: 'rgba(0,0,0,0.4)', border: '2px dashed var(--primary)', padding: '2rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                            <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Votre code d'entretien</p>
+                            <h1 style={{ fontSize: '2.5rem', letterSpacing: '8px', color: 'white', margin: 0 }}>
+                                {generatedCode}
+                            </h1>
                         </div>
+                        <button
+                            onClick={() => window.location.href = '/interview-room'}
+                            className={`${styles.btn} ${styles.btnPrimary}`}
+                            style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                            🚪 Accéder à la salle d'entretien
+                        </button>
                     </div>
                 );
             default:
