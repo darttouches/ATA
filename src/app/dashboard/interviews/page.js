@@ -22,7 +22,8 @@ export default function InterviewsManagement() {
     // Specific assigning
     const [assignedQ, setAssignedQ] = useState([]);
     const [assignedR, setAssignedR] = useState([]);
-    const [customText, setCustomText] = useState('');
+    const [customQuestionText, setCustomQuestionText] = useState('');
+    const [customRemarkText, setCustomRemarkText] = useState('');
     
     useEffect(() => {
         fetchData();
@@ -98,14 +99,14 @@ export default function InterviewsManagement() {
         setAssignedR([...assignedR, { text: gr.text }]);
     };
     const handleAddCustomQuestion = () => {
-        if (!customText) return;
-        setAssignedQ([...assignedQ, { text: customText }]);
-        setCustomText('');
+        if (!customQuestionText) return;
+        setAssignedQ([...assignedQ, { text: customQuestionText }]);
+        setCustomQuestionText('');
     };
     const handleAddCustomRemark = () => {
-        if (!customText) return;
-        setAssignedR([...assignedR, { text: customText }]);
-        setCustomText('');
+        if (!customRemarkText) return;
+        setAssignedR([...assignedR, { text: customRemarkText }]);
+        setCustomRemarkText('');
     };
 
     const removeAssignedQ = (idx) => setAssignedQ(assignedQ.filter((_, i) => i !== idx));
@@ -258,7 +259,7 @@ export default function InterviewsManagement() {
                                                 </div>
                                             </div>
                                             <div style={{marginTop: '10px', display:'flex', gap:'5px'}}>
-                                                <input type="text" placeholder="Question spécifique..." className={styles.input} style={{padding:'0.5rem'}} value={customText} onChange={e=>setCustomText(e.target.value)} />
+                                                <input type="text" placeholder="Question spécifique..." className={styles.input} style={{padding:'0.5rem'}} value={customQuestionText} onChange={e=>setCustomQuestionText(e.target.value)} />
                                                 <button onClick={handleAddCustomQuestion} className="btn btn-primary" style={{padding:'0.5rem'}}><Plus size={16}/></button>
                                             </div>
                                         </div>
@@ -281,7 +282,7 @@ export default function InterviewsManagement() {
                                                 </div>
                                             </div>
                                             <div style={{marginTop: '10px', display:'flex', gap:'5px'}}>
-                                                <input type="text" placeholder="Remarque spécifique..." className={styles.input} style={{padding:'0.5rem'}} value={customText} onChange={e=>setCustomText(e.target.value)} />
+                                                <input type="text" placeholder="Remarque spécifique..." className={styles.input} style={{padding:'0.5rem'}} value={customRemarkText} onChange={e=>setCustomRemarkText(e.target.value)} />
                                                 <button onClick={handleAddCustomRemark} className="btn btn-warning" style={{padding:'0.5rem', background: '#f59e0b'}}><Plus size={16}/></button>
                                             </div>
                                         </div>

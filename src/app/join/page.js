@@ -32,6 +32,7 @@ export default function JoinPage() {
     });
     const [loadingInterview, setLoadingInterview] = useState(false);
     const [generatedCode, setGeneratedCode] = useState('');
+    const [codeCopied, setCodeCopied] = useState(false);
     
     const synth = useRef(null);
 
@@ -273,9 +274,84 @@ export default function JoinPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentRuleIndex, lang, allRules, testRules]);
 
+    // ── Text normalisation (mobile & desktop safe) ──────────────────────────
+    const normalizeString = (str) => {
+        if (!str) return "";
+        return str
+            // Lowercase first
+            .toLowerCase()
+            // Replace all kinds of mobile smart apostrophes and quotes with a space
+            .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035''`´]/g, " ")
+            .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036""]/g, " ")
+            // Replace dashes/hyphens with space
+            .replace(/[-–—]/g, " ")
+            // Remove diacritics / accents (NFD decomposition)
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            // Non-breaking spaces and other whitespace variants → normal space
+            .replace(/[\u00A0\u202F\u2009\u2008\u2007\u2006\u2005\u2004\u2003\u2002\u2001\u2000]/g, " ")
+            // Remove all invisible/zero-width chars
+            .replace(/[\u200B\u200C\u200D\u200E\u200F\uFEFF]/g, "")
+            // Normalize Arabic letters (handle TA marbuta, alef variants, etc.)
+            .replace(/[أإآٱ]/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/[يى]/g, 'ى')
+            .replace(/ؤ/g, 'و')
+            .replace(/ئ/g, 'ى')
+            // Strip anything that's not latin word chars, arabic, or spaces
+            .replace(/[^\w\s\u0600-\u06FF]/g, "")
+            // Collapse multiple spaces
+            .replace(/\s+/g, " ")
+            .trim();
+    };
+
+    // Calculate how many words match between two strings
+    const wordOverlapScore = (a, b) => {
+        const wordsA = a.split(" ").filter(w => w.length > 1);
+        const wordsB = new Set(b.split(" ").filter(w => w.length > 1));
+        if (wordsA.length === 0) return 0;
+        const matched = wordsA.filter(w => wordsB.has(w)).length;
+        return matched / wordsA.length;
+    };
+
+    const verifyTypedText = () => {
+        const expected = testRules[currentRuleIndex]?.shortTextToType?.[lang];
+        if (!expected) return;
+
+        const normalizedTyping = normalizeString(typedText);
+        const normalizedExpected = normalizeString(expected);
+
+        // Strategy 1: substring match
+        const substringMatch =
+            normalizedTyping.includes(normalizedExpected) ||
+            (normalizedExpected.includes(normalizedTyping) && normalizedTyping.length > 3);
+
+        // Strategy 2: word-overlap ≥ 75% (tolerates mobile autocorrect noise)
+        const overlapScore = wordOverlapScore(normalizedExpected, normalizedTyping);
+        const wordMatch = overlapScore >= 0.75 && normalizedTyping.length > 3;
+
+        if (substringMatch || wordMatch) {
+            setTypeError('');
+            setTypedText('');
+            if (currentRuleIndex + 1 < testRules.length) {
+                setCurrentRuleIndex(i => i + 1);
+            } else {
+                setStep(9); // All rules passed → final form
+            }
+        } else {
+            // Failed — reshuffle 3 new rules and send back to reading step
+            alert(getText('failedRules'));
+            setTypeError('');
+            setTypedText('');
+            setCurrentRuleIndex(0);
+            const shuffled = [...allRules].sort(() => 0.5 - Math.random());
+            setTestRules(shuffled.slice(0, 3));
+            setStep(7);
+        }
+    };
+
     const handleAnswer = async (isCorrect) => {
         if (isCorrect) setScore(s => s + 1);
-        
+
         if (currentQuestionIndex + 1 < questions.length) {
             setCurrentQuestionIndex(i => i + 1);
         } else {
@@ -283,58 +359,16 @@ export default function JoinPage() {
             const finalScore = isCorrect ? score + 1 : score;
             const total = questions.length;
             const target = total >= 5 ? 4 : (total > 0 ? total - 1 : 1);
-            
+
             if (finalScore >= target) {
-                // Pass
                 setStep(6);
             } else {
-                // Fail, reset and go back to step 2 with NEW questions
                 alert(getText('failedQuiz'));
                 setScore(0);
                 setCurrentQuestionIndex(0);
-                await fetchQuestions(); // Get 5 new questions
+                await fetchQuestions();
                 setStep(2);
             }
-        }
-    };
-
-    const normalizeString = (str) => {
-        if (!str) return "";
-        return str.toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
-            .replace(/['’\-]/g, " ") // replace apostrophe and dash with space
-            .replace(/[^\w\s\u0600-\u06FF]/g, "") // Keep arabic and latin
-            .replace(/[أإآ]/g, 'ا') // Normalize Arabic Alif
-            .replace(/ة/g, 'ه') // Normalize Taa Marbouta to Haa
-            .replace(/ي/g, 'ى') // Normalize Yaa
-            .replace(/\s+/g, " ")
-            .trim();
-    };
-
-    const verifyTypedText = async () => {
-        const expected = testRules[currentRuleIndex].shortTextToType[lang];
-        const normalizedTyping = normalizeString(typedText);
-        const normalizedExpected = normalizeString(expected);
-
-        // Advanced matching: check if user wrote at least the expected part
-        if (normalizedTyping.includes(normalizedExpected) || normalizedExpected.includes(normalizedTyping) && normalizedTyping.length > 3) {
-            setTypeError('');
-            setTypedText('');
-            if (currentRuleIndex + 1 < testRules.length) {
-                setCurrentRuleIndex(i => i + 1);
-            } else {
-                setStep(9); // Success! final form
-            }
-        } else {
-            // Failed. Reshuffle 3 new test rules and restart typing test.
-            alert(getText('failedRules'));
-            setTypeError('');
-            setTypedText('');
-            setCurrentRuleIndex(0);
-            
-            const shuffled = [...allRules].sort(() => 0.5 - Math.random());
-            setTestRules(shuffled.slice(0, 3));
-            setStep(7); // Send them back to reading all rules or stay at 8? Sending back to 7 makes them re-read.
         }
     };
 
@@ -578,6 +612,10 @@ export default function JoinPage() {
                             onCopy={preventCopyPaste}
                             rows={3}
                             placeholder="..."
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            autoComplete="off"
+                            spellCheck={false}
                         />
                         {typeError && <p className={styles.errorText}>{typeError}</p>}
                         <button onClick={verifyTypedText} className={`${styles.btn} ${styles.btnSuccess}`} style={{width: '100%', justifyContent: 'center'}}>
@@ -660,11 +698,43 @@ export default function JoinPage() {
                             Votre rendez-vous d'entretien est enregistré.<br/>
                             <strong>Conservez précieusement ce code.</strong> Il vous permettra d'accéder à votre salle d'entretien à la date choisie.
                         </p>
-                        <div style={{ background: 'rgba(0,0,0,0.4)', border: '2px dashed var(--primary)', padding: '2rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                        <div style={{ background: 'rgba(0,0,0,0.4)', border: '2px dashed var(--primary)', padding: '2rem', borderRadius: '12px', marginBottom: '1rem' }}>
                             <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Votre code d'entretien</p>
                             <h1 style={{ fontSize: '2.5rem', letterSpacing: '8px', color: 'white', margin: 0 }}>
                                 {generatedCode}
                             </h1>
+                        </div>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(generatedCode);
+                                setCodeCopied(true);
+                                setTimeout(() => setCodeCopied(false), 3000);
+                            }}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '0.75rem',
+                                marginBottom: '1rem',
+                                borderRadius: '10px',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                background: codeCopied ? '#10b981' : 'rgba(255,255,255,0.08)',
+                                color: 'white',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                transition: 'background 0.3s'
+                            }}
+                        >
+                            {codeCopied ? '✅ Code copié dans le presse-papiers !' : '📋 Copier le code'}
+                        </button>
+                        <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
+                            <p style={{ color: '#fbbf24', fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.9rem' }}>⚠️ Important — Sauvegardez votre code !</p>
+                            <p style={{ color: '#fde68a', fontSize: '0.85rem', margin: 0, lineHeight: '1.6' }}>
+                                Collez ce code dans vos <strong>Notes</strong> (Bloc-notes, Keep…) ou envoyez-le vous en <strong>message privé</strong> (WhatsApp, Messenger…).<br/>
+                                Vous en aurez besoin le jour du rendez-vous pour accéder à votre salle d'entretien.
+                            </p>
                         </div>
                         <button
                             onClick={() => window.location.href = '/interview-room'}
