@@ -11,6 +11,12 @@ export async function GET() {
         }
 
         await dbConnect();
+        // Ensure legacy existing users without season property get updated to '2025/2026'
+        await User.updateMany(
+            { $or: [{ season: { $exists: false } }, { season: null }] },
+            { $set: { season: '2025/2026' } }
+        );
+
         const users = await User.find({}, '-password')
             .populate('club', 'name')
             .populate('preferredClub', 'name')
@@ -28,7 +34,7 @@ export async function PATCH(req) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
 
-        const { id, role, club, status, isPaid, memberNumber, phone, password, officialRole } = await req.json();
+        const { id, role, club, status, isPaid, memberNumber, phone, password, officialRole, season, isActive } = await req.json();
 
         // Security: National members cannot change roles
         if (user.role === 'national' && role) {
@@ -45,6 +51,8 @@ export async function PATCH(req) {
         if (memberNumber !== undefined) updateData.memberNumber = memberNumber;
         if (phone !== undefined) updateData.phone = phone;
         if (officialRole !== undefined) updateData.officialRole = officialRole;
+        if (season) updateData.season = season;
+        if (isActive !== undefined) updateData.isActive = isActive;
         
         if (password) {
             const bcrypt = require('bcryptjs');

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { ArrowLeft, Video, ShieldAlert, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Video, ShieldAlert, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function MeetingRoom() {

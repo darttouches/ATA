@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, UserPlus, Bot } from 'lucide-react';
 import styles from './login.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -39,9 +39,6 @@ function LoginForm() {
                         return;
                     }
                     
-                    // If endDate exists, we want to allow recruitment on that day up until midnight.
-                    // By just doing new Date(endDate) < now, a date like "2026-07-20" becomes 00:00.
-                    // So we can set it to the end of that day.
                     if (endDate) {
                         const end = new Date(endDate);
                         end.setHours(23, 59, 59, 999);
@@ -169,15 +166,31 @@ function LoginForm() {
                 </div>
                 
                 {isRecruitmentOpen && (
-                    <div className={styles.joinSection}>
-                        <p className={styles.joinText}>
-                            Vous souhaitez devenir membre officiel de l'association ?
-                        </p>
-                        <Link href="/join" className={styles.joinBtn}>
-                            <UserPlus size={18} />
-                            <span>Faire une demande d'adhésion</span>
-                        </Link>
-                    </div>
+                    <>
+                        <div className={styles.joinSection}>
+                            <p className={styles.joinText}>
+                                Vous souhaitez devenir membre officiel de l'association ?
+                            </p>
+                            <Link href="/join" className={styles.joinBtn}>
+                                <UserPlus size={18} />
+                                <span>Faire une demande d'adhésion</span>
+                            </Link>
+                        </div>
+
+                        <div className={styles.joinSection} style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem' }}>
+                            <p className={styles.joinText}>
+                                Vous avez un code d'entretien candidat ?
+                            </p>
+                            <Link 
+                                href="/interview-room" 
+                                className={styles.joinBtn} 
+                                style={{ background: 'rgba(124, 58, 237, 0.15)', borderColor: 'rgba(124, 58, 237, 0.4)', color: '#c084fc' }}
+                            >
+                                <Bot size={18} />
+                                <span>Accéder à la salle d'entretien</span>
+                            </Link>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

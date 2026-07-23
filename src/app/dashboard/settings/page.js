@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, Save, Check, Plus, Trash2, Link as LinkIcon, Facebook, Instagram, Twitter, Linkedin, Youtube, Mail, Phone, MapPin, Zap } from 'lucide-react';
+import { Upload, Save, Check, Plus, Trash2, Link as LinkIcon, Facebook, Instagram, Twitter, Linkedin, Youtube, Mail, Phone, MapPin, Zap, Calendar, UserX } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
 
@@ -10,6 +10,15 @@ export default function AdminSettings() {
     const [logo, setLogo] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    // Recruitment State
+    const [recruitmentData, setRecruitmentData] = useState({
+        isOpen: true,
+        startDate: '',
+        endDate: ''
+    });
+    const [deactivateSeason, setDeactivateSeason] = useState('2025/2026');
+    const [deactivatingSeason, setDeactivatingSeason] = useState(false);
 
     // Footer State
     const [footerData, setFooterData] = useState({
@@ -93,6 +102,7 @@ export default function AdminSettings() {
             if (data.ataWaves) setAtaWavesData(prev => ({ ...prev, ...data.ataWaves }));
             if (data.bgMusic) setBgMusicData(prev => ({ ...prev, ...data.bgMusic }));
             if (data.meetingTA) setMeetingTAData(prev => ({ ...prev, ...data.meetingTA }));
+            if (data.recruitment) setRecruitmentData(prev => ({ ...prev, ...data.recruitment }));
             if (data.scanner) setScannerData(prev => ({ ...prev, ...data.scanner }));
             if (data.games) setGamesData(prev => {
                 const newData = { ...prev, ...data.games };
@@ -185,7 +195,8 @@ export default function AdminSettings() {
                 bgMusic: bgMusicData,
                 meetingTA: meetingTAData,
                 scanner: scannerData,
-                games: gamesData
+                games: gamesData,
+                recruitment: recruitmentData
             }),
         });
 
@@ -193,11 +204,35 @@ export default function AdminSettings() {
             setSuccess(true);
             // Dispatch custom event to notify other components (like BackgroundMusic)
             window.dispatchEvent(new CustomEvent('settings-updated', { 
-                detail: { logo, footer: footerData, ataWaves: ataWavesData, bgMusic: bgMusicData, meetingTA: meetingTAData, games: gamesData } 
+                detail: { logo, footer: footerData, ataWaves: ataWavesData, bgMusic: bgMusicData, meetingTA: meetingTAData, games: gamesData, recruitment: recruitmentData } 
             }));
             setTimeout(() => setSuccess(false), 3000);
         }
         setLoading(false);
+    };
+
+    const handleDeactivateSeasonAccounts = async () => {
+        if (!confirm(`Êtes-vous sûr de vouloir désactiver tous les comptes membres de la saison ${deactivateSeason} ?\n\nCes membres devront se réinscrire pour la nouvelle année. Les comptes administrateurs restent intacts et toujours actifs.`)) {
+            return;
+        }
+
+        try {
+            setDeactivatingSeason(true);
+            const res = await fetch('/api/admin/users/deactivate-season', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ season: deactivateSeason })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur lors de la désactivation');
+
+            alert(data.message);
+            fetchUsers();
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setDeactivatingSeason(false);
+        }
     };
 
     const handleClearWasaaa3Scores = async () => {
@@ -268,6 +303,108 @@ export default function AdminSettings() {
                 >
                     {success ? <><Check size={18} /> {t('changesSaved')}</> : <><Save size={18} /> {t('saveAllChanges')}</>}
                 </button>
+            </div>
+
+            {/* Registration Period & Season Account Deactivation Section */}
+            <div className="card" style={{ marginTop: '2rem' }}>
+                <h3><Calendar size={20} style={{ display: 'inline', marginRight: '8px', color: 'var(--primary)' }} /> Période d'Inscription &amp; Réinscription</h3>
+                <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '1.5rem' }}>
+                    Définir la plage de dates d'inscription et désactiver les comptes membres par année pour permettre la réinscription.
+                </p>
+
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={recruitmentData.isOpen !== false}
+                            onChange={(e) => setRecruitmentData({ ...recruitmentData, isOpen: e.target.checked })}
+                            style={{ width: '18px', height: '18px', flexShrink: 0 }}
+                        />
+                        <span style={{ fontWeight: 600, fontSize: 'clamp(0.82rem, 3vw, 1rem)' }}>Ouvrir les inscriptions globales pour la nouvelle saison</span>
+                    </label>
+
+                    <div className="recruitment-dates-grid">
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Date de Début d'Inscription</label>
+                            <input 
+                                type="date" 
+                                className="card" 
+                                style={{ width: '100%' }}
+                                value={recruitmentData.startDate ? recruitmentData.startDate.substring(0,10) : ''}
+                                onChange={(e) => setRecruitmentData({ ...recruitmentData, startDate: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Date de Fin d'Inscription</label>
+                            <input 
+                                type="date" 
+                                className="card" 
+                                style={{ width: '100%' }}
+                                value={recruitmentData.endDate ? recruitmentData.endDate.substring(0,10) : ''}
+                                onChange={(e) => setRecruitmentData({ ...recruitmentData, endDate: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(244, 63, 94, 0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                        <h4 style={{ color: '#f43f5e', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <UserX size={18} /> Désactiver les comptes par saison (pour réinscription)
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '1rem', lineHeight: 1.4 }}>
+                            Passe tous les membres de la saison sélectionnée au statut &quot;En attente&quot; pour qu'ils se réinscrivent pour la nouvelle année.
+                            <br />
+                            <strong style={{ color: '#34d399' }}>🛡️ Les comptes administrateurs restent toujours actifs et ne sont jamais affectés.</strong>
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+                            <select 
+                                className="card"
+                                style={{ flex: '1 1 150px', minWidth: '140px', background: '#11224E', color: 'white' }}
+                                value={deactivateSeason}
+                                onChange={(e) => setDeactivateSeason(e.target.value)}
+                            >
+                                <option value="2025/2026">Saison 2025 / 2026</option>
+                                <option value="2026/2027">Saison 2026 / 2027</option>
+                            </select>
+                            
+                            <button
+                                className="btn btn-secondary"
+                                style={{ flex: '1 1 160px', borderColor: 'rgba(244, 63, 94, 0.4)', color: '#f43f5e', fontSize: '0.85rem', padding: '0.6rem 1rem', justifyContent: 'center' }}
+                                onClick={handleDeactivateSeasonAccounts}
+                                disabled={deactivatingSeason}
+                            >
+                                <UserX size={16} style={{ marginRight: '6px', flexShrink: 0 }} />
+                                {deactivatingSeason ? 'Traitement...' : `Désactiver (${deactivateSeason})`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '1.5rem' }}
+                    onClick={handleSave}
+                    disabled={loading}
+                >
+                    {success ? <><Check size={18} /> {t('changesSaved')}</> : <><Save size={18} /> {t('saveAllChanges')}</>}
+                </button>
+
+                <style jsx>{`
+                    .recruitment-dates-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 1rem;
+                        background: rgba(255,255,255,0.02);
+                        padding: 1rem;
+                        border-radius: 8px;
+                        border: 1px solid var(--card-border);
+                    }
+                    @media (max-width: 520px) {
+                        .recruitment-dates-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                `}</style>
             </div>
 
             {/* ATA Waves Management Section */}

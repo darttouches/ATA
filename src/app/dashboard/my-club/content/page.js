@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Trash2, Calendar, Video, Image as ImageIcon, Lightbulb, CheckCircle, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Calendar, Video, Image as ImageIcon, Lightbulb, CheckCircle2, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
 
@@ -162,7 +162,7 @@ export default function ChefContentManagement() {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'approved': return <CheckCircle size={16} color="#10b981" />;
+            case 'approved': return <CheckCircle2 size={16} color="#10b981" />;
             case 'rejected': return <XCircle size={16} color="#f43f5e" />;
             default: return <Clock size={16} color="#f59e0b" />;
         }

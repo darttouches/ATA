@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Mail, Trash2, CheckCircle, Clock, AlertCircle, MessageCircle } from 'lucide-react';
+import { Mail, Trash2, CheckCircle2, Clock, AlertCircle, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function ReclamationsManagement() {
@@ -95,7 +95,7 @@ export default function ReclamationsManagement() {
                                             style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer' }}
                                             title={t('markAsRead')}
                                         >
-                                            <CheckCircle size={20} />
+                                            <CheckCircle2 size={20} />
                                         </button>
                                     )}
                                     <button

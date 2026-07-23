@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Save, User, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, Save, User, CheckCircle2, XCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function ActionDetailsPage({ params }) {

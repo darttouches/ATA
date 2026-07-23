@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Users, Download, DownloadCloud, FileText, X, CheckCircle, AlertOctagon, RefreshCw, Lock, ArrowRightLeft, LogIn, LogOut, Settings, Save, FileSpreadsheet, Plus, MapPin, Calendar, Clock, Trash2, ChevronRight, QrCode } from 'lucide-react';
+import { Camera, Users, Download, DownloadCloud, FileText, X, CheckCircle2, AlertOctagon, RefreshCw, Lock, ArrowRightLeft, LogIn, LogOut, Settings, Save, FileSpreadsheet, Plus, MapPin, Calendar, Clock, Trash2, ChevronRight, QrCode } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -642,7 +642,7 @@ export default function QRScannerPage() {
                                                                 checked={Array.isArray(eventDetails.authorizedScanners) && eventDetails.authorizedScanners.includes('admin')}
                                                                 onChange={(e) => handleScannerToggle('admin', e.target.checked)} />
                                                             <div className="w-5 h-5 border-2 border-white/20 rounded-md flex items-center justify-center peer-checked:bg-blue-500 peer-checked:border-blue-500 transition-all">
-                                                                <CheckCircle className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                                <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                                             </div>
                                                         </div>
                                                         <span className="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Administrateurs Uniquement</span>
@@ -653,7 +653,7 @@ export default function QRScannerPage() {
                                                                 checked={Array.isArray(eventDetails.authorizedScanners) && eventDetails.authorizedScanners.includes('president')}
                                                                 onChange={(e) => handleScannerToggle('president', e.target.checked)} />
                                                             <div className="w-5 h-5 border-2 border-white/20 rounded-md flex items-center justify-center peer-checked:bg-blue-500 peer-checked:border-blue-500 transition-all">
-                                                                <CheckCircle className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                                <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                                             </div>
                                                         </div>
                                                         <span className="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Présidents et Admins</span>
@@ -664,7 +664,7 @@ export default function QRScannerPage() {
                                                                 checked={Array.isArray(eventDetails.authorizedScanners) && eventDetails.authorizedScanners.includes('all')}
                                                                 onChange={(e) => handleScannerToggle('all', e.target.checked)} />
                                                             <div className="w-5 h-5 border-2 border-white/20 rounded-md flex items-center justify-center peer-checked:bg-blue-500 peer-checked:border-blue-500 transition-all">
-                                                                <CheckCircle className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                                <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                                             </div>
                                                         </div>
                                                         <span className="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Moi (Organisateur actuel)</span>
@@ -684,7 +684,7 @@ export default function QRScannerPage() {
                                                                         checked={Array.isArray(eventDetails.authorizedScanners) && eventDetails.authorizedScanners.includes(m._id)}
                                                                         onChange={(e) => handleScannerToggle(m._id, e.target.checked)} />
                                                                     <div className="w-5 h-5 border-2 border-white/20 rounded-md flex items-center justify-center peer-checked:bg-blue-500 peer-checked:border-blue-500 transition-all">
-                                                                        <CheckCircle className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                                        <CheckCircle2 className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex flex-col">

@@ -37,6 +37,14 @@ export async function POST(req) {
             );
         }
 
+        // Check user active status (Admins are always allowed)
+        if (user.role !== 'admin' && user.isActive === false) {
+            return NextResponse.json(
+                { error: 'Votre compte a été désactivé pour cette saison. Veuillez vous réinscrire pour la nouvelle année.' },
+                { status: 403 }
+            );
+        }
+
         // Check user status (Admins are always allowed)
         if (user.role !== 'admin' && user.status !== 'approved') {
             if (user.status === 'pending') {

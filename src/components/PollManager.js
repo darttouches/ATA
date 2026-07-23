@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, CheckCircle, Clock, AlertCircle, BarChart3, Users, Globe, ChevronDown, ChevronUp, Calendar, EyeOff, Eye } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Clock, AlertCircle, BarChart3, Users, Globe, ChevronDown, ChevronUp, Calendar, EyeOff, Eye } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function PollManager({ isModeration = false }) {

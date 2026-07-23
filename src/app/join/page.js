@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import styles from './join.module.css';
 import { LanguageContext } from '@/context/LanguageContext';
+import { Calendar, Lock, Home, Loader2, AlertCircle } from 'lucide-react';
 
 export default function JoinPage() {
     // Step 0 is the start screen so we can get user interaction for autplaying audio
@@ -33,6 +34,34 @@ export default function JoinPage() {
     const [loadingInterview, setLoadingInterview] = useState(false);
     const [generatedCode, setGeneratedCode] = useState('');
     const [codeCopied, setCodeCopied] = useState(false);
+    
+    // Recruitment Period State
+    const [recruitmentStatus, setRecruitmentStatus] = useState({
+        loading: true,
+        isPeriodActive: true,
+        daysRemaining: null,
+        statusMessage: '',
+        startDate: null,
+        endDate: null
+    });
+
+    const getMinInterviewDateTime = () => {
+        const minLead = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        let minDate = minLead;
+        if (recruitmentStatus.startDate) {
+            const start = new Date(recruitmentStatus.startDate + 'T00:00:00');
+            if (start > minDate) minDate = start;
+        }
+        const tzOffset = minDate.getTimezoneOffset() * 60000;
+        return new Date(minDate.getTime() - tzOffset).toISOString().slice(0, 16);
+    };
+
+    const getMaxInterviewDateTime = () => {
+        if (!recruitmentStatus.endDate) return undefined;
+        const end = new Date(recruitmentStatus.endDate + 'T23:59:59');
+        const tzOffset = end.getTimezoneOffset() * 60000;
+        return new Date(end.getTime() - tzOffset).toISOString().slice(0, 16);
+    };
     
     const synth = useRef(null);
 
@@ -106,14 +135,91 @@ export default function JoinPage() {
         document.head.appendChild(script);
     }, []);
 
-    // Fetch initial data on mount
+    // Fetch initial data on mount & recruitment status
     useEffect(() => {
         const fetchInitial = async () => {
             await fetch('/api/onboarding/seed'); // seed safely
             fetchQuestions();
             fetchRules();
         };
+
+        const fetchRecruitmentSettings = async () => {
+            try {
+                const res = await fetch('/api/admin/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    const recruitment = data.recruitment;
+                    if (recruitment) {
+                        if (recruitment.isOpen === false) {
+                            setRecruitmentStatus({
+                                loading: false,
+                                isPeriodActive: false,
+                                daysRemaining: 0,
+                                statusMessage: "Les inscriptions sont actuellement fermées par l'administration.",
+                                startDate: null,
+                                endDate: null
+                            });
+                            return;
+                        }
+
+                        const now = new Date();
+                        let start = recruitment.startDate ? new Date(recruitment.startDate + 'T00:00:00') : null;
+                        let end = recruitment.endDate ? new Date(recruitment.endDate + 'T23:59:59') : null;
+
+                        if (start && now < start) {
+                            setRecruitmentStatus({
+                                loading: false,
+                                isPeriodActive: false,
+                                daysRemaining: 0,
+                                statusMessage: `Les inscriptions pour la nouvelle saison ouvriront le ${start.toLocaleDateString('fr-FR')}.`,
+                                startDate: recruitment.startDate,
+                                endDate: recruitment.endDate
+                            });
+                            return;
+                        }
+
+                        if (end && now > end) {
+                            setRecruitmentStatus({
+                                loading: false,
+                                isPeriodActive: false,
+                                daysRemaining: 0,
+                                statusMessage: `La période d'inscription est actuellement clôturée (fermée depuis le ${end.toLocaleDateString('fr-FR')}).`,
+                                startDate: recruitment.startDate,
+                                endDate: recruitment.endDate
+                            });
+                            return;
+                        }
+
+                        let daysRem = null;
+                        if (end) {
+                            const diffMs = end.getTime() - now.getTime();
+                            daysRem = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                        }
+
+                        setRecruitmentStatus({
+                            loading: false,
+                            isPeriodActive: true,
+                            daysRemaining: daysRem,
+                            statusMessage: end 
+                                ? `Période d'inscription ouverte ! Clôture dans ${daysRem} jour(s).`
+                                : "Période d'inscription actuellement ouverte.",
+                            startDate: recruitment.startDate,
+                            endDate: recruitment.endDate
+                        });
+                    } else {
+                        setRecruitmentStatus({ loading: false, isPeriodActive: true, daysRemaining: null, statusMessage: '', startDate: null, endDate: null });
+                    }
+                } else {
+                    setRecruitmentStatus(prev => ({ ...prev, loading: false }));
+                }
+            } catch (err) {
+                console.error("Error loading settings:", err);
+                setRecruitmentStatus(prev => ({ ...prev, loading: false }));
+            }
+        };
+
         fetchInitial();
+        fetchRecruitmentSettings();
         
         // Stop background music to hear the robot
         if (typeof window !== 'undefined') {
@@ -375,6 +481,30 @@ export default function JoinPage() {
     const handleInterviewRequest = async (e) => {
         e.preventDefault();
         setTypeError('');
+
+        const reqDate = new Date(interviewForm.interviewDate);
+        const minLeadTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        if (reqDate < minLeadTime) {
+            setTypeError("La date d'entretien doit être fixée au minimum 2 jours après la date de votre demande.");
+            return;
+        }
+
+        if (recruitmentStatus.startDate) {
+            const start = new Date(recruitmentStatus.startDate + 'T00:00:00');
+            if (reqDate < start) {
+                setTypeError(`La date d'entretien doit respecter la période d'inscription (à partir du ${start.toLocaleDateString('fr-FR')}).`);
+                return;
+            }
+        }
+
+        if (recruitmentStatus.endDate) {
+            const end = new Date(recruitmentStatus.endDate + 'T23:59:59');
+            if (reqDate > end) {
+                setTypeError(`La date d'entretien doit respecter la période d'inscription (avant le ${end.toLocaleDateString('fr-FR')}).`);
+                return;
+            }
+        }
+
         setLoadingInterview(true);
         try {
             const res = await fetch('/api/onboarding/interview/request', {
@@ -675,7 +805,8 @@ export default function JoinPage() {
                                     required
                                     value={interviewForm.interviewDate}
                                     onChange={e => setInterviewForm({...interviewForm, interviewDate: e.target.value})}
-                                    min={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                                    min={getMinInterviewDateTime()}
+                                    max={getMaxInterviewDateTime()}
                                 />
                             </div>
                             {typeError && <p className={styles.errorText}>{typeError}</p>}
@@ -737,11 +868,11 @@ export default function JoinPage() {
                             </p>
                         </div>
                         <button
-                            onClick={() => window.location.href = '/interview-room'}
+                            onClick={() => window.location.href = `/interview-room?code=${generatedCode}`}
                             className={`${styles.btn} ${styles.btnPrimary}`}
-                            style={{ width: '100%', justifyContent: 'center' }}
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '1.05rem', padding: '0.85rem' }}
                         >
-                            🚪 Accéder à la salle d'entretien
+                            🚪 Accéder directement à ma salle d'entretien
                         </button>
                     </div>
                 );
@@ -750,9 +881,94 @@ export default function JoinPage() {
         }
     };
 
+    if (recruitmentStatus.loading) {
+        return (
+            <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+                <div style={{ textAlign: 'center', color: '#cbd5e1' }}>
+                    <Loader2 size={40} className="animate-spin" style={{ margin: '0 auto 1rem auto', color: 'var(--primary, #8b5cf6)' }} />
+                    <p>Vérification de la période d'inscription...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!recruitmentStatus.isPeriodActive) {
+        return (
+            <div className={styles.container} style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className={styles.chatBox} style={{ maxWidth: '550px', textAlign: 'center', padding: '2.5rem 2rem' }}>
+                    <div style={{ width: '70px', height: '70px', background: 'rgba(239, 68, 68, 0.15)', border: '2px solid rgba(239, 68, 68, 0.4)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                        <Lock size={36} color="#ef4444" />
+                    </div>
+                    
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#ffffff', marginBottom: '1rem' }}>
+                        Inscriptions Fermées
+                    </h1>
+                    
+                    <p style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem', background: 'rgba(255,255,255,0.04)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        {recruitmentStatus.statusMessage || "Les inscriptions sont actuellement fermées ou hors période autorisée."}
+                    </p>
+                    
+                    <button 
+                        onClick={() => window.location.href = '/'}
+                        className={`${styles.btn} ${styles.btnPrimary}`}
+                        style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px' }}
+                    >
+                        <Home size={18} /> Accéder à l'accueil
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.container} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
             <div className={styles.chatBox}>
+                {/* REGISTRATION PERIOD ANNOUNCEMENT BANNER */}
+                {recruitmentStatus.isPeriodActive && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15))',
+                        border: '1px solid rgba(168, 85, 247, 0.4)',
+                        borderRadius: '12px',
+                        padding: '0.85rem 1rem',
+                        marginBottom: '1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        flexWrap: 'wrap',
+                        textAlign: 'start'
+                    }}>
+                        <div style={{
+                            background: 'var(--primary, #8b5cf6)',
+                            padding: '8px',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            flexShrink: 0
+                        }}>
+                            <Calendar size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 600 }}>
+                                📢 Remarque : Statut de la Période d'Inscription
+                            </h4>
+                            <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                                {recruitmentStatus.daysRemaining !== null ? (
+                                    <>
+                                        Il reste <strong style={{ color: '#38bdf8' }}>{recruitmentStatus.daysRemaining} jour(s)</strong> avant la fermeture des inscriptions.
+                                        {recruitmentStatus.endDate && (
+                                            <span style={{ opacity: 0.8 }}> (Clôture prévue le {new Date(recruitmentStatus.endDate).toLocaleDateString('fr-FR')})</span>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span>La période d'inscription pour cette saison est actuellement ouverte.</span>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className={styles.robotHeader} style={{ flexWrap: 'wrap', justifyContent: 'center', textAlign: 'center' }}>
                     <div className={styles.robotAvatar} style={{ marginBottom: '10px' }}>🤖</div>
                     <div style={{ width: '100%' }}>

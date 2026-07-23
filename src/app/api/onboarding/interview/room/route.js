@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import InterviewCandidate from '@/models/InterviewCandidate';
+import InterviewContent from '@/models/InterviewContent';
 
 export async function GET(req) {
     try {
@@ -10,8 +11,37 @@ export async function GET(req) {
 
         if (!candidateId) return NextResponse.json({ success: false, error: 'ID requis' }, { status: 400 });
 
-        const candidate = await InterviewCandidate.findById(candidateId).populate('questions.originalId');
+        let candidate = await InterviewCandidate.findById(candidateId).populate('questions.originalId');
         if (!candidate) return NextResponse.json({ success: false, error: 'Candidat introuvable' }, { status: 404 });
+
+        // Auto-assign default questions if none assigned yet
+        let updated = false;
+        if (!candidate.questions || candidate.questions.length === 0) {
+            const defaultQuestions = await InterviewContent.find({ type: 'question', isActive: { $ne: false }, isDefault: { $ne: false } });
+            if (defaultQuestions.length > 0) {
+                candidate.questions = defaultQuestions.map(q => ({
+                    originalId: q._id,
+                    text: q.text,
+                    answer: ''
+                }));
+                updated = true;
+            }
+        }
+
+        // Auto-assign default remarks if none assigned yet
+        if (!candidate.remarks || candidate.remarks.length === 0) {
+            const defaultRemarks = await InterviewContent.find({ type: 'remark', isActive: { $ne: false }, isDefault: { $ne: false } });
+            if (defaultRemarks.length > 0) {
+                candidate.remarks = defaultRemarks.map(r => ({
+                    text: r.text
+                }));
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            await candidate.save();
+        }
 
         return NextResponse.json({ success: true, data: candidate }, { status: 200 });
     } catch (error) {

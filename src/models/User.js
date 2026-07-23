@@ -9,7 +9,6 @@ const UserSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'Please provide an email'],
-        unique: true,
         match: [
             /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
             'Please provide a valid email',
@@ -92,7 +91,25 @@ const UserSchema = new mongoose.Schema({
     linkedin: String,
     website: String,
     officialRole: String, // Assigned by admin/president
+    interviewCode: {
+        type: String,
+        required: false,
+    },
+    season: {
+        type: String,
+        default: '2025/2026',
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
 });
+
+UserSchema.index({ email: 1, season: 1 }, { unique: true });
+
+if (process.env.NODE_ENV === 'development' && mongoose.models.User) {
+    delete mongoose.models.User;
+}
 
 // Robust export for Next.js HMR
 export default mongoose.models.User || mongoose.model('User', UserSchema);

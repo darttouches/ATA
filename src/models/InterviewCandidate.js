@@ -11,6 +11,11 @@ const InterviewCandidateSchema = new mongoose.Schema({
     // Status can be: 'pending' (waiting for date), 'in-progress', 'completed'
     status: { type: String, default: 'pending' },
     
+    // Decision by admin: 'pending', 'accepted', 'rejected'
+    decision: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+    decisionDate: { type: Date },
+    decisionReason: { type: String },
+    
     // Assigned questions for this specific candidate
     questions: [{
         originalId: { type: mongoose.Schema.Types.ObjectId, ref: 'InterviewContent' },
@@ -25,7 +30,10 @@ const InterviewCandidateSchema = new mongoose.Schema({
     }],
 
     rulesConfirmed: { type: Boolean, default: false },
-    completedAt: { type: Date }
 }, { timestamps: true });
+
+if (process.env.NODE_ENV === 'development' && mongoose.models.InterviewCandidate) {
+    delete mongoose.models.InterviewCandidate;
+}
 
 export default mongoose.models.InterviewCandidate || mongoose.model('InterviewCandidate', InterviewCandidateSchema);

@@ -153,3 +153,20 @@
 .joinBtn:hover {
     background: rgba(99,179,237,0.2);
 }
+
+@media (max-width: 480px) {
+    .container {
+        padding: 1rem 0.75rem;
+    }
+    .formCard {
+        padding: 1.5rem 1.15rem;
+        border-radius: 14px;
+    }
+    .title {
+        font-size: 1.6rem;
+    }
+    .joinBtn {
+        font-size: 0.85rem;
+        padding: 0.7rem;
+    }
+}

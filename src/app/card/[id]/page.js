@@ -3,7 +3,7 @@
 import { useEffect, useState, use, useRef, useCallback } from 'react';
 import QRCode from 'qrcode';
 import {
-    Shield, User, MapPin, Award, Share2, Printer, CheckCircle,
+    Shield, User, MapPin, Award, Share2, Printer, CheckCircle2,
     Facebook, Instagram, Linkedin, Globe, Mail, Phone, ExternalLink
 } from 'lucide-react';
 import Link from 'next/link';

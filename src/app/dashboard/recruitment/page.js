@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { Settings, Save, Plus, Edit, Trash2, Calendar, AlertCircle, UserPlus, X } from 'lucide-react';
+import { Settings, Save, Plus, Edit, Trash2, Calendar, AlertCircle, UserPlus, X, UserX } from 'lucide-react';
 import styles from './recruitment.module.css';
 
 export default function RecruitmentManagement() {
@@ -18,6 +18,10 @@ export default function RecruitmentManagement() {
         startDate: '',
         endDate: ''
     });
+
+    // Season Deactivation
+    const [deactivateSeason, setDeactivateSeason] = useState('2025/2026');
+    const [deactivating, setDeactivating] = useState(false);
 
     // Rules
     const [rules, setRules] = useState([]);
@@ -86,6 +90,34 @@ export default function RecruitmentManagement() {
             setError(err.message);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDeactivateSeasonAccounts = async () => {
+        if (!confirm(`Êtes-vous sûr de vouloir désactiver tous les comptes membres de l'année ${deactivateSeason} ?\n\nLes membres devront se réinscrire pour la nouvelle année. Les comptes administrateurs resteront intacts.`)) {
+            return;
+        }
+
+        try {
+            setDeactivating(true);
+            setError(null);
+            setSuccessMsg(null);
+
+            const res = await fetch('/api/admin/users/deactivate-season', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ season: deactivateSeason })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erreur lors de la désactivation');
+
+            setSuccessMsg(data.message);
+            setTimeout(() => setSuccessMsg(null), 5000);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setDeactivating(false);
         }
     };
 
@@ -217,6 +249,59 @@ export default function RecruitmentManagement() {
                         >
                             <Save size={18} /> {saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}
                         </button>
+                    </div>
+                </div>
+
+                {/* DEACTIVATION CARD */}
+                <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+                    <div className={styles.cardHeader}>
+                        <h2 className={styles.cardTitle} style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <UserX size={20} /> Désactivation des Comptes par Année (Réinscription)
+                        </h2>
+                    </div>
+                    
+                    <div className={styles.cardBody}>
+                        <p className={styles.helpText} style={{ marginBottom: '1rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+                            Permet de repasser tous les comptes membres d'une saison spécifique (ex: 2025/2026) au statut <strong>"En attente"</strong> pour qu'ils se réinscrivent pour la nouvelle année (2026/2027).
+                            <br />
+                            <span style={{ color: '#34d399', fontWeight: 600, display: 'inline-block', marginTop: '4px' }}>
+                                🛡️ Les comptes administrateurs restent toujours actifs et ne sont jamais affectés.
+                            </span>
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '220px' }}>
+                                <label className={styles.label}>Année Universitaire à désactiver</label>
+                                <select
+                                    className={styles.input}
+                                    style={{ background: 'rgba(17, 34, 78, 0.8)', color: 'white' }}
+                                    value={deactivateSeason}
+                                    onChange={(e) => setDeactivateSeason(e.target.value)}
+                                >
+                                    <option value="2025/2026">Saison 2025 / 2026 (Membres existants)</option>
+                                    <option value="2026/2027">Saison 2026 / 2027 (Nouvelle saison)</option>
+                                </select>
+                            </div>
+
+                            <button
+                                className="btn btn-secondary"
+                                style={{
+                                    borderColor: 'rgba(244, 63, 94, 0.4)',
+                                    color: '#f43f5e',
+                                    padding: '10px 20px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                                onClick={handleDeactivateSeasonAccounts}
+                                disabled={deactivating}
+                            >
+                                <UserX size={18} />
+                                {deactivating ? 'Désactivation...' : `Désactiver les membres (${deactivateSeason})`}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
