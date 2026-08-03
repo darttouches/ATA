@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X, GalleryHorizontal, Home, ShieldCheck, Trash2, Edit2, Upload, XCircle, CheckCircle2, Clock } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
+import RichTextEditor from '@/components/RichTextEditor';
 import Image from 'next/image';
 
 export default function AdminContentModeration() {
@@ -18,12 +19,13 @@ export default function AdminContentModeration() {
         type: 'event',
         description: '',
         date: '',
+        endDate: '',
         time: '',
         photos: [],
         videoUrl: '',
         link: '',
         status: 'approved',
-        club: '',
+        clubs: [],
         program: {
             items: [],
             globalDuration: '',
@@ -83,17 +85,27 @@ export default function AdminContentModeration() {
             ? item.photos
             : (typeof item.photos === 'string' ? item.photos.split(',').map(p => p.trim()).filter(p => p) : []);
 
+        // Récupérer la liste de clubs : utiliser clubs[] si disponible, sinon fallback sur l'ancien champ club
+        let loadedClubs = [];
+        if (Array.isArray(item.clubs) && item.clubs.length > 0) {
+            loadedClubs = item.clubs.map(c => (typeof c === 'object' ? c._id : c)).filter(Boolean);
+        } else if (item.club) {
+            const singleId = typeof item.club === 'object' ? item.club._id : item.club;
+            if (singleId) loadedClubs = [singleId];
+        }
+
         setFormData({
             title: item.title,
             type: item.type,
             description: item.description || '',
             date: item.date || '',
+            endDate: item.endDate || '',
             time: item.time || '',
             photos: photosArray,
             videoUrl: item.videoUrl || '',
             link: item.link || '',
             status: item.status,
-            club: item.club?._id || item.club || '',
+            clubs: loadedClubs,
             mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : ''),
             program: item.program || { items: [], globalDuration: '', partsCount: '' }
         });
@@ -212,8 +224,8 @@ export default function AdminContentModeration() {
                     onClick={() => {
                         setEditId(null);
                         setFormData({
-                            title: '', type: 'event', description: '', date: '', time: '',
-                            photos: [], videoUrl: '', link: '', status: 'approved', club: '',
+                            title: '', type: 'event', description: '', date: '', endDate: '', time: '',
+                            photos: [], videoUrl: '', link: '', status: 'approved', clubs: [],
                             program: { items: [], globalDuration: '', partsCount: '' }
                         });
                         setShowModal(true);
@@ -243,7 +255,10 @@ export default function AdminContentModeration() {
                                     <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>{getTypeLabel(item.type)}</div>
                                 </td>
                                 <td style={{ padding: '1rem' }}>
-                                    <div>{item.club?.name}</div>
+                                    <div>{item.clubs && item.clubs.length > 0
+                                        ? item.clubs.map(c => c?.name || '').join(', ')
+                                        : (item.club?.name || '—')}
+                                    </div>
                                     <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>{item.author?.name}</div>
                                 </td>
                                 <td style={{ padding: '1rem' }}>
@@ -318,32 +333,76 @@ export default function AdminContentModeration() {
                                         <option value="news" style={{ background: '#11224E', color: 'white' }}>{t('announcement')}</option>
                                     </select>
                                 </div>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('associateClub')}</label>
-                                    <select
-                                        className="card"
-                                        style={{ width: '100%', marginTop: '5px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }}
-                                        value={formData.club}
-                                        onChange={e => setFormData({ ...formData, club: e.target.value })}
-                                        required
-                                    >
-                                        <option value="" style={{ background: '#11224E', color: 'white' }}>{t('selectClub')}</option>
-                                        {clubs.map(c => (
-                                            <option key={c._id} value={c._id} style={{ background: '#11224E', color: 'white' }}>{c.name}</option>
-                                        ))}
-                                    </select>
+                            </div>
+
+                            {/* Sélection multi-clubs */}
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ fontSize: '0.9rem', opacity: 0.8, display: 'block', marginBottom: '8px' }}>
+                                    {t('associateClub')} {formData.clubs.length > 0 && <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '10px', padding: '1px 8px', fontSize: '0.75rem', marginLeft: '6px' }}>{formData.clubs.length}</span>}
+                                </label>
+                                {formData.clubs.length === 0 && (
+                                    <div style={{ fontSize: '0.78rem', color: '#f59e0b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        ⚠️ {t('selectClub') || 'Sélectionnez au moins un club'}
+                                    </div>
+                                )}
+                                <div style={{
+                                    display: 'flex', flexWrap: 'wrap', gap: '8px',
+                                    padding: '12px', borderRadius: '10px',
+                                    border: '1px solid rgba(255,255,255,0.12)',
+                                    background: 'rgba(0,0,0,0.2)',
+                                    maxHeight: '180px', overflowY: 'auto'
+                                }}>
+                                    {clubs.length === 0 && (
+                                        <span style={{ opacity: 0.5, fontSize: '0.85rem' }}>Aucun club disponible</span>
+                                    )}
+                                    {clubs.map(c => {
+                                        const isSelected = formData.clubs.includes(c._id);
+                                        return (
+                                            <button
+                                                key={c._id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        clubs: isSelected
+                                                            ? prev.clubs.filter(id => id !== c._id)
+                                                            : [...prev.clubs, c._id]
+                                                    }));
+                                                }}
+                                                style={{
+                                                    padding: '6px 14px',
+                                                    borderRadius: '20px',
+                                                    border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
+                                                    background: isSelected ? 'rgba(var(--primary-rgb,100,149,237),0.2)' : 'rgba(255,255,255,0.04)',
+                                                    color: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.7)',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.82rem',
+                                                    fontWeight: isSelected ? 700 : 400,
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex', alignItems: 'center', gap: '6px'
+                                                }}
+                                            >
+                                                {isSelected && <span style={{ fontSize: '10px' }}>✓</span>}
+                                                {c.name}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                 <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('date')}</label>
+                                    <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>📅 {t('date')} — {t('startDate') || 'Début'}</label>
                                     <input type="date" className="card" style={{ width: '100%', marginTop: '5px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }} value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
                                 </div>
                                 <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('time')}</label>
-                                    <input type="time" className="card" style={{ width: '100%', marginTop: '5px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }} value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} />
+                                    <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>📅 {t('endDate') || 'Date de fin'}</label>
+                                    <input type="date" className="card" style={{ width: '100%', marginTop: '5px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }} value={formData.endDate} min={formData.date || undefined} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
                                 </div>
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>⏰ {t('time')}</label>
+                                <input type="time" className="card" style={{ width: '50%', marginTop: '5px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.5)', color: 'white' }} value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} />
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -357,8 +416,13 @@ export default function AdminContentModeration() {
                                 </div>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('description')}</label>
-                                <textarea className="card" style={{ width: '100%', marginTop: '5px', border: '1px solid var(--card-border)', minHeight: '80px' }} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                                <RichTextEditor
+                                    label={t('description')}
+                                    value={formData.description}
+                                    onChange={(html) => setFormData({ ...formData, description: html })}
+                                    placeholder={t('descriptionOptional') || 'Description de l\'événement...'}
+                                    minHeight="120px"
+                                />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>

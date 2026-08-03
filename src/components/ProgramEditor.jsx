@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Plus, Trash2, Clock, Coffee, Utensils, Info, FileText, Layout, Zap, Moon, Bed, Mic, GraduationCap, Music, Ticket, User, Camera, Upload } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './ProgramEditor.module.css';
+import RichTextEditor from './RichTextEditor';
 
 const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration, partsCount, setPartsCount }) => {
     const { t } = useLanguage();
@@ -233,13 +234,14 @@ const ProgramEditor = ({ program, setProgram, globalDuration, setGlobalDuration,
                             />
                         </div>
 
-                        <textarea
-                            className={styles.inputField}
-                            style={{ marginTop: '10px', minHeight: '60px' }}
-                            value={item.description}
-                            onChange={(e) => updateItem(index, 'description', e.target.value)}
-                            placeholder={t('descriptionOptional')}
-                        />
+                        <div style={{ marginTop: '10px' }}>
+                            <RichTextEditor
+                                value={item.description}
+                                onChange={(html) => updateItem(index, 'description', html)}
+                                placeholder={t('descriptionOptional')}
+                                minHeight="80px"
+                            />
+                        </div>
                     </div>
                 ))}
             </div>

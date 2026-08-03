@@ -12,6 +12,7 @@ const ContentSchema = new mongoose.Schema({
     },
     description: String,
     date: String,
+    endDate: String,
     time: String,
     mediaUrl: String,
     photos: [String], // Array of photo URLs
@@ -20,8 +21,12 @@ const ContentSchema = new mongoose.Schema({
     club: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',
-        required: true,
+        required: false, // conservé pour rétrocompatibilité
     },
+    clubs: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
+    }],
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

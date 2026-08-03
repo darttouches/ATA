@@ -9,7 +9,7 @@ export async function GET() {
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         await dbConnect();
-        const contents = await Content.find({}).populate('club', 'name').populate('author', 'name').sort({ createdAt: -1 });
+        const contents = await Content.find({}).populate('club', 'name').populate('clubs', 'name').populate('author', 'name').sort({ createdAt: -1 });
         return NextResponse.json(contents);
     } catch (error) {
         return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
@@ -22,7 +22,10 @@ export async function POST(req) {
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const body = await req.json();
-        const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, club, onHome, isBestOff, program } = body;
+        const { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, clubs: clubsRaw, onHome, isBestOff, program } = body;
+        // clubs = tableau d'IDs, on garde aussi club (premier) pour rétrocompatiblité
+        const clubs = Array.isArray(clubsRaw) ? clubsRaw.filter(Boolean) : (clubsRaw ? [clubsRaw] : []);
+        const club = clubs[0] || null;
 
         // Clean program data
         const cleanProgram = program ? {
@@ -48,12 +51,14 @@ export async function POST(req) {
             description,
             mediaUrl,
             date,
+            endDate,
             time,
             photos,
             videoUrl,
             link,
             status: status || 'approved',
             club,
+            clubs,
             author: user.userId,
             onHome: onHome || false,
             isBestOff: isBestOff || false,
@@ -93,7 +98,9 @@ export async function PUT(req) {
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const body = await req.json();
-        const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club, program } = body;
+        const { id, title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, clubs: clubsRaw, program } = body;
+        const clubs = Array.isArray(clubsRaw) ? clubsRaw.filter(Boolean) : (clubsRaw ? [clubsRaw] : []);
+        const club = clubs[0] || null;
 
         // Clean program data
         const cleanProgram = program ? {
@@ -115,7 +122,7 @@ export async function PUT(req) {
 
         const updated = await Content.findByIdAndUpdate(
             id,
-            { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status, onHome, isBestOff, club, program: cleanProgram },
+            { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, club, clubs, program: cleanProgram },
             { new: true }
         );
 
