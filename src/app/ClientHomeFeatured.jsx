@@ -4,6 +4,8 @@ import { useState } from 'react';
 import ContentDetailModal from '@/components/ContentDetailModal';
 import { useLanguage } from '@/context/LanguageContext';
 
+const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
+
 export default function ClientHomeFeatured({ featured, gridStyle }) {
     const { t, formatDynamicText } = useLanguage();
     const [selectedItem, setSelectedItem] = useState(null);
@@ -34,7 +36,7 @@ export default function ClientHomeFeatured({ featured, gridStyle }) {
                         </div>
                         <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>{item.title}</h3>
                         <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1rem', flex: 1 }}>
-                            {item.description?.substring(0, 100)}...
+                            {stripHtml(item.description).substring(0, 100)}...
                         </p>
                         <button className="btn btn-secondary" style={{ width: '100%', fontSize: '0.8rem', pointerEvents: 'none' }}>
                             {t('learnMore')}

@@ -5,6 +5,9 @@ import Image from 'next/image';
 import { Plus, Trash2, Calendar, Video, Image as ImageIcon, Lightbulb, CheckCircle2, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
+import RichTextEditor from '@/components/RichTextEditor';
+
+const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
 
 export default function ChefContentManagement() {
     const { t } = useLanguage();
@@ -233,7 +236,7 @@ export default function ChefContentManagement() {
 
                             <h3 style={{ marginBottom: '0.5rem' }}>{item.title}</h3>
                             <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1rem', minHeight: '40px' }}>
-                                {item.description?.substring(0, 80)}...
+                                {stripHtml(item.description).substring(0, 80)}...
                             </p>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
@@ -313,10 +316,9 @@ export default function ChefContentManagement() {
 
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('description')}</label>
-                                <textarea
-                                    className="card"
-                                    style={{ width: '100%', marginTop: '5px', border: '1px solid var(--card-border)', minHeight: '80px' }}
-                                    value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                <RichTextEditor
+                                    content={formData.description}
+                                    onChange={(html) => setFormData({ ...formData, description: html })}
                                 />
                             </div>
 

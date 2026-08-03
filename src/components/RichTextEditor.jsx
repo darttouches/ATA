@@ -264,10 +264,12 @@ const RichTextEditor = ({ value, onChange, placeholder = '', minHeight = '120px'
                     margin: 0.8em 0;
                 }
                 [contenteditable] p { margin: 0.2em 0; }
-                [contenteditable] strong { font-weight: 700; }
-                [contenteditable] em { font-style: italic; }
-                [contenteditable] u { text-decoration: underline; }
-                [contenteditable] s { text-decoration: line-through; }
+                [contenteditable] b,
+                [contenteditable] strong { font-weight: bold !important; }
+                [contenteditable] i,
+                [contenteditable] em { font-style: italic !important; }
+                [contenteditable] u { text-decoration: underline !important; }
+                [contenteditable] s { text-decoration: line-through !important; }
             `}</style>
         </div>
     );

@@ -7,6 +7,8 @@ import styles from './ClubDetail.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
 
+const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
+
 export default function ClientClubContent({ events, gallery, videos }) {
     const { t, language } = useLanguage();
     const [selectedItem, setSelectedItem] = useState(null);
@@ -56,7 +58,7 @@ export default function ClientClubContent({ events, gallery, videos }) {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ marginBottom: '5px' }}>{event.title}</h3>
-                                    <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>{event.description?.substring(0, 100)}...</p>
+                                    <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>{stripHtml(event.description).substring(0, 100)}...</p>
                                     <div style={{ display: 'flex', gap: '15px', marginTop: '10px', fontSize: '0.8rem', opacity: 0.5 }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Calendar size={14} /> {event.date}</span>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Clock size={14} /> {event.time}</span>

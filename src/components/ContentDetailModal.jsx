@@ -78,7 +78,11 @@ export default function ContentDetailModal({ item, onClose }) {
                 </div>
 
                 <div className={styles.modalBody}>
-                    <p className={styles.fullDescription}>{item.description || t('noDescAvailable')}</p>
+                    {item.description ? (
+                        <div className={`${styles.fullDescription} html-content`} dangerouslySetInnerHTML={{ __html: item.description }} />
+                    ) : (
+                        <p className={styles.fullDescription}>{t('noDescAvailable')}</p>
+                    )}
 
                     {(uniqueImages.length > 0 || item.videoUrl) && (
                         <div className={styles.mediaContainer}>
@@ -282,7 +286,7 @@ export default function ContentDetailModal({ item, onClose }) {
                                                                         {pitem.speakerName && <span className={styles.speakerName}>{pitem.speakerName}</span>}
                                                                     </div>
                                                                 )}
-                                                                {pitem.description && <p className={styles.itemDesc}>{pitem.description}</p>}
+                                                                {pitem.description && <div className={`${styles.itemDesc} html-content`} dangerouslySetInnerHTML={{ __html: pitem.description }} />}
                                                             </div>
                                                         )}
                                                     </div>

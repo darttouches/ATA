@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Image as ImageIcon, Video, Lightbulb, Play } from 'lucide-react';
 import ContentDetailModal from '@/components/ContentDetailModal';
 
+const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
+
 export default function ClientBestOff({ items }) {
     const [selectedItem, setSelectedItem] = useState(null);
 
@@ -63,7 +65,7 @@ export default function ClientBestOff({ items }) {
                         <div style={{ padding: '1rem' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginBottom: '0.25rem' }}>{item.club?.name}</div>
                             <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{item.title}</h3>
-                            <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>{item.description?.substring(0, 100)}...</p>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>{stripHtml(item.description).substring(0, 100)}...</p>
                         </div>
                     </div>
                 ))}
