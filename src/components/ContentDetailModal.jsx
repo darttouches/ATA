@@ -72,7 +72,7 @@ export default function ContentDetailModal({ item, onClose }) {
                     <h2>{item.title}</h2>
                     {item.club?.name && <div className={styles.clubName}>{t('clubLabel')} : {formatDynamicText(item.club.name)}</div>}
                     <div className={styles.modalMeta}>
-                        {item.date && <span><Calendar size={16} /> {item.date}</span>}
+                        {item.date && <span><Calendar size={16} /> {item.date}{item.endDate && item.endDate !== item.date ? ` — ${item.endDate}` : ''}</span>}
                         {item.time && <span><Clock size={16} /> {item.time}</span>}
                     </div>
                 </div>
@@ -253,7 +253,7 @@ export default function ContentDetailModal({ item, onClose }) {
                                                     </div>
                                                     <div className={styles.timelineContent}>
                                                         <div className={styles.itemTitleGroup}>
-                                                            <div className={styles.itemTitle}>
+                                                            <h1 className={styles.itemTitle} style={{ margin: 0, padding: 0, fontSize: '1.1rem' }}>
                                                                 {pitem.type === 'coffee_break' && '☕ '}
                                                                 {pitem.type === 'pause' && '⏸️ '}
                                                                 {pitem.type === 'breakfast' && '🥐 '}
@@ -266,7 +266,7 @@ export default function ContentDetailModal({ item, onClose }) {
                                                                 {pitem.type === 'dj_party' && '🎧 '}
                                                                 {pitem.type === 'spectacle' && '🎭 '}
                                                                 {pitem.title || t(pitem.type)}
-                                                            </div>
+                                                            </h1>
                                                             <div className={styles.timeRangeMini}>
                                                                 {pitem.startTime} {pitem.endTime ? ` - ${pitem.endTime}` : ''}
                                                             </div>
