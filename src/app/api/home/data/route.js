@@ -11,7 +11,7 @@ export async function GET() {
         const featured = await Content.find({ onHome: true })
             .populate('club', 'name slug')
             .sort({ createdAt: -1 })
-            .limit(6)
+            .limit(12)
             .lean();
 
         const clubs = await Club.find({}).lean();
