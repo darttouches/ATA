@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import styles from './join.module.css';
 import { LanguageContext } from '@/context/LanguageContext';
+import Spline from '@splinetool/react-spline';
 import { Calendar, Lock, Home, Loader2, AlertCircle } from 'lucide-react';
 
 export default function JoinPage() {
@@ -12,6 +13,13 @@ export default function JoinPage() {
     const lang = language === 'en' ? 'en' : (language === 'ar' ? 'ar' : 'fr');
     
     const [isPlaying, setIsPlaying] = useState(false);
+    const [answerFeedback, setAnswerFeedback] = useState(null);
+    const [audioCompleted, setAudioCompleted] = useState(false);
+    const audioIdRef = useRef(0);
+
+    useEffect(() => {
+        setAudioCompleted(false);
+    }, [step]);
     
     // Data states
     const [questions, setQuestions] = useState([]);
@@ -64,6 +72,7 @@ export default function JoinPage() {
     };
     
     const synth = useRef(null);
+    const splineRef = useRef(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -289,16 +298,28 @@ export default function JoinPage() {
         // Prefer native voice if available (no internet required)
         if (nativeVoice && synth.current) {
             synth.current.cancel();
+            audioIdRef.current += 1;
+            const currentId = audioIdRef.current;
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.voice = nativeVoice;
             utterance.lang = nativeVoice.lang;
             utterance.rate = activeLang === 'ar' ? 0.85 : 1;
             utterance.volume = 1;
-            utterance.onstart = () => setIsPlaying(true);
-            utterance.onend = () => setIsPlaying(false);
+            utterance.onstart = () => {
+                setIsPlaying(true);
+                splineRef.current?.emitEvent('keyDown', 'Mouth Move 2');
+            };
+            utterance.onend = () => {
+                setIsPlaying(false);
+                if (audioIdRef.current === currentId) setAudioCompleted(true);
+                splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+            };
             utterance.onerror = (e) => {
                 console.warn('Native TTS failed, trying ResponsiveVoice...', e.error);
                 setIsPlaying(false);
+                if (audioIdRef.current === currentId) setAudioCompleted(true);
+                splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
                 tryResponsiveVoice(text, activeLang, rvVoiceMap);
             };
             setTimeout(() => synth.current?.speak(utterance), 50);
@@ -314,12 +335,24 @@ export default function JoinPage() {
         const attempt = (retries = 0) => {
             if (typeof window !== 'undefined' && window.responsiveVoice) {
                 window.responsiveVoice.cancel();
+                audioIdRef.current += 1;
+                const currentId = audioIdRef.current;
+
                 const rvVoice = rvVoiceMap[activeLang] || 'French Female';
                 setIsPlaying(true);
+                splineRef.current?.emitEvent('keyDown', 'Bouche');
                 window.responsiveVoice.speak(text, rvVoice, {
                     rate: activeLang === 'ar' ? 0.85 : 1,
-                    onend: () => setIsPlaying(false),
-                    onerror: () => setIsPlaying(false),
+                    onend: () => {
+                        setIsPlaying(false);
+                        if (audioIdRef.current === currentId) setAudioCompleted(true);
+                        splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+                    },
+                    onerror: () => {
+                        setIsPlaying(false);
+                        if (audioIdRef.current === currentId) setAudioCompleted(true);
+                        splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+                    }
                 });
             } else if (retries < 6) {
                 // Script still loading, retry in 500ms
@@ -337,11 +370,14 @@ export default function JoinPage() {
             window.responsiveVoice.cancel();
         }
         setIsPlaying(false);
+        splineRef.current?.emitEvent('keyUp', 'Bouche');
     };
 
     const triggerRulesAudio = (rulesList) => {
         if (!synth.current || rulesList.length === 0) return;
         synth.current.cancel();
+        audioIdRef.current += 1;
+        const currentId = audioIdRef.current;
         
         // Combine all rules into one block of text to read sequentially
         const combinedText = rulesList.map((r, i) => `${i + 1}. ${r.fullText[lang]}`).join(' .... ');
@@ -351,26 +387,40 @@ export default function JoinPage() {
         else if (lang === 'fr') utterance.lang = 'fr-FR';
         else utterance.lang = 'en-US';
         
-        utterance.onstart = () => setIsPlaying(true);
-        utterance.onend = () => setIsPlaying(false);
+        utterance.onstart = () => {
+            setIsPlaying(true);
+            splineRef.current?.emitEvent('keyDown', 'Bouche');
+        };
+        utterance.onend = () => {
+            setIsPlaying(false);
+            if (audioIdRef.current === currentId) setAudioCompleted(true);
+            splineRef.current?.emitEvent('keyUp', 'Bouche');
+        };
+        utterance.onerror = () => {
+            setIsPlaying(false);
+            if (audioIdRef.current === currentId) setAudioCompleted(true);
+            splineRef.current?.emitEvent('keyUp', 'Bouche');
+        };
         
         synth.current.speak(utterance);
     };
 
     // Auto-play whenever entering a step that has text
     useEffect(() => {
-        if (step === 1) speak(getText('step1'));
+        if (step === 1) {
+            speak(getText('step1'));
+            splineRef.current?.emitEvent('keyDown', 'Robot');
+        }
         if (step === 2) speak(getText('step2'));
         if (step === 3) speak(getText('step3'));
+        if (step === 5) {
+            speak(getText('failedQuiz'));
+            splineRef.current?.emitEvent('keyDown', 'Wrong');
+        }
         if (step === 6) speak(getText('step6'));
         if (step === 7) {
             // Read all rules aloud
             triggerRulesAudio(allRules);
-        }
-        if (step === 8) {
-             if (testRules.length > 0 && testRules[currentRuleIndex]) {
-                 speak(getText('readAndTestRulePrompt')); // Just speak a prompt
-             }
         }
         
         // Stop playing if entering a quiet step
@@ -456,8 +506,25 @@ export default function JoinPage() {
     };
 
     const handleAnswer = async (isCorrect) => {
-        if (isCorrect) setScore(s => s + 1);
+        // 1. Afficher le feedback visuel + déclencher l'animation du robot
+        setAnswerFeedback(isCorrect ? 'correct' : 'wrong');
 
+        if (isCorrect) {
+            setScore(s => s + 1);
+            // Animation bonne réponse
+            splineRef.current?.emitEvent('keyDown', 'body circle_1');
+            splineRef.current?.emitEvent('keyDown', 'Correct');
+        } else {
+            // Animation mauvaise réponse
+            splineRef.current?.emitEvent('keyDown', 'Wrong');
+            splineRef.current?.emitEvent('keyUp', 'body circle_1');
+        }
+
+        // 2. Laisser l'animation jouer 1.5s avant de passer à la suite
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setAnswerFeedback(null);
+
+        // 3. Passer à la question suivante ou terminer
         if (currentQuestionIndex + 1 < questions.length) {
             setCurrentQuestionIndex(i => i + 1);
         } else {
@@ -469,11 +536,7 @@ export default function JoinPage() {
             if (finalScore >= target) {
                 setStep(6);
             } else {
-                alert(getText('failedQuiz'));
-                setScore(0);
-                setCurrentQuestionIndex(0);
-                await fetchQuestions();
-                setStep(2);
+                setStep(5);
             }
         }
     };
@@ -647,8 +710,9 @@ export default function JoinPage() {
                         <p>{getText('step2')}</p>
                         <div className={styles.controls}>
                             <button onClick={() => speak(getText('step2'))} className={styles.btn}>{getText('play')}</button>
-                            {isPlaying && <button onClick={stopSpeaking} className={styles.btn}>{getText('stop')}</button>}
-                            <button onClick={() => setStep(3)} className={`${styles.btn} ${styles.btnPrimary}`}>{getText('next')}</button>
+                            {audioCompleted && (
+                                <button onClick={() => setStep(3)} className={`${styles.btn} ${styles.btnPrimary}`}>{getText('next')}</button>
+                            )}
                         </div>
                     </div>
                 );
@@ -658,8 +722,9 @@ export default function JoinPage() {
                         <p style={{ whiteSpace: 'pre-wrap' }}>{getText('step3')}</p>
                         <div className={styles.controls}>
                             <button onClick={() => speak(getText('step3'))} className={styles.btn}>{getText('play')}</button>
-                            {isPlaying && <button onClick={stopSpeaking} className={styles.btn}>{getText('stop')}</button>}
-                            <button onClick={() => setStep(4)} className={`${styles.btn} ${styles.btnPrimary}`}>{getText('next')}</button>
+                            {audioCompleted && (
+                                <button onClick={() => setStep(4)} className={`${styles.btn} ${styles.btnPrimary}`}>{getText('next')}</button>
+                            )}
                         </div>
                     </div>
                 );
@@ -672,11 +737,59 @@ export default function JoinPage() {
                         <div className={styles.progress}>Question {currentQuestionIndex + 1}/{questions.length}</div>
                         <p><strong>{getText('quizTitle')}:</strong> {q.questionText[lang]}</p>
                         <div style={{ marginTop: '20px' }}>
+                            {/* Feedback banner */}
+                            {answerFeedback && (
+                                <div style={{
+                                    padding: '10px 16px',
+                                    borderRadius: '10px',
+                                    marginBottom: '12px',
+                                    textAlign: 'center',
+                                    fontWeight: 700,
+                                    fontSize: '1.1rem',
+                                    background: answerFeedback === 'correct'
+                                        ? 'rgba(16, 185, 129, 0.15)'
+                                        : 'rgba(239, 68, 68, 0.15)',
+                                    border: answerFeedback === 'correct'
+                                        ? '1px solid rgba(16, 185, 129, 0.5)'
+                                        : '1px solid rgba(239, 68, 68, 0.5)',
+                                    color: answerFeedback === 'correct' ? '#10b981' : '#ef4444',
+                                    animation: 'fadeIn 0.3s ease-out'
+                                }}>
+                                    {answerFeedback === 'correct' ? '✅ Bonne réponse !' : '❌ Mauvaise réponse'}
+                                </div>
+                            )}
                             {q.options.map((opt, i) => (
-                                <button key={i} onClick={() => handleAnswer(opt.isCorrect)} className={styles.quizOption}>
+                                <button
+                                    key={i}
+                                    onClick={() => !answerFeedback && handleAnswer(opt.isCorrect)}
+                                    className={styles.quizOption}
+                                    disabled={!!answerFeedback}
+                                    style={{ opacity: answerFeedback ? 0.5 : 1, cursor: answerFeedback ? 'not-allowed' : 'pointer' }}
+                                >
                                     {opt.text[lang]}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+                );
+            case 5:
+                return (
+                    <div className={styles.messageBubble}>
+                        <p>{getText('failedQuiz')}</p>
+                        <div className={styles.controls}>
+                            <button onClick={() => speak(getText('failedQuiz'))} className={styles.btn}>
+                                {getText('play')}
+                            </button>
+                            {isPlaying && <button onClick={stopSpeaking} className={styles.btn}>{getText('stop')}</button>}
+                            
+                            <button onClick={async () => {
+                                setScore(0);
+                                setCurrentQuestionIndex(0);
+                                await fetchQuestions();
+                                setStep(2); // Go back to start
+                            }} className={`${styles.btn} ${styles.btnPrimary}`}>
+                                {getText('next')}
+                            </button>
                         </div>
                     </div>
                 );
@@ -708,49 +821,13 @@ export default function JoinPage() {
                         
                         <div className={styles.controls} style={{marginTop: '20px'}}>
                             <button onClick={() => triggerRulesAudio(allRules)} className={styles.btn}>{getText('play')}</button>
-                            {isPlaying && <button onClick={stopSpeaking} className={styles.btn}>{getText('stop')}</button>}
                             
-                            <button onClick={() => setStep(8)} className={`${styles.btn} ${styles.btnPrimary}`} style={{marginLeft: 'auto'}}>
-                                {getText('next')}
-                            </button>
+                            {audioCompleted && (
+                                <button onClick={() => setStep(9)} className={`${styles.btn} ${styles.btnPrimary}`} style={{marginLeft: 'auto'}}>
+                                    {getText('next')}
+                                </button>
+                            )}
                         </div>
-                     </div>
-                 );
-            case 8:
-                 if (testRules.length === 0) return <p>Loading test rules...</p>;
-                 const r = testRules[currentRuleIndex];
-                 if (!r) return <p>Retrieving rule...</p>;
-                 
-                 return (
-                     <div className={styles.messageBubble}>
-                        <div className={styles.progress}>Test {currentRuleIndex + 1}/3</div>
-                        <p style={{fontSize: '1.05rem'}}>{r.fullText[lang]}</p>
-                        <div className={styles.controls} style={{marginBottom: '20px'}}>
-                            <button onClick={() => speak(r.fullText[lang] + ". " + getText('readAndTestRulePrompt'))} className={styles.btn}>{getText('play')}</button>
-                            {isPlaying && <button onClick={stopSpeaking} className={styles.btn}>{getText('stop')}</button>}
-                        </div>
-                        <hr style={{borderColor: 'rgba(255,255,255,0.1)', margin: '15px 0'}}/>
-                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px dashed #3b82f6', padding: '15px', borderRadius: '12px', marginBottom: '15px' }}>
-                            <p style={{fontSize: '0.9rem', color: '#94a3b8', marginBottom: '8px'}}>{getText('typeRuleTitle')}</p>
-                            <h3 style={{color: '#fff', fontSize: '1.2rem', margin: 0}}>"{r.shortTextToType[lang]}"</h3>
-                        </div>
-                        <textarea
-                            className={styles.inputField}
-                            value={typedText}
-                            onChange={(e) => setTypedText(e.target.value)}
-                            onPaste={preventCopyPaste}
-                            onCopy={preventCopyPaste}
-                            rows={3}
-                            placeholder="..."
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            autoComplete="off"
-                            spellCheck={false}
-                        />
-                        {typeError && <p className={styles.errorText}>{typeError}</p>}
-                        <button onClick={verifyTypedText} className={`${styles.btn} ${styles.btnSuccess}`} style={{width: '100%', justifyContent: 'center'}}>
-                            {getText('verifyBtn')}
-                        </button>
                      </div>
                  );
             case 9:
@@ -970,9 +1047,29 @@ export default function JoinPage() {
                 )}
 
                 <div className={styles.robotHeader} style={{ flexWrap: 'wrap', justifyContent: 'center', textAlign: 'center' }}>
-                    <div className={styles.robotAvatar} style={{ marginBottom: '10px' }}>🤖</div>
+                    <style>{`
+                        /* Hide Spline watermark – all known selectors */
+                        a[href*="spline.design"],
+                        a[href*="spline.design"] *,
+                        div[class*="spline-watermark"],
+                        div[class*="watermark"],
+                        #spline-watermark,
+                        .spline-watermark {
+                            display: none !important;
+                            opacity: 0 !important;
+                            pointer-events: none !important;
+                        }
+                    `}</style>
+                    <div className={`${styles.splineWrapper} ${answerFeedback === 'correct' ? styles.correctFeedback : answerFeedback === 'wrong' ? styles.wrongFeedback : ''}`}>
+                        <Spline 
+                            scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" 
+                            onLoad={(spline) => { splineRef.current = spline; }}
+                        />
+                        {/* Overlay to cover the Spline watermark in the bottom-right corner */}
+                        <div className={styles.splineOverlay} aria-hidden="true" />
+                    </div>
                     <div style={{ width: '100%' }}>
-                        <h2 className={styles.robotTitle}>ATA - Bot</h2>
+                        <h2 className={styles.robotTitle}>Arto</h2>
                         {step > 0 ? (
                             <p className={styles.robotStatus}>Connecté - Étape {step}/9</p>
                         ) : (

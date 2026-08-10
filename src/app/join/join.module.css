@@ -291,3 +291,61 @@
   }
 }
 
+/* ===== SPLINE ROBOT WRAPPER ===== */
+.splineWrapper {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Overlay covering the Spline watermark (bottom-right corner) */
+.splineOverlay {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 190px;
+  height: 58px;
+  background: #192436;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ===== ANSWER FEEDBACK ANIMATIONS ===== */
+.correctFeedback {
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.9),
+    0 0 40px rgba(16, 185, 129, 0.5),
+    0 0 80px rgba(16, 185, 129, 0.25);
+  animation: correctPulse 1.5s ease-out forwards;
+}
+
+.wrongFeedback {
+  box-shadow:
+    0 0 0 3px rgba(239, 68, 68, 0.9),
+    0 0 40px rgba(239, 68, 68, 0.5),
+    0 0 80px rgba(239, 68, 68, 0.25);
+  animation: wrongShake 0.6s ease-out, wrongPulse 1.5s ease-out forwards;
+}
+
+@keyframes correctPulse {
+  0%   { box-shadow: 0 0 0 3px rgba(16,185,129,0.9), 0 0 40px rgba(16,185,129,0.5); }
+  50%  { box-shadow: 0 0 0 6px rgba(16,185,129,1),   0 0 80px rgba(16,185,129,0.7); }
+  100% { box-shadow: 0 0 0 0px rgba(16,185,129,0),   0 0  0px rgba(16,185,129,0);   }
+}
+
+@keyframes wrongPulse {
+  0%   { box-shadow: 0 0 0 3px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5); }
+  50%  { box-shadow: 0 0 0 6px rgba(239,68,68,1),   0 0 80px rgba(239,68,68,0.7); }
+  100% { box-shadow: 0 0 0 0px rgba(239,68,68,0),   0 0  0px rgba(239,68,68,0);   }
+}
+
+@keyframes wrongShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-8px); }
+  40%     { transform: translateX(8px); }
+  60%     { transform: translateX(-5px); }
+  80%     { transform: translateX(5px); }
+}
