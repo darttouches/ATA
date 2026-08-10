@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/db';
 import Content from '@/models/Content';
+import Club from '@/models/Club';
 import { NextResponse } from 'next/server';
 
 export async function GET() {

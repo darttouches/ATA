@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Lightbox from '@/components/Lightbox';
+import Link from 'next/link';
 
 const ClubMap = dynamic(() => import('@/components/ClubMap'), { ssr: false });
 
@@ -74,6 +75,9 @@ export default function AboutPage() {
                         <h1 className={styles.title}>{t('aboutTitle')}</h1>
                         <div className={styles.textBlock}>
                             <p>{t('aboutDesc')}</p>
+                            <Link href="/association" target="_blank" className="btn btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex', alignItems: 'center' }}>
+                                📖 Découvrir le magazine interactif
+                            </Link>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Image as ImageIcon, Video, Lightbulb, Play } from 'lucide-react';
 import ContentDetailModal from '@/components/ContentDetailModal';
 
@@ -8,6 +8,25 @@ const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
 
 export default function ClientBestOff({ items }) {
     const [selectedItem, setSelectedItem] = useState(null);
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('event');
+        if (eventId) {
+            const item = items.find(e => e._id === eventId);
+            if (item) setSelectedItem(item);
+        }
+    }, [items]);
+
+    useEffect(() => {
+        const url = new URL(window.location);
+        if (selectedItem) {
+            url.searchParams.set('event', selectedItem._id);
+        } else {
+            url.searchParams.delete('event');
+        }
+        window.history.replaceState({}, '', url);
+    }, [selectedItem]);
 
     const getTypeIcon = (type) => {
         switch (type) {

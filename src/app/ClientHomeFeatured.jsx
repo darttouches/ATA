@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ContentDetailModal from '@/components/ContentDetailModal';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -9,6 +9,25 @@ const stripHtml = (html) => html?.replace(/<[^>]*>?/gm, '') || '';
 export default function ClientHomeFeatured({ featured, gridStyle }) {
     const { t, formatDynamicText } = useLanguage();
     const [selectedItem, setSelectedItem] = useState(null);
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('event');
+        if (eventId) {
+            const item = featured.find(e => e._id === eventId);
+            if (item) setSelectedItem(item);
+        }
+    }, [featured]);
+
+    useEffect(() => {
+        const url = new URL(window.location);
+        if (selectedItem) {
+            url.searchParams.set('event', selectedItem._id);
+        } else {
+            url.searchParams.delete('event');
+        }
+        window.history.replaceState({}, '', url);
+    }, [selectedItem]);
 
     return (
         <>

@@ -12,13 +12,22 @@ export default function BestOffPage() {
 
     useEffect(() => {
         fetch('/api/best-off')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Network response failed');
+                return res.json();
+            })
             .then(data => {
-                setItems(data);
+                if (Array.isArray(data)) {
+                    setItems(data);
+                } else {
+                    console.error('Expected array, got:', data);
+                    setItems([]);
+                }
                 setLoading(false);
             })
             .catch(err => {
-                console.error(err);
+                console.error('Error fetching best-off:', err);
+                setItems([]);
                 setLoading(false);
             });
     }, []);

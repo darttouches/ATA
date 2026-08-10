@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
-import { X, Calendar, Clock, Image as ImageIcon, Play, ExternalLink, User } from 'lucide-react';
+import { X, Calendar, Clock, Image as ImageIcon, Play, ExternalLink, User, Share2, Check } from 'lucide-react';
 import styles from './ContentDetailModal.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 import Lightbox from './Lightbox';
@@ -62,14 +62,36 @@ export default function ContentDetailModal({ item, onClose }) {
         setLightboxIndex(index);
     };
 
+    const [copied, setCopied] = useState(false);
+    const handleShare = async () => {
+        const urlToShare = `${window.location.origin}${window.location.pathname}?event=${item._id}`;
+        
+        // Ensure browser URL updates reliably
+        window.history.replaceState({}, '', urlToShare);
+
+        try {
+            await navigator.clipboard.writeText(urlToShare);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy', err);
+        }
+    };
+
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
             <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
                 <button className={styles.closeBtn} onClick={onClose}><X size={24} /></button>
 
                 <div className={styles.modalHeader}>
-                    <span className={styles.typeTag}>{item.type}</span>
-                    <h2>{item.title}</h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <span className={styles.typeTag}>{item.type}</span>
+                        <button onClick={handleShare} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem', transition: 'all 0.2s' }}>
+                            {copied ? <Check size={16} color="#4ade80" /> : <Share2 size={16} />}
+                            {copied ? 'Lien copié' : 'Partager'}
+                        </button>
+                    </div>
+                    <h2 style={{marginTop: 0}}>{item.title}</h2>
                     {item.club?.name && <div className={styles.clubName}>{t('clubLabel')} : {formatDynamicText(item.club.name)}</div>}
                     <div className={styles.modalMeta}>
                         {item.date && <span><Calendar size={16} /> {item.date}{item.endDate && item.endDate !== item.date ? ` — ${item.endDate}` : ''}</span>}

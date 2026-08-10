@@ -14,6 +14,25 @@ export default function ClientClubContent({ events, gallery, videos }) {
     const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('event');
+        if (eventId) {
+            const item = [...events, ...gallery, ...videos].find(e => e._id === eventId);
+            if (item) setSelectedItem(item);
+        }
+    }, [events, gallery, videos]);
+
+    useEffect(() => {
+        const url = new URL(window.location);
+        if (selectedItem) {
+            url.searchParams.set('event', selectedItem._id);
+        } else {
+            url.searchParams.delete('event');
+        }
+        window.history.replaceState({}, '', url);
+    }, [selectedItem]);
+
+    useEffect(() => {
         if (selectedItem) {
             document.body.style.overflow = 'hidden';
         } else {
