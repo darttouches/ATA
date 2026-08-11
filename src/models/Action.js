@@ -25,7 +25,15 @@ const ActionSchema = new mongoose.Schema({
     club: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',
-        required: true,
+        required: false,
+    },
+    authorizedScanners: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    }],
+    contentRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Content'
     },
     attendees: [{
         member: {

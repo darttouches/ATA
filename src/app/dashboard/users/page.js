@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle, Calendar, Lock, UserPlus, Sparkles, Tag, UserX } from 'lucide-react';
+import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle, Calendar, Lock, UserPlus, Sparkles, Tag, UserX, Link, Copy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
@@ -20,6 +20,42 @@ export default function UsersManagement() {
         season: '2025/2026'
     });
     const [isSaving, setIsSaving] = useState(false);
+    const [copiedUserId, setCopiedUserId] = useState(null);
+
+    const copyCardLink = (e, userId) => {
+        e.stopPropagation();
+        const url = `${window.location.origin}/card/${userId}`;
+
+        // Try modern clipboard API first, fallback to execCommand
+        const doCopy = () => {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(url);
+            } else {
+                // Fallback for HTTP/localhost
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+                return Promise.resolve();
+            }
+        };
+
+        doCopy().then(() => {
+            setCopiedUserId(userId);
+            setTimeout(() => setCopiedUserId(null), 2500);
+        }).catch(() => {
+            // Last resort: show the URL
+            prompt('Copiez ce lien manuellement :', url);
+        });
+    };
 
     const fetchCurrentUser = useCallback(async () => {
         try {
@@ -509,6 +545,7 @@ export default function UsersManagement() {
                                         <th style={{ padding: '1rem' }}>{t('phone')}</th>
                                         <th style={{ padding: '1rem' }}>{t('status')}</th>
                                         <th style={{ padding: '1rem' }}>Activite</th>
+                                         <th style={{ padding: '1rem', textAlign: 'center' }}>Carte NFC</th>
                                          <th style={{ padding: '1rem' }}>Actions</th>
                                     </tr>
                                 </thead>
@@ -679,6 +716,30 @@ export default function UsersManagement() {
                                                     >
                                                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isActive ? '#22c55e' : '#f87171', display: 'inline-block' }}></span>
                                                         {isActive ? 'Actif' : 'Désactivé'}
+                                                    </button>
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                                    <button
+                                                        onClick={(e) => copyCardLink(e, user._id)}
+                                                        title="Copier le lien de la carte membre"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '5px',
+                                                            padding: '5px 10px',
+                                                            borderRadius: '8px',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            border: '1px solid',
+                                                            background: copiedUserId === user._id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+                                                            color: copiedUserId === user._id ? '#10b981' : '#60a5fa',
+                                                            borderColor: copiedUserId === user._id ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.25)',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        {copiedUserId === user._id ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+                                                        {copiedUserId === user._id ? 'Copié !' : 'Lien carte'}
                                                     </button>
                                                 </td>
                                                 <td style={{ padding: '1rem' }} onClick={(e) => e.stopPropagation()}>

@@ -147,7 +147,7 @@ export default function MembershipCardPage({ params }) {
                         </div>
                         {/* Status Icon */}
                         <div className="verified-badge">
-                            <CheckCircle size={14} className="text-white" />
+                            <CheckCircle2 size={14} className="text-white" />
                         </div>
                     </div>
                 </div>
@@ -224,7 +224,7 @@ export default function MembershipCardPage({ params }) {
                 <div className="footer-strip" style={{ backgroundColor: clubColor }}></div>
             </div>
 
-            <style jsx>{`
+            <style dangerouslySetInnerHTML={{__html: `
                 .page-wrapper {
                    min-height: 100vh;
                    background-color: #f1f5f9;
@@ -465,10 +465,10 @@ export default function MembershipCardPage({ params }) {
                         margin: 0;
                     }
                     /* HIDE ALL LAYOUT ELEMENTS */
-                    :global(nav), :global(footer), :global(.no-print), :global(audio), :global(.actions-bar) {
+                    nav, footer, .no-print, audio, .actions-bar {
                         display: none !important;
                     }
-                    :global(body), :global(html) {
+                    body, html {
                         background: white !important;
                         margin: 0 !important;
                         padding: 0 !important;
@@ -476,7 +476,7 @@ export default function MembershipCardPage({ params }) {
                         width: 105mm !important;
                         height: 148mm !important;
                     }
-                    :global(.main-content) {
+                    .main-content {
                         padding: 0 !important;
                         margin: 0 !important;
                         min-height: 0 !important;
@@ -502,7 +502,7 @@ export default function MembershipCardPage({ params }) {
                         print-color-adjust: exact !important;
                     }
                 }
-            `}</style>
+            `}} />
         </div>
     );
 }

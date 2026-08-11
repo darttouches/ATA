@@ -16,10 +16,23 @@ export async function GET(req) {
         // Users have a 'club' field. It might be populated or an ID.
         if (clubId) {
             // Check both 'club' and 'preferredClub'
-            query.$or = [
-                { club: clubId },
-                { preferredClub: clubId }
-            ];
+            const clubCondition = {
+                $or: [
+                    { club: clubId },
+                    { preferredClub: clubId }
+                ]
+            };
+            
+            const includeNational = searchParams.get('includeNational') === 'true';
+            if (includeNational) {
+                query.$or = [
+                    clubCondition,
+                    { role: 'national' },
+                    { role: 'admin' }
+                ];
+            } else {
+                query = { ...query, ...clubCondition };
+            }
         }
 
         if (role) {

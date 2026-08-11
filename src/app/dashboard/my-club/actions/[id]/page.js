@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Save, User, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronLeft, Save, Wifi, WifiOff, CheckCircle2, UserCheck, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function ActionDetailsPage({ params }) {
@@ -17,6 +17,11 @@ export default function ActionDetailsPage({ params }) {
     const [attendanceMap, setAttendanceMap] = useState({});
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({});
+    const [currentUser, setCurrentUser] = useState(null);
+    const [showScanner, setShowScanner] = useState(false);
+    const [scanMessage, setScanMessage] = useState('');
+    const [scanStatus, setScanStatus] = useState('idle'); // idle | scanning | success | error
+    const [recentScans, setRecentScans] = useState([]); // list of recently scanned members
 
     useEffect(() => {
         if (action) {
@@ -25,6 +30,7 @@ export default function ActionDetailsPage({ params }) {
                 startDate: action.startDate ? new Date(action.startDate).toISOString().split('T')[0] : '',
                 localTime: action.localTime || '',
                 description: action.description || '',
+                authorizedScanners: action.authorizedScanners || [],
             });
         }
     }, [action]);
@@ -67,17 +73,23 @@ export default function ActionDetailsPage({ params }) {
                         const mId = typeof att.member === 'object' ? att.member._id : att.member;
                         initialMap[mId] = {
                             present: att.present,
-                            remark: att.remark || ''
+                            remark: att.remark || '',
+                            memberData: att.member
                         };
                     });
                 }
 
-                // Fetch ALL users and ALL clubs
-                const [usersRes, clubsRes] = await Promise.all([
+                const [usersRes, clubsRes, currentUserRes] = await Promise.all([
                     fetch('/api/users'),
-                    fetch('/api/clubs')
+                    fetch('/api/clubs'),
+                    fetch('/api/user/profile')
                 ]);
-                
+
+                if (currentUserRes.ok) {
+                    const userData = await currentUserRes.json();
+                    setCurrentUser(userData);
+                }
+
                 const usersData = await usersRes.json();
                 const clubsData = await clubsRes.json();
 
@@ -85,11 +97,14 @@ export default function ActionDetailsPage({ params }) {
                     setMembers(usersData.data);
                     usersData.data.forEach(m => {
                         if (!initialMap[m._id]) {
-                            initialMap[m._id] = { present: false, remark: '' };
+                            initialMap[m._id] = { present: false, remark: '', memberData: m };
+                        } else {
+                            // enrich with full member data
+                            initialMap[m._id].memberData = m;
                         }
                     });
                 }
-                
+
                 if (Array.isArray(clubsData)) {
                     setClubs(clubsData);
                 } else if (clubsData.data && Array.isArray(clubsData.data)) {
@@ -97,6 +112,13 @@ export default function ActionDetailsPage({ params }) {
                 }
 
                 setAttendanceMap(initialMap);
+
+                // Build initial recentScans from already-present attendees
+                const alreadyPresent = Object.entries(initialMap)
+                    .filter(([, v]) => v.present)
+                    .map(([k, v]) => ({ memberId: k, memberData: v.memberData, scannedAt: new Date() }));
+                setRecentScans(alreadyPresent);
+
                 setLoadState('success');
             } catch (err) {
                 console.error(err);
@@ -107,52 +129,122 @@ export default function ActionDetailsPage({ params }) {
         if (id) fetchData();
     }, [id]);
 
-    const handleAttendanceChange = (memberId, field, value) => {
+    // Mark a member present immediately and save to DB + award 1 point
+    const markPresentAndSave = async (memberId) => {
+        // Optimistically update UI
         setAttendanceMap(prev => ({
             ...prev,
-            [memberId]: {
-                ...prev[memberId],
-                [field]: value
-            }
+            [memberId]: { ...prev[memberId], present: true }
         }));
-    };
 
-    const handleSave = async () => {
+        const memberData = members.find(m => m._id === memberId) || attendanceMap[memberId]?.memberData;
+
+        setRecentScans(prev => {
+            const already = prev.find(s => s.memberId === memberId);
+            if (already) return prev; // already in list
+            return [{ memberId, memberData, scannedAt: new Date() }, ...prev];
+        });
+
+        // Build full attendees array for save
+        const attendeesArray = Object.keys(attendanceMap).map(mId => ({
+            member: mId,
+            present: mId === memberId ? true : (attendanceMap[mId]?.present || false),
+            remark: attendanceMap[mId]?.remark || ''
+        }));
+
         try {
-            const attendeesArray = Object.keys(attendanceMap).map(mId => ({
-                member: mId,
-                present: attendanceMap[mId].present,
-                remark: attendanceMap[mId].remark
-            }));
-
-            const res = await fetch(`/api/actions/${id}`, {
+            await fetch(`/api/actions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    attendees: attendeesArray
-                })
+                body: JSON.stringify({ attendees: attendeesArray })
+            });
+        } catch (err) {
+            console.error('Error saving attendance:', err);
+        }
+    };
+
+    const startNFCScan = async () => {
+        if (!('NDEFReader' in window)) {
+            setScanStatus('error');
+            setScanMessage("NFC non disponible sur ce navigateur. Utilisez Chrome sur Android.");
+            return;
+        }
+
+        try {
+            const ndef = new window.NDEFReader();
+            setScanStatus('scanning');
+            setScanMessage("Approchez un badge NFC...");
+            await ndef.scan();
+
+            ndef.addEventListener("reading", async ({ message, serialNumber }) => {
+                let memberIdFound = null;
+                for (const record of message.records) {
+                    if (record.recordType === "url" || record.recordType === "text") {
+                        const decoder = new TextDecoder(record.encoding || 'utf-8');
+                        const data = decoder.decode(record.data);
+                        const match = data.match(/card\/([a-zA-Z0-9_-]+)/);
+                        if (match) memberIdFound = match[1];
+                    }
+                }
+
+                if (memberIdFound) {
+                    const matchedMember = members.find(m => m._id === memberIdFound || m.nfcToken === memberIdFound);
+                    if (matchedMember) {
+                        // Check if already scanned
+                        if (attendanceMap[matchedMember._id]?.present) {
+                            setScanStatus('error');
+                            setScanMessage(`⚠️ ${matchedMember.firstName} ${matchedMember.lastName} est déjà marqué présent !`);
+                        } else {
+                            setScanStatus('success');
+                            setScanMessage(`✅ ${matchedMember.firstName} ${matchedMember.lastName} — Présence enregistrée ! +1 point`);
+                            await markPresentAndSave(matchedMember._id);
+                        }
+                        // Reset scan status after 2s
+                        setTimeout(() => {
+                            setScanStatus('scanning');
+                            setScanMessage("Approchez un autre badge NFC...");
+                        }, 2500);
+                    } else {
+                        setScanStatus('error');
+                        setScanMessage(`❌ Membre non reconnu (Code: ${memberIdFound})`);
+                        setTimeout(() => {
+                            setScanStatus('scanning');
+                            setScanMessage("Approchez un badge NFC...");
+                        }, 2500);
+                    }
+                } else {
+                    setScanStatus('error');
+                    setScanMessage("❌ Le tag NFC ne contient pas de carte membre valide.");
+                    setTimeout(() => {
+                        setScanStatus('scanning');
+                        setScanMessage("Approchez un badge NFC...");
+                    }, 2500);
+                }
             });
 
-            if (res.ok) {
-                alert(t('attendanceUpdated'));
-                const updatedActionRes = await fetch(`/api/actions/${id}`);
-                const updatedActionData = await updatedActionRes.json();
-                if (updatedActionData.success) {
-                    setAction(updatedActionData.data);
-                }
-            } else {
-                const errorData = await res.json();
-                alert('Erreur: ' + (errorData.error || t('updateError')));
-            }
+            ndef.addEventListener("readingerror", () => {
+                setScanStatus('error');
+                setScanMessage("❌ Erreur de lecture. Réessayez.");
+            });
         } catch (error) {
-            console.error(error);
-            alert(t('serverError'));
+            setScanStatus('error');
+            setScanMessage("Erreur d'accès au NFC : " + error.message);
         }
+    };
+
+    const stopNFCScan = () => {
+        setShowScanner(false);
+        setScanMessage('');
+        setScanStatus('idle');
     };
 
     if (loadState === 'loading') return <div className="container" style={{ padding: '2rem' }}>{t('loading')}</div>;
     if (loadState === 'error') return <div className="container" style={{ padding: '2rem' }}>{t('errorLoadingAction')}</div>;
     if (!action) return <div className="container" style={{ padding: '2rem' }}>{t('actionNotFound')}</div>;
+
+    const canScan = currentUser?.role === 'admin' || currentUser?.role === 'national' || (action.authorizedScanners || []).includes(currentUser?._id);
+    const presentCount = recentScans.length;
+    const totalMembers = members.length;
 
     return (
         <div>
@@ -181,6 +273,35 @@ export default function ActionDetailsPage({ params }) {
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('description')}</label>
                             <textarea className="input" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
                         </div>
+
+                        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Membres autorisés à scanner</label>
+                            <p style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '1rem' }}>Sélectionnez les personnes qui auront le bouton "Scanner NFC" pour cet événement.</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
+                                {members.filter(m => m.role === 'admin' || m.role === 'national' || (action && action.club && (m.club?._id === action.club._id || m.club === action.club._id || m.preferredClub?._id === action.club._id))).map(member => (
+                                    <label key={member._id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={(editForm.authorizedScanners || []).includes(member._id)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setEditForm(prev => {
+                                                    const list = prev.authorizedScanners || [];
+                                                    if (checked) {
+                                                        return { ...prev, authorizedScanners: [...list, member._id] };
+                                                    } else {
+                                                        return { ...prev, authorizedScanners: list.filter(pid => pid !== member._id) };
+                                                    }
+                                                });
+                                            }}
+                                            style={{ accentColor: 'var(--primary)' }}
+                                        />
+                                        {member.firstName} {member.lastName} {member.role === 'national' || member.role === 'admin' ? '(Bureau/Admin)' : ''}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button onClick={handleUpdateDetails} className="btn btn-primary">{t('save')}</button>
                             <button onClick={() => setIsEditing(false)} className="btn btn-secondary">{t('cancel')}</button>
@@ -191,149 +312,183 @@ export default function ActionDetailsPage({ params }) {
                         <div>
                             <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>{action.title}</h1>
                             <p style={{ opacity: 0.7, margin: '0.5rem 0' }}>{new Date(action.startDate).toLocaleDateString()} {t('at') || 'à'} {action.localTime}</p>
-                            <p style={{ fontSize: '0.9rem', maxWidth: '600px', opacity: 0.9 }}>{action.description}</p>
+                            <div style={{ fontSize: '0.9rem', maxWidth: '600px', opacity: 0.9 }} dangerouslySetInnerHTML={{ __html: action.description }} />
                         </div>
-                        <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
-                            {t('edit')}
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            {canScan && (
+                                <button
+                                    onClick={() => { setShowScanner(true); startNFCScan(); }}
+                                    className="btn btn-primary"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#3b82f6', borderColor: '#3b82f6' }}
+                                >
+                                    <Wifi size={18} /> Scanner NFC
+                                </button>
+                            )}
+                            <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
+                                {t('edit')}
+                            </button>
+                        </div>
                     </div>
                 )}
             </header>
 
-            <div style={{ background: 'var(--card-bg)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)' }}>
-                    <h3 style={{ fontWeight: 600 }}>{t('attendanceList')}</h3>
+            {/* Stats bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '1.2rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#10b981' }}>{presentCount}</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Membres présents</div>
                 </div>
+                <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '1.2rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 700 }}>{totalMembers}</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Total membres</div>
+                </div>
+                <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '1.2rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#f59e0b' }}>
+                        {totalMembers > 0 ? Math.round((presentCount / totalMembers) * 100) : 0}%
+                    </div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Taux de présence</div>
+                </div>
+            </div>
 
-                <div style={{ overflowX: 'auto' }}>
-                    {clubs.map(club => {
-                        const clubMembers = members.filter(m => 
-                            (m.club?._id?.toString() || m.club?.toString()) === club._id.toString() ||
-                            (m.preferredClub?._id?.toString() || m.preferredClub?.toString()) === club._id.toString()
-                        );
-                        
-                        if (clubMembers.length === 0) return null;
-
-                        return (
-                            <div key={club._id} style={{ marginBottom: '2rem' }}>
-                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem 1.5rem', borderTop: '1px solid var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
-                                    <h4 style={{ color: 'var(--primary)', fontWeight: 700, margin: 0 }}>{club.name}</h4>
-                                </div>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                                    <thead>
-                                        <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.01)' }}>
-                                            <th style={{ padding: '0.8rem 1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>{t('member')}</th>
-                                            <th style={{ padding: '0.8rem 1.5rem', textAlign: 'center', fontSize: '0.85rem', opacity: 0.7 }}>{t('present')}</th>
-                                            <th style={{ padding: '0.8rem 1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>{t('remark')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {clubMembers.map(member => {
-                                            const state = attendanceMap[member._id] || { present: false, remark: '' };
-                                            return (
-                                                <tr key={member._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <td style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
-                                                            {member.profileImage ? (
-                                                                <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
-                                                            ) : (
-                                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.8rem' }}>
-                                                                    {(member.firstName || member.name || '?').charAt(0).toUpperCase()}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                            <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{member.firstName} {member.lastName}</span>
-                                                            <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{member.email}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '0.8rem 1.5rem', textAlign: 'center' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={state.present}
-                                                            onChange={(e) => handleAttendanceChange(member._id, 'present', e.target.checked)}
-                                                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
-                                                        />
-                                                    </td>
-                                                    <td style={{ padding: '0.8rem 1.5rem' }}>
-                                                        <input
-                                                            type="text"
-                                                            value={state.remark}
-                                                            onChange={(e) => handleAttendanceChange(member._id, 'remark', e.target.value)}
-                                                            placeholder={t('addRemark')}
-                                                            className="input"
-                                                            style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', width: '100%' }}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        );
-                    })}
-
-                    {/* Unassigned members */}
-                    {members.filter(m => !m.club && !m.preferredClub).length > 0 && (
-                        <div style={{ marginBottom: '2rem' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem 1.5rem', borderTop: '1px solid var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
-                                <h4 style={{ color: '#94a3b8', fontWeight: 700, margin: 0 }}>Sans Club / Hors Club</h4>
-                            </div>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                                <tbody>
-                                    {members.filter(m => !m.club && !m.preferredClub).map(member => {
-                                        const state = attendanceMap[member._id] || { present: false, remark: '' };
-                                        return (
-                                            <tr key={member._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <td style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
-                                                        {member.profileImage ? (
-                                                            <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
-                                                        ) : (
-                                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.8rem' }}>
-                                                                {(member.firstName || member.name || '?').charAt(0).toUpperCase()}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{member.firstName} {member.lastName}</span>
-                                                        <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{member.email}</span>
-                                                    </div>
-                                                </td>
-                                                <td style={{ padding: '0.8rem 1.5rem', textAlign: 'center' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={state.present}
-                                                        onChange={(e) => handleAttendanceChange(member._id, 'present', e.target.checked)}
-                                                        style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
-                                                    />
-                                                </td>
-                                                <td style={{ padding: '0.8rem 1.5rem' }}>
-                                                    <input
-                                                        type="text"
-                                                        value={state.remark}
-                                                        onChange={(e) => handleAttendanceChange(member._id, 'remark', e.target.value)}
-                                                        placeholder={t('addRemark')}
-                                                        className="input"
-                                                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', width: '100%' }}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+            {/* Attendance list — NFC scans only */}
+            <div style={{ background: 'var(--card-bg)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--card-border)' }}>
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h3 style={{ fontWeight: 600, margin: 0 }}>Liste de Présence</h3>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.6, margin: '0.25rem 0 0' }}>
+                            Les membres apparaissent ici automatiquement après le scan de leur badge NFC. Chaque scan ajoute +1 point.
+                        </p>
+                    </div>
+                    {canScan && (
+                        <button
+                            onClick={() => { setShowScanner(true); startNFCScan(); }}
+                            className="btn btn-primary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#3b82f6', borderColor: '#3b82f6', whiteSpace: 'nowrap' }}
+                        >
+                            <Wifi size={16} /> Scanner NFC
+                        </button>
                     )}
                 </div>
 
-                <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button onClick={handleSave} className="btn btn-primary" style={{ display: 'flex', gap: '0.5rem' }}>
-                        <Save size={18} /> {t('save')}
-                    </button>
-                </div>
+                {recentScans.length === 0 ? (
+                    <div style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
+                        <UserCheck size={48} style={{ margin: '0 auto 1rem', display: 'block' }} />
+                        <p style={{ margin: 0 }}>Aucun badge scanné pour le moment.</p>
+                        <p style={{ fontSize: '0.8rem', margin: '0.25rem 0 0' }}>Utilisez le bouton "Scanner NFC" pour enregistrer les présences.</p>
+                    </div>
+                ) : (
+                    <div style={{ padding: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
+                            {recentScans.map(({ memberId, memberData }) => {
+                                const m = memberData || {};
+                                return (
+                                    <div key={memberId} style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                        padding: '0.75rem 1rem', borderRadius: '10px',
+                                        background: 'rgba(16, 185, 129, 0.08)',
+                                        border: '1px solid rgba(16, 185, 129, 0.25)'
+                                    }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                                            {m.profileImage ? (
+                                                <Image src={m.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1rem', fontWeight: 700 }}>
+                                                    {(m.firstName || m.name || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {m.firstName} {m.lastName}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{m.email}</div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <CheckCircle2 size={20} color="#10b981" />
+                                            <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 700 }}>+1 pt</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* NFC Scanner Modal */}
+            {showScanner && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: 'var(--card-bg)', padding: '2.5rem', borderRadius: '16px', width: '90%', maxWidth: '420px', textAlign: 'center', border: '1px solid var(--card-border)' }}>
+                        
+                        {/* Animated NFC icon */}
+                        <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 1.5rem' }}>
+                            <div style={{
+                                position: 'absolute', inset: 0, borderRadius: '50%',
+                                background: scanStatus === 'success' ? 'rgba(16,185,129,0.15)' : scanStatus === 'error' ? 'rgba(244,63,94,0.15)' : 'rgba(59,130,246,0.15)',
+                                animation: scanStatus === 'scanning' ? 'pulse 1.5s infinite' : 'none',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                {scanStatus === 'success' ? (
+                                    <CheckCircle2 size={40} color="#10b981" />
+                                ) : scanStatus === 'error' ? (
+                                    <AlertCircle size={40} color="#f43f5e" />
+                                ) : (
+                                    <Wifi size={40} color="#3b82f6" />
+                                )}
+                            </div>
+                        </div>
+
+                        <h2 style={{ marginBottom: '0.5rem', fontWeight: 700 }}>Scanner un badge NFC</h2>
+                        
+                        <div style={{
+                            minHeight: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            marginBottom: '1.5rem', padding: '1rem', borderRadius: '10px',
+                            background: scanStatus === 'success' ? 'rgba(16,185,129,0.1)' : scanStatus === 'error' ? 'rgba(244,63,94,0.1)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${scanStatus === 'success' ? 'rgba(16,185,129,0.3)' : scanStatus === 'error' ? 'rgba(244,63,94,0.3)' : 'rgba(255,255,255,0.1)'}`
+                        }}>
+                            <p style={{
+                                margin: 0, fontSize: '0.9rem',
+                                color: scanStatus === 'success' ? '#10b981' : scanStatus === 'error' ? '#f43f5e' : 'inherit'
+                            }}>
+                                {scanMessage || "Prêt à scanner..."}
+                            </p>
+                        </div>
+
+                        {/* Recent scans in modal */}
+                        {recentScans.length > 0 && (
+                            <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+                                <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '0.5rem' }}>Derniers scans ({recentScans.length}) :</p>
+                                <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                    {recentScans.slice(0, 5).map(({ memberId, memberData }) => {
+                                        const m = memberData || {};
+                                        return (
+                                            <div key={memberId} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', padding: '0.3rem 0.5rem', borderRadius: '6px', background: 'rgba(16,185,129,0.08)' }}>
+                                                <CheckCircle2 size={14} color="#10b981" />
+                                                <span>{m.firstName} {m.lastName}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <p style={{ fontSize: '0.75rem', opacity: 0.5, marginBottom: '1.5rem' }}>
+                            Approchez simplement la carte au dos du téléphone. (Chrome sur Android requis)
+                        </p>
+                        <button onClick={stopNFCScan} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                            Terminer le scan
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <style jsx>{`
+                @keyframes pulse {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.15); opacity: 0.7; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }

@@ -1,7 +1,37 @@
 import dbConnect from '@/lib/db';
 import Content from '@/models/Content';
+import Action from '@/models/Action';
 import { getUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+
+async function syncContentToAction(content, user) {
+    if (!content || (content.type !== 'event' && content.type !== 'formation')) return;
+    if (content.status !== 'approved') return;
+
+    try {
+        const exists = await Action.findOne({ contentRef: content._id });
+        if (!exists) {
+            await Action.create({
+                title: content.title,
+                description: content.description,
+                startDate: content.date || new Date(),
+                localTime: content.time || '00:00',
+                club: content.club || (content.clubs && content.clubs[0]) || null,
+                author: user.userId,
+                status: 'approved',
+                contentRef: content._id
+            });
+        } else {
+            await Action.findByIdAndUpdate(exists._id, {
+                title: content.title,
+                startDate: content.date || exists.startDate,
+                localTime: content.time || exists.localTime
+            });
+        }
+    } catch (err) {
+        console.error('Error syncing to Action', err);
+    }
+}
 
 export async function GET() {
     try {
@@ -65,6 +95,8 @@ export async function POST(req) {
             program: cleanProgram
         });
 
+        await syncContentToAction(content, user);
+
         return NextResponse.json(content);
     } catch (error) {
         console.error('Admin Content creation error:', error);
@@ -85,6 +117,10 @@ export async function PATCH(req) {
             { status, onHome, isBestOff },
             { new: true }
         );
+
+        if (updatedContent) {
+            await syncContentToAction(updatedContent, user);
+        }
 
         return NextResponse.json(updatedContent);
     } catch (error) {
@@ -125,6 +161,10 @@ export async function PUT(req) {
             { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, club, clubs, program: cleanProgram },
             { new: true }
         );
+
+        if (updated) {
+            await syncContentToAction(updated, user);
+        }
 
         return NextResponse.json(updated);
     } catch (error) {
