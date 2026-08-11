@@ -121,10 +121,16 @@ export default function MembershipCardPage({ params }) {
             </div>
 
             {/* THE CARD - A6 (105x148mm) */}
-            <div ref={cardRef} className="card-a6 shadow-2xl">
+            <div ref={cardRef} className="card-a6 shadow-2xl" style={{ 
+                backgroundColor: clubColor,
+                backgroundImage: "url('/images/card-bg.jpg')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                color: 'white'
+            }}>
 
                 {/* Top Section */}
-                <div className="header-section" style={{ backgroundColor: clubColor }}>
+                <div className="header-section">
                     <Link href="/" className="logo-badge-link">
                         <div className="logo-badge">
                             <Shield className="text-white" size={14} />
@@ -221,7 +227,7 @@ export default function MembershipCardPage({ params }) {
                     </div>
                 </div>
 
-                <div className="footer-strip" style={{ backgroundColor: clubColor }}></div>
+                <div className="footer-strip"></div>
             </div>
 
             <style dangerouslySetInnerHTML={{__html: `
@@ -267,11 +273,12 @@ export default function MembershipCardPage({ params }) {
                 .card-a6 {
                     width: 105mm;
                     height: 148mm;
-                    background: white;
+                    background: #1e293b;
                     border-radius: 6mm;
                     overflow: hidden;
                     display: flex;
                     flex-direction: column;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                 }
                 .header-section {
                     height: 50mm;
@@ -356,13 +363,14 @@ export default function MembershipCardPage({ params }) {
                 .user-name {
                     font-size: 6mm;
                     font-weight: 1000;
-                    color: #0f172a !important;
-                    -webkit-text-fill-color: #0f172a !important;
+                    color: white !important;
+                    -webkit-text-fill-color: white !important;
                     background: none !important;
                     margin-bottom: 2mm;
+                    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
                 }
                 .role-chip {
-                    background: #f1f5f9;
+                    background: rgba(255, 255, 255, 0.9);
                     display: inline-flex;
                     align-items: center;
                     gap: 1.5mm;
@@ -379,11 +387,12 @@ export default function MembershipCardPage({ params }) {
                 .club-name {
                     font-size: 2.5mm;
                     font-weight: 700;
-                    color: #94a3b8;
+                    color: rgba(255, 255, 255, 0.8);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: 1mm;
+                    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
                 }
                 .social-links-grid {
                     display: flex;
@@ -396,14 +405,15 @@ export default function MembershipCardPage({ params }) {
                 .social-icon {
                     width: 8mm;
                     height: 8mm;
-                    background: #f8fafc;
-                    border: 0.3mm solid #e2e8f0;
+                    background: rgba(255, 255, 255, 0.9);
+                    border: 0.3mm solid rgba(255, 255, 255, 0.2);
                     border-radius: 2.5mm;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: #475569;
                     transition: 0.2s;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
                 }
                 .instacolor { color: #E4405F; }
                 .fbcolor { color: #1877F2; }
@@ -437,9 +447,10 @@ export default function MembershipCardPage({ params }) {
                 .qr-label {
                     font-size: 1.8mm;
                     font-weight: 800;
-                    color: #cbd5e1;
+                    color: rgba(255, 255, 255, 0.7);
                     text-transform: uppercase;
                     letter-spacing: 0.4mm;
+                    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
                 }
                 .footer-strip {
                     height: 1.5mm;
