@@ -99,7 +99,7 @@ function LoginForm() {
                     </div>
                 )}
 
-                {error && <div className={styles.error}>{error}</div>}
+                {error && <div className={styles.error} style={{ whiteSpace: 'pre-wrap', textAlign: 'left', lineHeight: '1.5' }}>{error}</div>}
 
                 <form onSubmit={handleSubmit}>
                     <div className={styles.inputGroup}>
