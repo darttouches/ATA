@@ -666,12 +666,18 @@ export default function JoinPage() {
     const getText = (key) => i18n[lang]?.[key] || i18n['fr'][key];
 
     const translateCategory = (cat) => {
-        if (lang === 'ar') return cat;
         const map = {
-            'الانضباط والسلوك': { fr: 'Discipline et Comportement', en: 'Discipline and Behavior' },
-            'الاجتماعات': { fr: 'Réunions', en: 'Meetings' },
-            'الأنشطة': { fr: 'Activités', en: 'Activities' },
-            'الالتزام بالاحترام الاخلاقي': { fr: 'Respect Éthique', en: 'Ethical Respect' }
+            'Engagement': { ar: 'الالتزام', fr: 'Engagement', en: 'Engagement' },
+            'Discipline et comportement': { ar: 'الانضباط والسلوك', fr: 'Discipline et comportement', en: 'Discipline and Behavior' },
+            'Réunions et communication': { ar: 'الاجتماعات والتواصل', fr: 'Réunions et communication', en: 'Meetings and Communication' },
+            'Activités et événements': { ar: 'الأنشطة والفعاليات', fr: 'Activités et événements', en: 'Activities and Events' },
+            'Éthique': { ar: 'الأخلاقيات', fr: 'Éthique', en: 'Ethics' },
+            'Responsabilités des membres': { ar: 'مسؤوليات الأعضاء', fr: 'Responsabilités des membres', en: 'Member Responsibilities' },
+            // Legacy fallbacks
+            'الانضباط والسلوك': { fr: 'Discipline et Comportement', en: 'Discipline and Behavior', ar: 'الانضباط والسلوك' },
+            'الاجتماعات': { fr: 'Réunions', en: 'Meetings', ar: 'الاجتماعات' },
+            'الأنشطة': { fr: 'Activités', en: 'Activities', ar: 'الأنشطة' },
+            'الالتزام بالاحترام الاخلاقي': { fr: 'Respect Éthique', en: 'Ethical Respect', ar: 'الالتزام بالاحترام الاخلاقي' }
         };
         return map[cat]?.[lang] || cat;
     };
