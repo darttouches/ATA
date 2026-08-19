@@ -49,7 +49,7 @@ export async function POST(req) {
         if (user.role !== 'admin' && user.status !== 'approved') {
             if (user.status === 'pending') {
                 return NextResponse.json(
-                    { error: "Votre compte n'est pas encore payé.\n\nVous devez payer chez le président de votre club et OBLIGATOIREMENT prendre un reçu officiel avec le cachet du club, ainsi que votre nom et prénom.\n\nSinon, contactez le responsable au bureau national sur WhatsApp au +216 23 468 877 pour plus d'informations ou réclamation.\n\nLe reçu vous permet d'obtenir votre carte membre et doit toujours être conservé chez vous comme preuve de paiement.\n\nUne fois votre compte accepté et marqué comme payé, vous aurez la possibilité d'accéder à votre compte." },
+                    { error: 'PAYMENT_PENDING', errorCode: 'PAYMENT_PENDING' },
                     { status: 403 }
                 );
             }

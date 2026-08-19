@@ -16,6 +16,15 @@ export async function GET() {
             {
                 category: 'Engagement',
                 fullText: {
+                    fr: 'Une discipline rigoureuse concernant la présence et le respect des horaires est exigée.',
+                    en: 'Strict discipline regarding attendance and punctuality is required.',
+                    ar: 'يجب الانضباط في الحضور واحترام المواعيد'
+                },
+                shortTextToType: { fr: 'présence', en: 'attendance', ar: 'الانضباط في الحضور' }
+            },
+            {
+                category: 'Engagement',
+                fullText: {
                     fr: 'Assiduité et implication : Une participation régulière et sérieuse est attendue de chaque membre, en fonction des responsabilités qui lui sont confiées.',
                     en: 'Attendance and involvement: Regular and serious participation is expected of each member, according to their responsibilities.',
                     ar: 'المواظبة والمشاركة: يُتوقع من كل عضو مشاركة منتظمة وجادة، بناءً على المسؤوليات الموكلة إليه.'
@@ -33,6 +42,15 @@ export async function GET() {
             },
             
             // Discipline et comportement
+            {
+                category: 'Discipline et comportement',
+                fullText: {
+                    fr: 'Tous les membres doivent faire preuve de discipline éthique et se comporter avec respect envers les autres.',
+                    en: 'All members must show ethical discipline and respect others at all times.',
+                    ar: 'يجب على جميع الاعضاء الانضبات اخلاقيا و الاحترام الاخرين'
+                },
+                shortTextToType: { fr: 'respect mutuel', en: 'mutual respect', ar: 'الاحترام الاخرين' }
+            },
             {
                 category: 'Discipline et comportement',
                 fullText: {
@@ -111,6 +129,24 @@ export async function GET() {
             },
 
             // Éthique
+            {
+                category: 'Éthique',
+                fullText: {
+                    fr: 'Il est strictement interdit d\'utiliser une ancienne carte d\'adhésion lors d\'une activité.',
+                    en: 'It is strictly forbidden to use an old membership card during an activity.',
+                    ar: 'يمنع استعمال بطاقة العضوية قديمة في اطار نشاط'
+                },
+                shortTextToType: { fr: 'ancienne carte', en: 'old card', ar: 'بطاقة قديمة' }
+            },
+            {
+                category: 'Éthique',
+                fullText: {
+                    fr: 'Il est formellement interdit d\'utiliser une carte d\'adhésion n\'appartenant pas à son porteur (ne pas prêter sa carte).',
+                    en: 'It is strictly forbidden to use a membership card that does not belong to its owner (do not lend your card).',
+                    ar: 'يمنع استعمال بطاقة العضوية لغير صاحبها'
+                },
+                shortTextToType: { fr: 'titulaire', en: 'owner', ar: 'لغير صاحبها' }
+            },
             {
                 category: 'Éthique',
                 fullText: {

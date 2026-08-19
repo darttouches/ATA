@@ -5,6 +5,7 @@ import styles from './interview.module.css';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LogIn, Send, CheckCircle2, LogOut, Calendar, User, Sparkles, HelpCircle, Lock, Home, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import Spline from '@splinetool/react-spline';
 
 function InterviewRoomContent() {
     const router = useRouter();
@@ -346,8 +347,11 @@ function InterviewRoomContent() {
         return (
             <div className={styles.container}>
                 <div className={styles.loginCard}>
-                    <div className={styles.botIcon}>🤖</div>
-                    <h2>Espace Entretien Candidat</h2>
+                    <div className={styles.splineWrapper} style={{ height: '220px', marginBottom: '16px' }}>
+                        <Spline scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" />
+                        <div className={styles.splineOverlay} aria-hidden="true" />
+                    </div>
+                    <h2 style={{ marginTop: 0 }}>Espace Entretien Candidat</h2>
                     <p>Entrez le code d'entretien à 8 caractères que vous avez reçu lors de votre demande d'adhésion.</p>
                     
                     {error && <div className={styles.error}>{error}</div>}
@@ -403,10 +407,13 @@ function InterviewRoomContent() {
         <div className={styles.container}>
             <div className={styles.chatBox}>
                 <div className={styles.header}>
-                    <div className={styles.botIconSmall}>🤖</div>
+                    <div style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
+                        <Spline scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" />
+                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '70px', height: '22px', background: '#0f172a', zIndex: 10, pointerEvents: 'none' }} aria-hidden="true" />
+                    </div>
                     <div style={{ flex: 1 }}>
                         <h3 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            Robot ATA <Sparkles size={16} color="#fbbf24" />
+                            Arto <Sparkles size={16} color="#fbbf24" />
                         </h3>
                         <div style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '2px' }}>
                             <span>● En ligne avec <strong>{candidateData?.firstName} {candidateData?.lastName}</strong></span>
