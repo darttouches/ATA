@@ -64,12 +64,14 @@ export async function POST(req) {
 
         // Dynamic lead time requirement
         const leadDays = recruitment?.interviewLeadTimeDays !== undefined ? recruitment.interviewLeadTimeDays : 2;
-        const minAllowedDate = new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000);
-        if (requestedDate < minAllowedDate) {
-            return NextResponse.json(
-                { success: false, error: `La date d'entretien doit être fixée au minimum ${leadDays} jours après la date de votre demande.` },
-                { status: 400 }
-            );
+        if (leadDays > 0) {
+            const minAllowedDate = new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000);
+            if (requestedDate < minAllowedDate) {
+                return NextResponse.json(
+                    { success: false, error: `La date d'entretien doit être fixée au minimum ${leadDays} jour${leadDays > 1 ? 's' : ''} après la date de votre demande.` },
+                    { status: 400 }
+                );
+            }
         }
 
         // Ensure requested interview date respects recruitment period start and end

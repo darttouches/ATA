@@ -51,11 +51,12 @@ export default function JoinPage() {
         statusMessage: '',
         startDate: null,
         endDate: null,
-        interviewLeadTimeDays: 2
+        interviewLeadTimeDays: null
     });
 
     const getMinInterviewDateTime = () => {
-        const leadDays = recruitmentStatus.interviewLeadTimeDays !== undefined ? recruitmentStatus.interviewLeadTimeDays : 2;
+        // null means not yet loaded → fallback 2. Use exact value once loaded (including 0)
+        const leadDays = recruitmentStatus.interviewLeadTimeDays !== null ? recruitmentStatus.interviewLeadTimeDays : 2;
         const minLead = new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000);
         let minDate = minLead;
         if (recruitmentStatus.startDate) {
@@ -219,7 +220,7 @@ export default function JoinPage() {
                             interviewLeadTimeDays: recruitment.interviewLeadTimeDays !== undefined ? recruitment.interviewLeadTimeDays : 2
                         });
                     } else {
-                        setRecruitmentStatus({ loading: false, isPeriodActive: true, daysRemaining: null, statusMessage: '', startDate: null, endDate: null });
+                        setRecruitmentStatus({ loading: false, isPeriodActive: true, daysRemaining: null, statusMessage: '', startDate: null, endDate: null, interviewLeadTimeDays: recruitment?.interviewLeadTimeDays !== undefined ? recruitment.interviewLeadTimeDays : 2 });
                     }
                 } else {
                     setRecruitmentStatus(prev => ({ ...prev, loading: false }));
@@ -549,10 +550,10 @@ export default function JoinPage() {
         setTypeError('');
 
         const reqDate = new Date(interviewForm.interviewDate);
-        const leadDays = recruitmentStatus.interviewLeadTimeDays !== undefined ? recruitmentStatus.interviewLeadTimeDays : 2;
+        const leadDays = recruitmentStatus.interviewLeadTimeDays !== null ? recruitmentStatus.interviewLeadTimeDays : 2;
         const minLeadTime = new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000);
-        if (reqDate < minLeadTime) {
-            setTypeError(`La date d'entretien doit être fixée au minimum ${leadDays} jours après la date de votre demande.`);
+        if (leadDays > 0 && reqDate < minLeadTime) {
+            setTypeError(`La date d'entretien doit être fixée au minimum ${leadDays} jour${leadDays > 1 ? 's' : ''} après la date de votre demande.`);
             return;
         }
 
@@ -845,7 +846,12 @@ export default function JoinPage() {
                     <div className={styles.messageBubble}>
                         <h2 style={{ fontSize: '1.3rem', color: 'white', marginBottom: '0.75rem' }}>🎉 Félicitations !</h2>
                         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                            Vous avez validé toutes les étapes. Pour finaliser, renseignez vos informations et choisissez une date d'entretien virtuel (min. {recruitmentStatus.interviewLeadTimeDays !== undefined ? recruitmentStatus.interviewLeadTimeDays : 2} jours à l'avance).
+                            {(() => {
+                                const ld = recruitmentStatus.interviewLeadTimeDays !== null ? recruitmentStatus.interviewLeadTimeDays : 2;
+                                return ld === 0
+                                    ? "Vous avez validé toutes les étapes. Renseignez vos informations et choisissez votre date d'entretien virtuel."
+                                    : `Vous avez validé toutes les étapes. Pour finaliser, renseignez vos informations et choisissez une date d'entretien virtuel (min. ${ld} jour${ld > 1 ? 's' : ''} à l'avance).`;
+                            })()}
                         </p>
                         <form onSubmit={handleInterviewRequest} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -884,7 +890,12 @@ export default function JoinPage() {
                             />
                             <div style={{ marginTop: '0.25rem' }}>
                                 <label style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.4rem' }}>
-                                    📅 Date et heure de l'entretien ({recruitmentStatus.interviewLeadTimeDays !== undefined ? recruitmentStatus.interviewLeadTimeDays : 2} jours minimum)
+                                    {(() => {
+                                        const ld = recruitmentStatus.interviewLeadTimeDays !== null ? recruitmentStatus.interviewLeadTimeDays : 2;
+                                        return ld === 0
+                                            ? '📅 Date et heure de l\'entretien (libre choix)'
+                                            : `📅 Date et heure de l'entretien (min. ${ld} jour${ld > 1 ? 's' : ''} à l'avance)`;
+                                    })()}
                                 </label>
                                 <input
                                     type="datetime-local"
