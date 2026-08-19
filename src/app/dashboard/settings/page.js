@@ -15,7 +15,8 @@ export default function AdminSettings() {
     const [recruitmentData, setRecruitmentData] = useState({
         isOpen: true,
         startDate: '',
-        endDate: ''
+        endDate: '',
+        interviewLeadTimeDays: 2
     });
     const [deactivateSeason, setDeactivateSeason] = useState('2025/2026');
     const [deactivatingSeason, setDeactivatingSeason] = useState(false);
@@ -343,6 +344,18 @@ export default function AdminSettings() {
                                 value={recruitmentData.endDate ? recruitmentData.endDate.substring(0,10) : ''}
                                 onChange={(e) => setRecruitmentData({ ...recruitmentData, endDate: e.target.value })}
                             />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>Délai d'attente pour l'entretien (en jours)</label>
+                            <input 
+                                type="number" 
+                                min="0"
+                                className="card" 
+                                style={{ width: '100%', maxWidth: '200px' }}
+                                value={recruitmentData.interviewLeadTimeDays !== undefined ? recruitmentData.interviewLeadTimeDays : 2}
+                                onChange={(e) => setRecruitmentData({ ...recruitmentData, interviewLeadTimeDays: parseInt(e.target.value) || 0 })}
+                            />
+                            <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '5px' }}>Définit le nombre minimum de jours avant qu'un candidat puisse planifier son entretien.</p>
                         </div>
                     </div>
 

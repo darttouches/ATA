@@ -59,7 +59,8 @@ export async function GET() {
     const defaultRecruitment = {
         isOpen: true,
         startDate: null,
-        endDate: null
+        endDate: null,
+        interviewLeadTimeDays: 2
     };
 
     return NextResponse.json(

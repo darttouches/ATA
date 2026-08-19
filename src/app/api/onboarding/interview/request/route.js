@@ -62,11 +62,12 @@ export async function POST(req) {
             return NextResponse.json({ success: false, error: 'Date d\'entretien invalide.' }, { status: 400 });
         }
 
-        // Minimum 2 days after request date requirement
-        const minAllowedDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        // Dynamic lead time requirement
+        const leadDays = recruitment?.interviewLeadTimeDays !== undefined ? recruitment.interviewLeadTimeDays : 2;
+        const minAllowedDate = new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000);
         if (requestedDate < minAllowedDate) {
             return NextResponse.json(
-                { success: false, error: 'La date d\'entretien doit être fixée au minimum 2 jours après la date de votre demande.' },
+                { success: false, error: `La date d'entretien doit être fixée au minimum ${leadDays} jours après la date de votre demande.` },
                 { status: 400 }
             );
         }
