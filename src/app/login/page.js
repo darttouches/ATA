@@ -16,8 +16,10 @@ function WhatsAppIcon({ size = 20 }) {
     );
 }
 
-// Payment Pending Notice — trilingual (FR / EN / AR)
+// Payment Pending Notice — trilingual tabs (FR / EN / AR)
 function PaymentPendingNotice({ onBack }) {
+    const [activeLang, setActiveLang] = useState(0);
+
     const WHATSAPP_NUMBER = '21623468877';
     const WHATSAPP_DISPLAY = '+216 23 468 877';
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Bonjour, je souhaite obtenir des informations sur mon compte Touches D\'Art.')}`;
@@ -33,7 +35,6 @@ function PaymentPendingNotice({ onBack }) {
                 { icon: <ShieldCheck size={18}/>, text: 'Conservez précieusement ce reçu — il est votre preuve de paiement et votre clé pour la carte membre.' },
             ],
             contactText: 'Pour toute information ou réclamation, contactez le responsable au Bureau National :',
-            backText: 'Retour à la connexion',
         },
         {
             lang: 'EN', flag: '🇬🇧', dir: 'ltr',
@@ -61,36 +62,51 @@ function PaymentPendingNotice({ onBack }) {
         },
     ];
 
+    const c = content[activeLang];
+
+
     return (
         <div className={styles.paymentPendingOverlay}>
             <div className={styles.paymentPendingCard}>
                 {/* Header */}
                 <div className={styles.ppHeader}>
                     <div className={styles.ppIconWrapper}>
-                        <AlertTriangle size={28} />
+                        <AlertTriangle size={26} />
                     </div>
-                    <h2 className={styles.ppMainTitle}>💳 Paiement requis · Payment Required · الدفع مطلوب</h2>
+                    <div>
+                        <h2 className={styles.ppMainTitle}>💳 Paiement requis</h2>
+                        <p className={styles.ppMainSub}>Payment Required · الدفع مطلوب</p>
+                    </div>
                 </div>
 
-                {/* Language Tabs */}
-                <div className={styles.ppLangs}>
-                    {content.map((c) => (
-                        <div key={c.lang} className={styles.ppLangBlock} dir={c.dir}>
-                            <div className={styles.ppLangBadge}>{c.flag} {c.lang}</div>
-                            <p className={styles.ppTitle}>{c.title}</p>
-                            <p className={styles.ppSubtitle}>{c.subtitle}</p>
-                            <div className={styles.ppSteps}>
-                                {c.steps.map((step, i) => (
-                                    <div key={i} className={styles.ppStep}>
-                                        <div className={styles.ppStepNum}>{i + 1}</div>
-                                        <div className={styles.ppStepIcon}>{step.icon}</div>
-                                        <p className={styles.ppStepText}>{step.text}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <p className={styles.ppContactLabel}>{c.contactText}</p>
-                        </div>
+                {/* Language Switcher Tabs */}
+                <div className={styles.ppTabs}>
+                    {content.map((item, i) => (
+                        <button
+                            key={item.lang}
+                            className={`${styles.ppTab} ${activeLang === i ? styles.ppTabActive : ''}`}
+                            onClick={() => setActiveLang(i)}
+                        >
+                            <span>{item.flag}</span>
+                            <span>{item.lang}</span>
+                        </button>
                     ))}
+                </div>
+
+                {/* Active Language Content */}
+                <div className={styles.ppLangContent} dir={c.dir}>
+                    <p className={styles.ppTitle}>{c.title}</p>
+                    <p className={styles.ppSubtitle}>{c.subtitle}</p>
+                    <div className={styles.ppSteps}>
+                        {c.steps.map((step, i) => (
+                            <div key={i} className={styles.ppStep}>
+                                <div className={styles.ppStepNum}>{i + 1}</div>
+                                <div className={styles.ppStepIcon}>{step.icon}</div>
+                                <p className={styles.ppStepText}>{step.text}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <p className={styles.ppContactLabel}>{c.contactText}</p>
                 </div>
 
                 {/* WhatsApp CTA */}
