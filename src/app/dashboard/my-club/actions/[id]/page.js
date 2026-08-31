@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Save, Wifi, WifiOff, CheckCircle2, UserCheck, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export default function ActionDetailsPage({ params }) {
     const { id } = use(params);
@@ -270,8 +271,11 @@ export default function ActionDetailsPage({ params }) {
                             </div>
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('description')}</label>
-                            <textarea className="input" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} />
+                            <RichTextEditor
+                                label={t('description')}
+                                value={editForm.description}
+                                onChange={(val) => setEditForm({ ...editForm, description: val })}
+                            />
                         </div>
 
                         <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>

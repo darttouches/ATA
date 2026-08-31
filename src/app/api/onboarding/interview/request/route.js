@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import InterviewCandidate from '@/models/InterviewCandidate';
 import InterviewContent from '@/models/InterviewContent';
 import Settings from '@/models/Settings';
+import { sendInterviewCodeEmail } from '@/lib/mail';
 
 function generateCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -129,6 +130,19 @@ export async function POST(req) {
             questions: initialQuestions,
             remarks: initialRemarks
         });
+
+        // Send trilingual confirmation email to candidate
+        try {
+            await sendInterviewCodeEmail({
+                to: email,
+                firstName,
+                lastName,
+                code: candidate.code,
+                interviewDate
+            });
+        } catch (emailError) {
+            console.error("Impossible d'envoyer l'email au candidat (email error):", emailError);
+        }
 
         return NextResponse.json({ success: true, code: candidate.code }, { status: 201 });
     } catch (error) {

@@ -46,13 +46,13 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'president', 'membre', 'national'],
+        enum: ['admin', 'president', 'membre', 'national', 'club'],
         default: 'membre',
     },
     club: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',
-        required: false, // For chefs (assigned)
+        required: false, // For chefs / club accounts
     },
     preferredClub: {
         type: mongoose.Schema.Types.ObjectId,
@@ -61,7 +61,7 @@ const UserSchema = new mongoose.Schema({
     },
     bonusPoints: {
         type: Number,
-        default: 0,
+        default: 1,
     },
     lastActive: {
         type: Date,
@@ -103,6 +103,16 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    deactivatedByAdmin: {
+        type: Boolean,
+        default: false,
+    },
+    scoreHistory: [{
+        points: Number,
+        reason: String,
+        addedBy: String,
+        date: { type: Date, default: Date.now }
+    }],
 });
 
 UserSchema.index({ email: 1, season: 1 }, { unique: true });

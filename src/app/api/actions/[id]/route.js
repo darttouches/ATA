@@ -52,11 +52,31 @@ export async function PUT(req, { params }) {
                 const isPresentNow = newAtt.present || false;
 
                 if (!wasPresent && isPresentNow) {
-                    // +1 to score
-                    await User.findByIdAndUpdate(mid, { $inc: { bonusPoints: 1 } });
+                    // +1 to score + history entry
+                    await User.findByIdAndUpdate(mid, {
+                        $inc: { bonusPoints: 1 },
+                        $push: {
+                            scoreHistory: {
+                                points: 1,
+                                reason: `Présence: ${action.title}`,
+                                addedBy: 'Système NFC',
+                                date: new Date()
+                            }
+                        }
+                    });
                 } else if (wasPresent && !isPresentNow) {
-                    // -1 to score
-                    await User.findByIdAndUpdate(mid, { $inc: { bonusPoints: -1 } });
+                    // -1 to score + remove last attendance entry for this action
+                    await User.findByIdAndUpdate(mid, {
+                        $inc: { bonusPoints: -1 },
+                        $push: {
+                            scoreHistory: {
+                                points: -1,
+                                reason: `Présence annulée: ${action.title}`,
+                                addedBy: 'Système NFC',
+                                date: new Date()
+                            }
+                        }
+                    });
                 }
             }
         }

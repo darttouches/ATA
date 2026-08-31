@@ -36,7 +36,15 @@ export async function PATCH(req) {
 
         if (!updatedAction) return NextResponse.json({ error: 'Action introuvable' }, { status: 404 });
 
-        // 2. Notify the President (Club Chief)
+        // 2. Sync approvedEventsCount for the club
+        if (updatedAction.club) {
+            const clubId = updatedAction.club._id || updatedAction.club;
+            const Club = (await import('@/models/Club')).default;
+            const approvedEventsCount = await Action.countDocuments({ club: clubId, status: 'approved' });
+            await Club.findByIdAndUpdate(clubId, { approvedEventsCount });
+        }
+
+        // 3. Notify the President (Club Chief)
         if (updatedAction.club && updatedAction.club.chief) {
             const Notification = (await import('@/models/Notification')).default;
 

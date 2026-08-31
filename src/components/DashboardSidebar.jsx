@@ -105,7 +105,7 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                             display: 'inline-block',
                             fontWeight: 700
                         }}>
-                            {user.role === 'president' ? t('president') : (user.role === 'national' ? t('nationalBoardMember') : user.role)}
+                            {user.role === 'president' ? t('president') : (user.role === 'national' ? t('nationalBoardMember') : user.role === 'club' ? 'Compte Club' : user.role)}
                         </div>
                     </div>
                     {/* Close button for mobile */}
@@ -274,7 +274,7 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                         </>
                     )}
 
-                    {user.role === 'president' && (
+                    {(user.role === 'president' || user.role === 'club') && (
                         <>
                             <div className={styles.sectionLabel}>{t('myClub')}</div>
                             <Link href="/dashboard/voice-management" className={`${styles.link} ${isActive('/dashboard/voice-management') ? styles.activeLink : ''}`} onClick={onClose}>

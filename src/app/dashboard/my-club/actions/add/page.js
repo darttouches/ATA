@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export default function AddActionPage() {
     const { t } = useLanguage();
@@ -140,14 +141,11 @@ export default function AddActionPage() {
                 </div>
 
                 <div className="form-group">
-                    <label>{t('description')}</label>
-                    <textarea
-                        name="description"
-                        required
+                    <RichTextEditor
+                        label={t('description')}
                         value={formData.description}
-                        onChange={handleChange}
-                        className="input"
-                        rows="4"
+                        onChange={(val) => setFormData({ ...formData, description: val })}
+                        placeholder="Description de l'action..."
                     />
                 </div>
 

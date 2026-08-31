@@ -77,6 +77,28 @@ export default function JoinPage() {
     const synth = useRef(null);
     const splineRef = useRef(null);
 
+    const safeEmitEvent = (eventType, targetName) => {
+        try {
+            if (splineRef.current && typeof splineRef.current.emitEvent === 'function') {
+                splineRef.current.emitEvent(eventType, targetName);
+            }
+        } catch (err) {
+            // Silently catch missing property runtime errors from Spline
+        }
+    };
+
+    // Suppress Spline internal "Missing property" console.error noise
+    useEffect(() => {
+        const originalError = console.error;
+        console.error = (...args) => {
+            const msg = args[0];
+            if (typeof msg === 'string' && msg.includes('Missing property')) return;
+            if (msg instanceof Error && msg.message?.includes('Missing property')) return;
+            originalError.apply(console, args);
+        };
+        return () => { console.error = originalError; };
+    }, []);
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             synth.current = window.speechSynthesis;
@@ -312,18 +334,18 @@ export default function JoinPage() {
             utterance.volume = 1;
             utterance.onstart = () => {
                 setIsPlaying(true);
-                splineRef.current?.emitEvent('keyDown', 'Mouth Move 2');
+                safeEmitEvent('keyDown', 'Mouth Move 2');
             };
             utterance.onend = () => {
                 setIsPlaying(false);
                 if (audioIdRef.current === currentId) setAudioCompleted(true);
-                splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+                safeEmitEvent('keyUp', 'Mouth Move 2');
             };
             utterance.onerror = (e) => {
                 console.warn('Native TTS failed, trying ResponsiveVoice...', e.error);
                 setIsPlaying(false);
                 if (audioIdRef.current === currentId) setAudioCompleted(true);
-                splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+                safeEmitEvent('keyUp', 'Mouth Move 2');
                 tryResponsiveVoice(text, activeLang, rvVoiceMap);
             };
             setTimeout(() => synth.current?.speak(utterance), 50);
@@ -344,18 +366,18 @@ export default function JoinPage() {
 
                 const rvVoice = rvVoiceMap[activeLang] || 'French Female';
                 setIsPlaying(true);
-                splineRef.current?.emitEvent('keyDown', 'Bouche');
+                safeEmitEvent('keyDown', 'Bouche');
                 window.responsiveVoice.speak(text, rvVoice, {
                     rate: activeLang === 'ar' ? 0.85 : 1,
                     onend: () => {
                         setIsPlaying(false);
                         if (audioIdRef.current === currentId) setAudioCompleted(true);
-                        splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+                        safeEmitEvent('keyUp', 'Mouth Move 2');
                     },
                     onerror: () => {
                         setIsPlaying(false);
                         if (audioIdRef.current === currentId) setAudioCompleted(true);
-                        splineRef.current?.emitEvent('keyUp', 'Mouth Move 2');
+                        safeEmitEvent('keyUp', 'Mouth Move 2');
                     }
                 });
             } else if (retries < 6) {
@@ -374,7 +396,7 @@ export default function JoinPage() {
             window.responsiveVoice.cancel();
         }
         setIsPlaying(false);
-        splineRef.current?.emitEvent('keyUp', 'Bouche');
+        safeEmitEvent('keyUp', 'Bouche');
     };
 
     const triggerRulesAudio = (rulesList) => {
@@ -393,17 +415,17 @@ export default function JoinPage() {
         
         utterance.onstart = () => {
             setIsPlaying(true);
-            splineRef.current?.emitEvent('keyDown', 'Bouche');
+            safeEmitEvent('keyDown', 'Bouche');
         };
         utterance.onend = () => {
             setIsPlaying(false);
             if (audioIdRef.current === currentId) setAudioCompleted(true);
-            splineRef.current?.emitEvent('keyUp', 'Bouche');
+            safeEmitEvent('keyUp', 'Bouche');
         };
         utterance.onerror = () => {
             setIsPlaying(false);
             if (audioIdRef.current === currentId) setAudioCompleted(true);
-            splineRef.current?.emitEvent('keyUp', 'Bouche');
+            safeEmitEvent('keyUp', 'Bouche');
         };
         
         synth.current.speak(utterance);
@@ -413,13 +435,13 @@ export default function JoinPage() {
     useEffect(() => {
         if (step === 1) {
             speak(getText('step1'));
-            splineRef.current?.emitEvent('keyDown', 'Robot');
+            safeEmitEvent('keyDown', 'Robot');
         }
         if (step === 2) speak(getText('step2'));
         if (step === 3) speak(getText('step3'));
         if (step === 5) {
             speak(getText('failedQuiz'));
-            splineRef.current?.emitEvent('keyDown', 'Wrong');
+            safeEmitEvent('keyDown', 'Wrong');
         }
         if (step === 6) speak(getText('step6'));
         if (step === 7) {
@@ -516,12 +538,12 @@ export default function JoinPage() {
         if (isCorrect) {
             setScore(s => s + 1);
             // Animation bonne réponse
-            splineRef.current?.emitEvent('keyDown', 'body circle_1');
-            splineRef.current?.emitEvent('keyDown', 'Correct');
+            safeEmitEvent('keyDown', 'body circle_1');
+            safeEmitEvent('keyDown', 'Correct');
         } else {
             // Animation mauvaise réponse
-            splineRef.current?.emitEvent('keyDown', 'Wrong');
-            splineRef.current?.emitEvent('keyUp', 'body circle_1');
+            safeEmitEvent('keyDown', 'Wrong');
+            safeEmitEvent('keyUp', 'body circle_1');
         }
 
         // 2. Laisser l'animation jouer 1.5s avant de passer à la suite
@@ -927,6 +949,11 @@ export default function JoinPage() {
                             Votre rendez-vous d'entretien est enregistré.<br/>
                             <strong>Conservez précieusement ce code.</strong> Il vous permettra d'accéder à votre salle d'entretien à la date choisie.
                         </p>
+                        
+                        <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '10px', padding: '0.85rem', marginBottom: '1rem', color: '#7dd3fc', fontSize: '0.85rem', textAlign: 'left' }}>
+                            📧 <strong>Email envoyé !</strong> Un message de confirmation trilingue contenant votre code, rappel du rendez-vous et avertissement sur le retard a été envoyé à votre adresse email.
+                        </div>
+
                         <div style={{ background: 'rgba(0,0,0,0.4)', border: '2px dashed var(--primary)', padding: '2rem', borderRadius: '12px', marginBottom: '1rem' }}>
                             <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Votre code d'entretien</p>
                             <h1 style={{ fontSize: '2.5rem', letterSpacing: '8px', color: 'white', margin: 0 }}>
@@ -958,13 +985,15 @@ export default function JoinPage() {
                         >
                             {codeCopied ? '✅ Code copié dans le presse-papiers !' : '📋 Copier le code'}
                         </button>
-                        <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
-                            <p style={{ color: '#fbbf24', fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.9rem' }}>⚠️ Important — Sauvegardez votre code !</p>
-                            <p style={{ color: '#fde68a', fontSize: '0.85rem', margin: 0, lineHeight: '1.6' }}>
-                                Collez ce code dans vos <strong>Notes</strong> (Bloc-notes, Keep…) ou envoyez-le vous en <strong>message privé</strong> (WhatsApp, Messenger…).<br/>
-                                Vous en aurez besoin le jour du rendez-vous pour accéder à votre salle d'entretien.
+
+                        <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.4)', borderRadius: '10px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
+                            <p style={{ color: '#f43f5e', fontWeight: 700, marginBottom: '0.4rem', fontSize: '0.9rem' }}>⚠️ Règle stricte sur le retard (15 min max)</p>
+                            <p style={{ color: '#fecdd3', fontSize: '0.85rem', margin: 0, lineHeight: '1.6' }}>
+                                Vous devez accéder à la salle d'entretien à l'heure exacte ou dans un <strong>délai maximal de 15 minutes</strong> après l'heure prévue.<br/>
+                                <strong>Au-delà de 15 minutes de retard</strong>, votre code deviendra automatiquement <strong>invalide et inutilisable</strong>.
                             </p>
                         </div>
+
                         <button
                             onClick={() => window.location.href = `/interview-room?code=${generatedCode}`}
                             className={`${styles.btn} ${styles.btnPrimary}`}
@@ -1085,9 +1114,30 @@ export default function JoinPage() {
                         <Spline 
                             scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" 
                             onLoad={(spline) => { splineRef.current = spline; }}
+                            onError={() => {}}
                         />
-                        {/* Overlay to cover the Spline watermark in the bottom-right corner */}
-                        <div className={styles.splineOverlay} aria-hidden="true" />
+                        {/* Solid mask over "Built with Spline" badge — matches Spline's dark background */}
+                        <div aria-hidden="true" style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: '220px',
+                            height: '60px',
+                            background: '#0d1117',
+                            zIndex: 20,
+                            pointerEvents: 'none'
+                        }} />
+                        {/* Full-width bottom fade gradient to hide any icon that bleeds further left */}
+                        <div aria-hidden="true" style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: '100%',
+                            height: '30px',
+                            background: 'linear-gradient(to top, #0d1117 60%, transparent 100%)',
+                            zIndex: 19,
+                            pointerEvents: 'none'
+                        }} />
                     </div>
                     <div style={{ width: '100%' }}>
                         <h2 className={styles.robotTitle}>Arto</h2>

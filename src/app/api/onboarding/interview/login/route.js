@@ -48,6 +48,18 @@ export async function POST(req) {
         const candidate = await InterviewCandidate.findOne({ code: code.toUpperCase() });
         if (!candidate) return NextResponse.json({ success: false, error: 'Code invalide ou introuvable.' }, { status: 404 });
 
+        // Validate 15-minute delay limit
+        if (candidate.interviewDate) {
+            const scheduledTime = new Date(candidate.interviewDate).getTime();
+            const expiryTime = scheduledTime + 15 * 60 * 1000; // 15 minutes grace period
+            if (Date.now() > expiryTime) {
+                return NextResponse.json({ 
+                    success: false, 
+                    error: "Le code d'entretien a expiré. Vous avez dépassé le délai de retard maximal autorisé (15 minutes après l'heure prévue)." 
+                }, { status: 403 });
+            }
+        }
+
         return NextResponse.json({ success: true, candidateId: candidate._id, status: candidate.status }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });

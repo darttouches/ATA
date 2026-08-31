@@ -56,6 +56,18 @@ const ClubSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    clubAccountId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
+    approvedEventsCount: {
+        type: Number,
+        default: 0,
+    },
     createdAt: {
         type: Date,
         default: Date.now,

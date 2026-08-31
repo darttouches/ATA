@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import ScanEvent from '@/models/ScanEvent';
+import User from '@/models/User';
 
 export async function GET(request, { params }) {
     try {
@@ -42,6 +43,30 @@ export async function PUT(request, { params }) {
 
         if (!Array.isArray(scannedUsers)) {
             return NextResponse.json({ success: false, error: 'Scanned users array required' }, { status: 400 });
+        }
+
+        const previousEvent = await ScanEvent.findById(id);
+        if (!previousEvent) {
+            return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+        }
+
+        const prevUserIds = new Set(previousEvent.scannedUsers.map(u => u.userId.toString()));
+
+        for (const u of scannedUsers) {
+            if (u.userId && mongoose.Types.ObjectId.isValid(u.userId) && !prevUserIds.has(u.userId.toString())) {
+                // New user scanned! Give +1 point
+                await User.findByIdAndUpdate(u.userId, {
+                    $inc: { bonusPoints: 1 },
+                    $push: {
+                        scoreHistory: {
+                            points: 1,
+                            reason: `Présence: ${previousEvent.title} (${previousEvent.date})`,
+                            addedBy: 'Système NFC',
+                            date: new Date()
+                        }
+                    }
+                });
+            }
         }
 
         const updatedEvent = await ScanEvent.findByIdAndUpdate(

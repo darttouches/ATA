@@ -6,13 +6,27 @@ import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { NextResponse } from 'next/server';
 
+async function getClubForUser(user) {
+    await dbConnect();
+    const dbUser = await User.findById(user.userId);
+    let club = null;
+    if (dbUser && dbUser.club) {
+        club = await Club.findById(dbUser.club);
+    }
+    if (!club) {
+        club = await Club.findOne({ $or: [{ clubAccountId: user.userId }, { chief: user.userId }] });
+    }
+    return club;
+}
+
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'president') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'club' && user.role !== 'president' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        }
 
-        await dbConnect();
-        const club = await Club.findOne({ chief: user.userId });
+        const club = await getClubForUser(user);
         if (!club) return NextResponse.json({ error: 'Club non trouvé' }, { status: 404 });
 
         const contents = await Content.find({ club: club._id }).sort({ createdAt: -1 });
@@ -25,7 +39,9 @@ export async function GET() {
 export async function POST(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'president') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'club' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'La création de contenu est désormais réservée exclusivement au compte officiel du Club.' }, { status: 403 });
+        }
 
         const body = await req.json();
         const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, program } = body;
@@ -48,7 +64,7 @@ export async function POST(req) {
 
         await dbConnect();
 
-        const club = await Club.findOne({ chief: user.userId });
+        const club = await getClubForUser(user);
         if (!club) return NextResponse.json({ error: 'Club non trouvé' }, { status: 404 });
 
         const content = await Content.create({
@@ -75,7 +91,7 @@ export async function POST(req) {
                 sender: user.userId,
                 type: 'content_submission',
                 title: 'Nouveau contenu à valider',
-                message: `${user.name} a soumis un nouvel élément : ${title}`,
+                message: `Le compte club ${club.name} a soumis un nouvel élément : ${title}`,
                 link: '/dashboard/content'
             })));
         }
@@ -90,7 +106,9 @@ export async function POST(req) {
 export async function PUT(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'president') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'club' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'La modification de contenu est désormais réservée exclusivement au compte officiel du Club.' }, { status: 403 });
+        }
 
         const body = await req.json();
         const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, program } = body;
@@ -113,8 +131,7 @@ export async function PUT(req) {
 
         await dbConnect();
 
-        // Check if content belongs to this chef's club
-        const club = await Club.findOne({ chief: user.userId });
+        const club = await getClubForUser(user);
         const existing = await Content.findById(id);
 
         if (!existing || existing.club.toString() !== club._id.toString()) {
@@ -137,7 +154,9 @@ export async function PUT(req) {
 export async function DELETE(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'president') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'club' && user.role !== 'admin')) {
+            return NextResponse.json({ error: 'La suppression de contenu est réservée au compte officiel du Club.' }, { status: 403 });
+        }
 
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');

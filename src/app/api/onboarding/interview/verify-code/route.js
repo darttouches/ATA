@@ -18,6 +18,18 @@ export async function POST(req) {
             return NextResponse.json({ success: false, error: "Code d'entretien introuvable. Veuillez vérifier votre saisie." }, { status: 404 });
         }
 
+        // Validate 15-minute delay limit
+        if (candidate.interviewDate) {
+            const scheduledTime = new Date(candidate.interviewDate).getTime();
+            const expiryTime = scheduledTime + 15 * 60 * 1000; // 15 minutes grace period
+            if (Date.now() > expiryTime) {
+                return NextResponse.json({ 
+                    success: false, 
+                    error: "Le code d'entretien a expiré. Vous avez dépassé le délai de retard maximal autorisé (15 minutes après l'heure prévue)." 
+                }, { status: 400 });
+            }
+        }
+
         if (candidate.decision === 'rejected') {
             return NextResponse.json({ 
                 success: false, 

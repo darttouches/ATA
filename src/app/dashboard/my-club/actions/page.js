@@ -119,7 +119,7 @@ export default function ActionsPage() {
                                         <Clock size={14} /> {action.localTime}
                                     </span>
                                 </div>
-                                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.8 }}>{action.description}</p>
+                                <div style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.8 }} dangerouslySetInnerHTML={{ __html: action.description }} />
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem' }}>

@@ -1,23 +1,36 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { BarChart3, TrendingUp, Users, Calendar, X, Award, ShieldCheck, MapPin, Bell, Clock, User } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Calendar, X, Award, ShieldCheck, MapPin, Bell, Clock, User, Trophy, BookOpen, Scale, Globe, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import RankingModal from '@/components/RankingModal';
+import RulesModal from '@/components/RulesModal';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function DashboardHome() {
     const { t, language, formatDynamicText } = useLanguage();
     const [stats, setStats] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isRankingOpen, setIsRankingOpen] = useState(false);
+    const [isRulesOpen, setIsRulesOpen] = useState(false);
 
     const [selectedMember, setSelectedMember] = useState(null);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const loadData = async () => {
             try {
-                const res = await fetch('/api/dashboard/stats');
-                const data = await res.json();
-                if (data.success) {
-                    setStats(data.data);
+                const [statsRes, userRes] = await Promise.all([
+                    fetch('/api/dashboard/stats'),
+                    fetch('/api/auth/me')
+                ]);
+                const statsData = await statsRes.json();
+                if (statsData.success) {
+                    setStats(statsData.data);
+                }
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    setCurrentUser(userData);
                 }
             } catch (err) {
                 console.error(err);
@@ -25,12 +38,10 @@ export default function DashboardHome() {
                 setLoading(false);
             }
         };
-        fetchStats();
+        loadData();
     }, []);
 
     if (loading) return <div className="container" style={{ padding: '2rem' }}>{t('loading')}</div>;
-
-    const maxActions = stats ? Math.max(...stats.activityStats.map(s => s.actions), 1) : 1;
 
     const getTypeLabel = (type) => {
         switch (type) {
@@ -45,7 +56,7 @@ export default function DashboardHome() {
 
     return (
         <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 700 }}>
+            <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', fontWeight: 800 }}>
                 {t('dashboardTitle')}
             </h1>
             <p style={{ opacity: 0.7, marginBottom: '2rem' }}>
@@ -61,6 +72,90 @@ export default function DashboardHome() {
                     <div>
                         <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>{t('totalActions')}</p>
                         <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{stats?.totalActions || 0}</h3>
+                    </div>
+                </div>
+            </div>
+
+            {/* Section : Charte & Règles de l'Association */}
+            <div style={{
+                marginBottom: '2.5rem',
+                background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(79, 70, 229, 0.1) 50%, rgba(15, 23, 42, 0.6) 100%)',
+                padding: '1.75rem 2rem',
+                borderRadius: '20px',
+                border: '1px solid rgba(124, 58, 237, 0.3)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Decorative background blur shape */}
+                <div style={{
+                    position: 'absolute', right: '-40px', top: '-40px',
+                    width: '180px', height: '180px', borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(124, 58, 237, 0.25) 0%, rgba(0,0,0,0) 70%)',
+                    pointerEvents: 'none'
+                }} />
+
+                <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justify: 'space-between',
+                    gap: '1.5rem',
+                    position: 'relative',
+                    zIndex: 2
+                }}>
+                    <div style={{ flex: '1 1 350px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                            <span style={{
+                                background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                                color: 'white', padding: '4px 12px', borderRadius: '20px',
+                                fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase',
+                                letterSpacing: '0.5px', boxShadow: '0 2px 8px rgba(124, 58, 237, 0.4)'
+                            }}>
+                                Charte Officielle
+                            </span>
+                            <span style={{
+                                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)',
+                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem',
+                                fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px'
+                            }}>
+                                <Globe size={13} color="#a78bfa" /> 3 Langues (FR / AR / EN)
+                            </span>
+                        </div>
+
+                        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 8px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Scale size={24} color="#a78bfa" />
+                            Règles & Règlement Intérieur de l'Association
+                        </h2>
+                        <p style={{ margin: 0, fontSize: '0.92rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+                            Consultez les principes fondamentaux, droits, devoirs et chartes de bonne conduite régissant l'association Touches d'Art.
+                        </p>
+                    </div>
+
+                    <div>
+                        <button
+                            onClick={() => setIsRulesOpen(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                                color: 'white',
+                                padding: '12px 24px',
+                                borderRadius: '14px',
+                                border: 'none',
+                                fontWeight: 800,
+                                fontSize: '0.95rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 6px 20px rgba(124, 58, 237, 0.45)',
+                                transition: 'all 0.25s ease'
+                            }}
+                            className="hover:scale-105 active:scale-95"
+                        >
+                            <BookOpen size={20} />
+                            Consulter les Règles
+                            <ArrowRight size={18} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -103,9 +198,17 @@ export default function DashboardHome() {
 
                 {/* Membership Activity Curve */}
                 <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--card-border)', position: 'relative' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <TrendingUp size={20} className="text-primary" /> {t('engagementPerformance')}
-                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <TrendingUp size={20} className="text-primary" /> {t('engagementPerformance')}
+                        </h3>
+                        <button 
+                            onClick={() => setIsRankingOpen(true)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)' }}
+                        >
+                            <Trophy size={18} /> Classement
+                        </button>
+                    </div>
 
                     <div style={{ position: 'relative', height: '300px', display: 'flex', alignItems: 'center', padding: '0 2rem' }}>
                         {stats?.topMembers && stats.topMembers.length > 0 ? (
@@ -133,7 +236,7 @@ export default function DashboardHome() {
 
                                 <div style={{
                                     display: 'flex',
-                                    justifyContent: 'space-around',
+                                    justify: 'space-around',
                                     width: '100%',
                                     position: 'relative',
                                     zIndex: 2,
@@ -157,7 +260,7 @@ export default function DashboardHome() {
                                                 onMouseEnter={(e) => e.currentTarget.style.transform = `translateY(${-yOffset}px) scale(1.1)`}
                                                 onMouseLeave={(e) => e.currentTarget.style.transform = `translateY(${-yOffset}px) scale(1)`}
                                             >
-                                        <div style={{ width: '60px', height: '60px', borderRadius: '50%',
+                                                <div style={{ width: '60px', height: '60px', borderRadius: '50%',
                                                     border: '3px solid var(--primary)',
                                                     background: 'var(--card-bg)',
                                                     overflow: 'hidden', padding: '3px',
@@ -284,6 +387,9 @@ export default function DashboardHome() {
                     </div>
                 </div>
             )}
+            
+            <RankingModal isOpen={isRankingOpen} onClose={() => setIsRankingOpen(false)} />
+            <RulesModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} currentUser={currentUser} />
         </div>
     );
 }

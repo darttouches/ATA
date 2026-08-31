@@ -63,20 +63,20 @@ const Navbar = ({ user, serverLogo }) => {
                     setAtaWavesPublished(data.ataWaves?.isPublished || false);
                 }
             })
-            .catch(err => console.error("Error fetching settings:", err));
+            .catch(() => {
+                // Silently ignore - happens briefly during server startup, not a real error
+            });
     }, []);
 
     useEffect(() => {
         // PWA Install Logic
         const handleBeforeInstallPrompt = (e) => {
-            console.log('✅ PWA: beforeinstallprompt event fired');
             e.preventDefault();
             setDeferredPrompt(e);
             setShowInstallBtn(true);
         };
 
         const handleAppInstalled = () => {
-            console.log('🎉 PWA: Application installed successfully');
             setShowInstallBtn(false);
             setDeferredPrompt(null);
         };
@@ -87,7 +87,6 @@ const Navbar = ({ user, serverLogo }) => {
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
-                .then(reg => console.log('✅ PWA: Service Worker registered'))
                 .catch(err => console.error('❌ PWA: SW register failed:', err));
         }
 
@@ -178,7 +177,7 @@ const Navbar = ({ user, serverLogo }) => {
             <nav className={styles.navbar}>
                 <div className={`container ${styles.navContainer}`}>
                     <Link href="/" className={styles.logo} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {logo && <Image src={logo} alt="Logo" height={40} width={120} style={{ height: '40px', width: 'auto', objectFit: 'contain' }} priority sizes="120px" />}
+                        {logo && <Image src={logo} alt="Logo" height={40} width={40} style={{ height: '40px', width: 'auto', objectFit: 'contain' }} priority unoptimized />}
                         {language === 'ar' ? t('brandName') : <>Touches<span className={styles.highlight}>D'Art</span></>}
                     </Link>
 

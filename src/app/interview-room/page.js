@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import styles from './interview.module.css';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LogIn, Send, CheckCircle2, LogOut, Calendar, User, Sparkles, HelpCircle, Lock, Home, Loader2 } from 'lucide-react';
+import { LogIn, Send, CheckCircle2, LogOut, Calendar, User, Sparkles, HelpCircle, Lock, Home, Loader2, Bot } from 'lucide-react';
 import Link from 'next/link';
 import Spline from '@splinetool/react-spline';
 
@@ -18,12 +18,39 @@ function InterviewRoomContent() {
     const [loading, setLoading] = useState(false);
     const [hasAttemptedUrlCode, setHasAttemptedUrlCode] = useState(false);
 
+    // Spline & Voice refs
+    const splineRef = useRef(null);
+    const synth = useRef(null);
+    const messagesEndRef = useRef(null);
+
+    const safeEmitEvent = (eventType, targetName) => {
+        try {
+            if (splineRef.current && typeof splineRef.current.emitEvent === 'function') {
+                splineRef.current.emitEvent(eventType, targetName);
+            }
+        } catch (err) {
+            // Catch missing property errors from Spline runtime
+        }
+    };
+
     // Recruitment Period State
     const [recruitmentStatus, setRecruitmentStatus] = useState({
         loading: true,
         isPeriodActive: true,
         statusMessage: ''
     });
+
+    // Suppress Spline internal "Missing property" console.error noise
+    useEffect(() => {
+        const originalError = console.error;
+        console.error = (...args) => {
+            const msg = args[0];
+            if (typeof msg === 'string' && msg.includes('Missing property')) return;
+            if (msg instanceof Error && msg.message?.includes('Missing property')) return;
+            originalError.apply(console, args);
+        };
+        return () => { console.error = originalError; };
+    }, []);
 
     useEffect(() => {
         const fetchRecruitmentSettings = async () => {
@@ -85,14 +112,10 @@ function InterviewRoomContent() {
     
     // Interview State
     const [candidateId, setCandidateId] = useState(null);
-    const [currentStep, setCurrentStep] = useState(-1); // -1: Not started, 0..N: Questions, N+1: Remarks, N+2: Rules confirmation
+    const [currentStep, setCurrentStep] = useState(-1);
     const [chatHistory, setChatHistory] = useState([]);
     const [answerText, setAnswerText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    
-    // Voice synth & messaging ref
-    const synth = useRef(null);
-    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') synth.current = window.speechSynthesis;
@@ -113,6 +136,15 @@ function InterviewRoomContent() {
             synth.current.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'fr-FR';
+            utterance.onstart = () => {
+                safeEmitEvent('keyDown', 'Bouche');
+            };
+            utterance.onend = () => {
+                safeEmitEvent('keyUp', 'Bouche');
+            };
+            utterance.onerror = () => {
+                safeEmitEvent('keyUp', 'Bouche');
+            };
             synth.current.speak(utterance);
         }
     };
@@ -138,7 +170,6 @@ function InterviewRoomContent() {
         }
     };
 
-    // Auto attempt login if code param is provided in URL
     useEffect(() => {
         if (initialCodeFromUrl && !candidateId && !hasAttemptedUrlCode) {
             setHasAttemptedUrlCode(true);
@@ -169,39 +200,34 @@ function InterviewRoomContent() {
             if (data.success) {
                 setCandidateData(data.data);
                 
-                // Initialize interview based on status
                 if (data.data.status === 'pending') {
-                    // Update status to in-progress
                     await fetch('/api/onboarding/interview/room', {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ candidateId: id, nextStatus: 'in-progress' })
                     });
                     
-                    const welcomeMsg = `Bienvenue ${data.data.firstName} ${data.data.lastName}. Je suis le robot d'entretien ATA. Nous allons commencer avec vos questions.`;
+                    const welcomeMsg = `Bienvenue ${data.data.firstName} ${data.data.lastName}. Je suis Arto, votre robot assistant d'entretien. Nous allons commencer avec vos questions.`;
                     setChatHistory([{ sender: 'bot', text: welcomeMsg }]);
                     speak(welcomeMsg);
                     
                     setTimeout(() => setCurrentStep(0), 1200);
                 } else if (data.data.status === 'in-progress') {
-                    // Resuming
                     let nextUnanswered = data.data.questions.findIndex(q => !q.answer);
                     if (nextUnanswered === -1) {
-                        // All answered, move to remarks or rules
                         if (data.data.remarks && data.data.remarks.length > 0) {
-                            setCurrentStep(data.data.questions.length); // Remarks mode
+                            setCurrentStep(data.data.questions.length);
                         } else {
                             if (!data.data.rulesConfirmed) {
-                                setCurrentStep(data.data.questions.length + 1); // Confirmation mode
+                                setCurrentStep(data.data.questions.length + 1);
                             } else {
-                                setCurrentStep(999); // Done
+                                setCurrentStep(999);
                             }
                         }
                     } else {
                         setCurrentStep(nextUnanswered);
                     }
                     
-                    // Populate history
                     const hist = [];
                     data.data.questions.forEach((q, idx) => {
                         if (idx <= nextUnanswered || nextUnanswered === -1) {
@@ -212,7 +238,7 @@ function InterviewRoomContent() {
                     setChatHistory(hist);
                 } else if (data.data.status === 'completed') {
                     setCurrentStep(999);
-                    setChatHistory([{ sender: 'bot', text: `Bonjour ${data.data.firstName}, votre entretien a déjà été soumis et enregistré avec succès. Merci !` }]);
+                    setChatHistory([{ sender: 'bot', text: `Bonjour ${data.data.firstName}, votre entretien avec Arto a été soumis et enregistré avec succès. Merci !` }]);
                 }
             }
         } catch(err) {
@@ -223,7 +249,6 @@ function InterviewRoomContent() {
         }
     };
 
-    // When step changes, if it's a new question from the bot
     useEffect(() => {
         if (!candidateData || currentStep === -1) return;
         
@@ -234,7 +259,6 @@ function InterviewRoomContent() {
             setChatHistory(prev => [...prev, { sender: 'bot', text: questionText }]);
             speak(questionText);
         } else if (currentStep === qLen && qLen > 0) {
-            // Remarks
             const rLen = candidateData.remarks ? candidateData.remarks.length : 0;
             if (rLen > 0) {
                 setChatHistory(prev => [...prev, { sender: 'bot', text: "Voici quelques remarques importantes concernant votre candidature :" }]);
@@ -282,7 +306,7 @@ function InterviewRoomContent() {
             }, 1000);
         } catch(err) {
             console.error(err);
-            setAnswerText(val); // restore 
+            setAnswerText(val);
         }
     };
 
@@ -346,13 +370,14 @@ function InterviewRoomContent() {
     if (!candidateId) {
         return (
             <div className={styles.container}>
-                <div className={styles.loginCard}>
-                    <div className={styles.splineWrapper} style={{ height: '220px', marginBottom: '16px' }}>
-                        <Spline scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" />
-                        <div className={styles.splineOverlay} aria-hidden="true" />
+                <div className={styles.loginCard} style={{ maxWidth: '480px' }}>
+                    {/* ARTO hero illustration — simple static preview, no Spline here to avoid duplicate instance */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '90px', height: '90px', margin: '0 auto 1.25rem auto', background: 'linear-gradient(135deg, rgba(124,58,237,0.18), rgba(79,70,229,0.12))', border: '2px solid rgba(124,58,237,0.35)', borderRadius: '50%' }}>
+                        <Bot size={44} color="#a78bfa" />
                     </div>
-                    <h2 style={{ marginTop: 0 }}>Espace Entretien Candidat</h2>
-                    <p>Entrez le code d'entretien à 8 caractères que vous avez reçu lors de votre demande d'adhésion.</p>
+
+                    <h2 style={{ marginTop: 0, fontSize: '1.4rem' }}>Salle d'Entretien avec Arto</h2>
+                    <p style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>Entrez votre code d'entretien à 8 caractères pour échanger en direct avec <strong>Arto</strong>, notre robot assistant.</p>
                     
                     {error && <div className={styles.error}>{error}</div>}
                     
@@ -375,18 +400,18 @@ function InterviewRoomContent() {
                             style={{ width: '100%', padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem' }} 
                             disabled={loading || !loginCode.trim()}
                         >
-                            {loading ? 'Vérification du code...' : 'Accéder à ma salle d\'entretien'} <LogIn size={18} />
+                            {loading ? 'Vérification du code...' : 'Rejoindre Arto en entretien'} <LogIn size={18} />
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'left', fontSize: '0.85rem', color: '#94a3b8' }}>
+                    <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'left', fontSize: '0.85rem', color: '#94a3b8' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontWeight: 600, marginBottom: '6px' }}>
                             <HelpCircle size={15} /> Où trouver mon code d'entretien ?
                         </div>
                         <p style={{ margin: 0, lineHeight: 1.5 }}>
-                            Votre code vous a été attribué après la validation du test d'intégration. Si vous ne vous êtes pas encore inscrit, rendez-vous sur la page d'adhésion.
+                            Votre code vous a été envoyé par <strong>email</strong> lors de votre demande d'adhésion.
                         </p>
-                        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                        <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
                             <Link href="/join" style={{ color: 'var(--primary)', textDecoration: 'underline', fontSize: '0.85rem' }}>
                                 Faire une demande d'adhésion & obtenir un code ➡️
                             </Link>
@@ -405,29 +430,32 @@ function InterviewRoomContent() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.chatBox}>
+            <div className={styles.chatBox} style={{ height: '88vh' }}>
+                {/* Header */}
                 <div className={styles.header}>
-                    <div style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
-                        <Spline scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" />
-                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '70px', height: '22px', background: '#0f172a', zIndex: 10, pointerEvents: 'none' }} aria-hidden="true" />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            Arto <Sparkles size={16} color="#fbbf24" />
-                        </h3>
-                        <div style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '2px' }}>
-                            <span>● En ligne avec <strong>{candidateData?.firstName} {candidateData?.lastName}</strong></span>
-                            {formattedDate && (
-                                <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                    <Calendar size={13} /> Rendez-vous : {formattedDate}
-                                </span>
-                            )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Bot size={22} color="white" />
+                        </div>
+                        <div>
+                            <h3 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.1rem' }}>
+                                Arto <Sparkles size={16} color="#fbbf24" />
+                            </h3>
+                            <div style={{ fontSize: '0.78rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                <span>● En entretien virtuel avec <strong>{candidateData?.firstName} {candidateData?.lastName}</strong></span>
+                            </div>
                         </div>
                     </div>
+                    {formattedDate && (
+                        <div style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '6px' }}>
+                            <Calendar size={13} /> {formattedDate}
+                        </div>
+                    )}
                     <button 
                         onClick={handleLogout}
                         title="Changer de code / Se déconnecter"
                         style={{
+                            marginLeft: formattedDate ? '10px' : 'auto',
                             background: 'rgba(255,255,255,0.08)',
                             border: '1px solid rgba(255,255,255,0.15)',
                             color: '#cbd5e1',
@@ -445,6 +473,40 @@ function InterviewRoomContent() {
                     </button>
                 </div>
 
+                {/* Live Interactive ARTO 3D Viewport inside the room */}
+                {/* FOND SOLIDE #0a0e1a = couleur réelle du canvas Spline → masques parfaitement invisibles */}
+                <div style={{ position: 'relative', width: '100%', height: '240px', background: '#0a0e1a', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', flexShrink: 0, overflow: 'hidden' }}>
+                    <Spline 
+                        scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" 
+                        onLoad={(spline) => { splineRef.current = spline; }}
+                        onError={() => {}} 
+                        style={{ width: '100%', height: '100%' }}
+                    />
+                    {/* Solid mask — même couleur exacte que le fond Spline (#0a0e1a) */}
+                    <div aria-hidden="true" style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        width: '260px',
+                        height: '64px',
+                        background: '#0a0e1a',
+                        zIndex: 20,
+                        pointerEvents: 'none'
+                    }} />
+                    {/* Bande complète en bas pour tout résidu */}
+                    <div aria-hidden="true" style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '32px',
+                        background: '#0a0e1a',
+                        zIndex: 19,
+                        pointerEvents: 'none'
+                    }} />
+                </div>
+
+                {/* Messages Chat Area */}
                 <div className={styles.messagesArea}>
                     {chatHistory.map((m, i) => (
                         <div key={i} className={`${styles.message} ${m.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
@@ -459,13 +521,14 @@ function InterviewRoomContent() {
                     <div ref={messagesEndRef} />
                 </div>
 
+                {/* Input Controls */}
                 <div className={styles.inputArea}>
                     {currentStep >= 0 && currentStep < qLen && (
                         <form onSubmit={handleSendAnswer} style={{ display: 'flex', gap: '10px', width: '100%' }}>
                             <input 
                                 type="text"
                                 className={styles.chatInput}
-                                placeholder="Tapez votre réponse ici..."
+                                placeholder="Tapez votre réponse pour Arto..."
                                 value={answerText}
                                 onChange={(e) => setAnswerText(e.target.value)}
                                 disabled={isTyping}
@@ -487,7 +550,7 @@ function InterviewRoomContent() {
 
                     {currentStep === 999 && (
                         <div style={{ width: '100%', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', padding: '10px' }}>
-                            L'entretien est clôturé. Merci pour vos réponses. L'administration vous contactera prochainement.
+                            L'entretien avec Arto est clôturé. Merci pour vos réponses. L'administration vous contactera prochainement.
                         </div>
                     )}
                 </div>
@@ -501,7 +564,7 @@ export default function InterviewRoomPage() {
         <Suspense fallback={
             <div className={styles.container}>
                 <div className={styles.loginCard}>
-                    <h2>Chargement de la salle d'entretien...</h2>
+                    <h2>Chargement de la salle d'entretien d'Arto...</h2>
                 </div>
             </div>
         }>
@@ -509,4 +572,3 @@ export default function InterviewRoomPage() {
         </Suspense>
     );
 }
-

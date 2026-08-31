@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle, Calendar, Lock, UserPlus, Sparkles, Tag, UserX, Link, Copy } from 'lucide-react';
+import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle, Calendar, Lock, UserPlus, Sparkles, Tag, UserX, Link as LinkIcon, Copy, Trophy, ArrowUp, ArrowDown, Search, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
@@ -21,6 +21,76 @@ export default function UsersManagement() {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [copiedUserId, setCopiedUserId] = useState(null);
+
+    // Ranking modal states
+    const [showRankingModal, setShowRankingModal] = useState(false);
+    const [rankingSeason, setRankingSeason] = useState('2025/2026');
+    const [rankingClub, setRankingClub] = useState('all');
+    const [rankingSearch, setRankingSearch] = useState('');
+    const [rankingSort, setRankingSort] = useState('desc'); // desc or asc
+    const [selectedRankingUser, setSelectedRankingUser] = useState(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('ranking') === 'true') {
+                setShowRankingModal(true);
+            }
+        }
+    }, []);
+
+    // Extract unique clubs and seasons for the filter
+    const allClubs = useMemo(() => {
+        const clubs = new Set();
+        users.forEach(u => {
+            const cName = u.club?.name || u.preferredClub?.name;
+            if(cName) clubs.add(cName);
+        });
+        return Array.from(clubs).sort();
+    }, [users]);
+
+    const allSeasons = useMemo(() => {
+        const seasons = new Set();
+        users.forEach(u => {
+            if(u.season) seasons.add(u.season);
+        });
+        if(seasons.size === 0) {
+            seasons.add('2025/2026');
+            seasons.add('2026/2027');
+        }
+        return Array.from(seasons).sort((a,b) => b.localeCompare(a));
+    }, [users]);
+
+    const rankingUsers = useMemo(() => {
+        let filtered = users.filter(u => u.status === 'approved' && u.isActive !== false);
+        if(rankingSeason) {
+            filtered = filtered.filter(u => u.season === rankingSeason);
+        }
+        if(rankingClub !== 'all') {
+            filtered = filtered.filter(u => {
+                const cName = u.club?.name || u.preferredClub?.name;
+                return cName === rankingClub;
+            });
+        }
+        if(rankingSearch) {
+            const lowSearch = rankingSearch.toLowerCase();
+            filtered = filtered.filter(u => {
+                const fullName = `${u.firstName || ''} ${u.lastName || ''}`.toLowerCase();
+                const userName = (u.name || '').toLowerCase();
+                return fullName.includes(lowSearch) || userName.includes(lowSearch);
+            });
+        }
+        filtered.sort((a, b) => {
+            const scoreA = a.bonusPoints || 0;
+            const scoreB = b.bonusPoints || 0;
+            if(rankingSort === 'desc') {
+                return scoreB - scoreA;
+            } else {
+                return scoreA - scoreB;
+            }
+        });
+        return filtered;
+    }, [users, rankingSeason, rankingClub, rankingSearch, rankingSort]);
 
     const copyCardLink = (e, userId) => {
         e.stopPropagation();
@@ -240,6 +310,19 @@ export default function UsersManagement() {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                        onClick={() => {
+                            setRankingSeason(selectedSeason);
+                            setRankingSearch('');
+                            setRankingClub('all');
+                            setRankingSort('desc');
+                            setShowRankingModal(true);
+                        }}
+                        className="btn btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none' }}
+                    >
+                        <Trophy size={18} /> Classement
+                    </button>
                     <button
                         onClick={toggleGlobalSelectAll}
                         className="btn btn-secondary"
@@ -545,6 +628,7 @@ export default function UsersManagement() {
                                         <th style={{ padding: '1rem' }}>{t('phone')}</th>
                                         <th style={{ padding: '1rem' }}>{t('status')}</th>
                                         <th style={{ padding: '1rem' }}>Activite</th>
+                                        <th style={{ padding: '1rem', textAlign: 'center' }}>Score</th>
                                          <th style={{ padding: '1rem', textAlign: 'center' }}>Carte NFC</th>
                                          <th style={{ padding: '1rem' }}>Actions</th>
                                     </tr>
@@ -628,6 +712,7 @@ export default function UsersManagement() {
                                                         <option value="membre">{t('member')}</option>
                                                         <option value="president">{t('president')}</option>
                                                         <option value="national">{t('nationalBoardMember')}</option>
+                                                        <option value="club">Club</option>
                                                         <option value="admin">Admin</option>
                                                     </select>
                                                 </td>
@@ -717,6 +802,25 @@ export default function UsersManagement() {
                                                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isActive ? '#22c55e' : '#f87171', display: 'inline-block' }}></span>
                                                         {isActive ? 'Actif' : 'Désactivé'}
                                                     </button>
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: '12px' }}>
+                                                        {currentUser?.role === 'admin' && (
+                                                            <button 
+                                                                onClick={() => updateUser(user._id, { addScore: -1 })}
+                                                                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                                                            >-</button>
+                                                        )}
+                                                        <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#f59e0b', minWidth: '20px', textAlign: 'center' }}>
+                                                            {user.bonusPoints === undefined ? 1 : user.bonusPoints}
+                                                        </span>
+                                                        {currentUser?.role === 'admin' && (
+                                                            <button 
+                                                                onClick={() => updateUser(user._id, { addScore: 1 })}
+                                                                style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                                                            >+</button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td style={{ padding: '1rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                                                     <button
@@ -878,6 +982,213 @@ export default function UsersManagement() {
                             >
                                 {isSaving ? t('saving') || 'Enregistrement...' : t('save')}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Ranking Modal */}
+            {showRankingModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
+                    justify: 'center', zIndex: 3000, padding: '1rem'
+                }} onClick={() => setShowRankingModal(false)}>
+                    <div className="card" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button 
+                            onClick={() => setShowRankingModal(false)}
+                            style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+                        
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Trophy size={24} color="#f59e0b" /> Classement des Utilisateurs
+                        </h2>
+
+                        {/* Filters */}
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 200px', position: 'relative' }}>
+                                <Search size={18} style={{ position: 'absolute', left: '10px', top: '10px', opacity: 0.5 }} />
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher..."
+                                    value={rankingSearch}
+                                    onChange={(e) => setRankingSearch(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        background: 'rgba(17, 34, 78, 0.5)',
+                                        color: 'white',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        padding: '8px 10px 8px 36px',
+                                        borderRadius: '8px',
+                                        fontSize: '0.85rem'
+                                    }}
+                                />
+                            </div>
+                            
+                            <select
+                                value={rankingSeason}
+                                onChange={(e) => setRankingSeason(e.target.value)}
+                                style={{
+                                    flex: '1 1 120px',
+                                    background: 'rgba(17, 34, 78, 0.5)',
+                                    color: 'white',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '8px 10px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                {allSeasons.map(season => (
+                                    <option key={season} value={season}>{season}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={rankingClub}
+                                onChange={(e) => setRankingClub(e.target.value)}
+                                style={{
+                                    flex: '1 1 150px',
+                                    background: 'rgba(17, 34, 78, 0.5)',
+                                    color: 'white',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '8px 10px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                <option value="all">Tous les clubs</option>
+                                {allClubs.map(club => (
+                                    <option key={club} value={club}>{club}</option>
+                                ))}
+                            </select>
+
+                            <button
+                                onClick={() => setRankingSort(rankingSort === 'desc' ? 'asc' : 'desc')}
+                                style={{
+                                    background: 'rgba(17, 34, 78, 0.5)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                                title="Trier par score"
+                            >
+                                {rankingSort === 'desc' ? <ArrowDown size={18} /> : <ArrowUp size={18} />}
+                            </button>
+                        </div>
+
+                        {/* Ranking List */}
+                        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                                        <th style={{ padding: '12px 16px', width: '60px', textAlign: 'center' }}>Rang</th>
+                                        <th style={{ padding: '12px 16px' }}>Membre</th>
+                                        <th style={{ padding: '12px 16px' }}>Club</th>
+                                        <th style={{ padding: '12px 16px', textAlign: 'right' }}>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rankingUsers.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Aucun membre trouvé.</td>
+                                        </tr>
+                                    ) : (
+                                        rankingUsers.map((user, index) => (
+                                            <tr key={user._id} onClick={() => setSelectedRankingUser(user)} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }} className="hover:bg-white/5 transition-colors">
+                                                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                                    {index === 0 && rankingSort === 'desc' ? <Trophy size={18} color="#fbbf24" style={{ margin: '0 auto' }} /> :
+                                                     index === 1 && rankingSort === 'desc' ? <Trophy size={18} color="#9ca3af" style={{ margin: '0 auto' }} /> :
+                                                     index === 2 && rankingSort === 'desc' ? <Trophy size={18} color="#b45309" style={{ margin: '0 auto' }} /> :
+                                                     <span style={{ fontWeight: 600, opacity: 0.8 }}>#{index + 1}</span>}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                                        {user.profileImage ? (
+                                                            <Image src={user.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <UserCog size={16} style={{ opacity: 0.3 }} />
+                                                        )}
+                                                    </div>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                                        {user.firstName ? `${user.firstName} ${user.lastName}` : user.name}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
+                                                    <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
+                                                        {user.club?.name || user.preferredClub?.name || 'Aucun club'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
+                                                    {user.bonusPoints || 0} pts
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* User Score History Sub-modal */}
+            {selectedRankingUser && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center',
+                    justify: 'center', zIndex: 4000, padding: '1rem'
+                }} onClick={() => setSelectedRankingUser(null)}>
+                    <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button 
+                            onClick={() => setSelectedRankingUser(null)}
+                            style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Trophy size={24} color="#f59e0b" /> Historique ({selectedRankingUser.firstName} {selectedRankingUser.lastName || selectedRankingUser.name})
+                        </h2>
+
+                        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                                        <th style={{ padding: '12px 16px' }}>Date</th>
+                                        <th style={{ padding: '12px 16px' }}>Action</th>
+                                        <th style={{ padding: '12px 16px', textAlign: 'right' }}>Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(!selectedRankingUser.scoreHistory || selectedRankingUser.scoreHistory.length === 0) ? (
+                                        <tr>
+                                            <td colSpan="3" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Aucun historique enregistré.</td>
+                                        </tr>
+                                    ) : (
+                                        [...selectedRankingUser.scoreHistory].reverse().map((hist, idx) => (
+                                            <tr key={idx} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
+                                                    {new Date(hist.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: '0.9rem' }}>
+                                                    {hist.reason}
+                                                    {hist.addedBy && <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>par {hist.addedBy}</div>}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: hist.points > 0 ? '#10b981' : '#ef4444' }}>
+                                                    {hist.points > 0 ? `+${hist.points}` : hist.points}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

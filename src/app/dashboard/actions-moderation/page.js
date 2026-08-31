@@ -78,9 +78,7 @@ export default function ActionsModeration() {
                                     <Link href={`/dashboard/my-club/actions/${action._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                         <div style={{ fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }} className="hover:text-primary transition-colors">{action.title}</div>
                                     </Link>
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '4px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {action.description}
-                                    </div>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '4px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} dangerouslySetInnerHTML={{ __html: action.description }} />
                                 </td>
                                 <td style={{ padding: '1.2rem' }}>
                                     <span style={{
