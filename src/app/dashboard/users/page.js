@@ -63,7 +63,12 @@ export default function UsersManagement() {
     }, [users]);
 
     const rankingUsers = useMemo(() => {
-        let filtered = users.filter(u => u.status === 'approved' && u.isActive !== false);
+        // Show all members filtered by season — even if deactivated
+        // Include approved OR paid members (covers all cases), exclude club accounts
+        let filtered = users.filter(u => 
+            (u.status === 'approved' || u.isPaid === true) && 
+            u.role !== 'club'
+        );
         if(rankingSeason) {
             filtered = filtered.filter(u => u.season === rankingSeason);
         }

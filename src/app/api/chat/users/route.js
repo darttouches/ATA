@@ -13,15 +13,22 @@ export async function GET() {
         // Update current user's lastActive
         await User.findByIdAndUpdate(currentUser.userId, { lastActive: new Date() });
 
-        // Fetch all approved users except the current one
+        // Find current user's full profile to get their season
+        const currentUserFull = await User.findById(currentUser.userId).select('season role').lean();
+        const currentSeason = currentUserFull?.season || '2026/2027';
+
+        // Fetch active/approved users from the same season, plus all admins
         let users = await User.find({
             _id: { $ne: currentUser.userId },
+            isActive: { $ne: false },
             $or: [
-                { status: 'approved' },
+                // Same season, approved
+                { season: currentSeason, status: 'approved' },
+                // Admins are always visible regardless of season
                 { role: 'admin' }
             ]
         })
-            .select('name role profileImage lastActive club preferredClub') // Removed email
+            .select('name role profileImage lastActive club preferredClub season')
             .populate('club', 'name')
             .populate('preferredClub', 'name')
             .lean();

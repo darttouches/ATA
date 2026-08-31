@@ -135,7 +135,8 @@ export async function GET(req) {
             return NextResponse.json({ success: true, type: 'clubs', data: clubRankings });
         } else {
             // Fetch members
-            const memberQuery = { status: 'approved', role: { $ne: 'club' }, isActive: { $ne: false } };
+            // No isActive filter — historical rankings show all approved members even if deactivated
+            const memberQuery = { status: 'approved', role: { $ne: 'club' } };
             if (season && season !== 'all') {
                 if (season === '2025/2026') {
                     memberQuery.$or = [{ season: '2025/2026' }, { season: { $exists: false } }, { season: '' }];
