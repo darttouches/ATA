@@ -21,11 +21,13 @@ export async function GET(req) {
             // without `mongoose.Types.ObjectId`.
         }
 
+        const season = searchParams.get('season') || '2026/2027';
+
         // 1. Fetch Actions
         const actions = await Action.find(clubId ? { club: clubId } : {})
             .populate({
                 path: 'attendees.member',
-                select: 'name firstName lastName profileImage club preferredClub bonusPoints',
+                select: 'name firstName lastName profileImage club preferredClub bonusPoints role season',
                 populate: [
                     { path: 'club', select: 'name' },
                     { path: 'preferredClub', select: 'name' }
@@ -37,20 +39,26 @@ export async function GET(req) {
         actions.forEach(action => {
             action.attendees.forEach(att => {
                 if (att.present && att.member) {
-                    const memberId = att.member._id.toString();
+                    const member = att.member;
+                    
+                    // Exclude specific roles and respect season filter
+                    if (['club', 'admin', 'national'].includes(member.role)) return;
+                    if (member.season !== season) return;
+
+                    const memberId = member._id.toString();
                     if (!attendanceMap[memberId]) {
                         // Use either 'club' (assigned) or 'preferredClub' (chosen at signup)
-                        const memberClub = att.member.club || att.member.preferredClub;
+                        const memberClub = member.club || member.preferredClub;
 
                         attendanceMap[memberId] = {
                             _id: memberId,
-                            name: att.member.name,
-                            firstName: att.member.firstName,
-                            lastName: att.member.lastName,
-                            profileImage: att.member.profileImage,
+                            name: member.name,
+                            firstName: member.firstName,
+                            lastName: member.lastName,
+                            profileImage: member.profileImage,
                             clubName: memberClub?.name || 'Inconnu',
                             actionCount: 0,
-                            bonusPoints: att.member.bonusPoints || 0
+                            bonusPoints: member.bonusPoints || 0
                         };
                     }
                     attendanceMap[memberId].actionCount++;
@@ -59,8 +67,14 @@ export async function GET(req) {
         });
 
         // 2.5 Add members with bonusPoints who might not have attended actions
-        const usersWithBonus = await User.find({ bonusPoints: { $gt: 0 } })
-            .select('name firstName lastName profileImage club preferredClub bonusPoints')
+        const usersQuery = { 
+            bonusPoints: { $gt: 0 }, 
+            role: { $nin: ['club', 'admin', 'national'] } 
+        };
+        if (season) usersQuery.season = season;
+
+        const usersWithBonus = await User.find(usersQuery)
+            .select('name firstName lastName profileImage club preferredClub bonusPoints role season')
             .populate([
                 { path: 'club', select: 'name' },
                 { path: 'preferredClub', select: 'name' }
@@ -91,7 +105,7 @@ export async function GET(req) {
                 count: m.actionCount + m.bonusPoints // Total score combines actions and bonus
             }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 10); // Get more members for the curve
+            .slice(0, 10); // Display exactly Top 10
 
         // 3. Activity Diagram Data (Actions per month)
         const last6Months = {};

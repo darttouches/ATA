@@ -17,7 +17,8 @@ export default function UsersManagement() {
     const [editFormData, setEditFormData] = useState({
         password: '',
         officialRole: '',
-        season: '2025/2026'
+        season: '2025/2026',
+        memberNumberDigits: ''
     });
     const [isSaving, setIsSaving] = useState(false);
     const [copiedUserId, setCopiedUserId] = useState(null);
@@ -81,8 +82,8 @@ export default function UsersManagement() {
             });
         }
         filtered.sort((a, b) => {
-            const scoreA = a.bonusPoints || 0;
-            const scoreB = b.bonusPoints || 0;
+            const scoreA = a.bonusPoints === undefined ? (a.season === '2025/2026' ? 1 : 2) : a.bonusPoints;
+            const scoreB = b.bonusPoints === undefined ? (b.season === '2025/2026' ? 1 : 2) : b.bonusPoints;
             if(rankingSort === 'desc') {
                 return scoreB - scoreA;
             } else {
@@ -217,9 +218,9 @@ export default function UsersManagement() {
         return { '2025/2026': c2025, '2026/2027': c2026 };
     }, [users]);
 
-    // Filter users by selected season
     const filteredUsers = useMemo(() => {
         return users.filter(u => {
+
             if (selectedSeason === '2026/2027') {
                 return u.season === '2026/2027';
             } else {
@@ -233,7 +234,10 @@ export default function UsersManagement() {
     const groupedUsers = useMemo(() => {
         const groups = {};
         filteredUsers.forEach(user => {
-            const clubName = user.club?.name || user.preferredClub?.name || t('noClub');
+            let clubName = user.club?.name || user.preferredClub?.name;
+            if (!clubName) {
+                clubName = (user.role === 'admin' || user.role === 'national') ? 'Bureau National & Admin' : t('noClub');
+            }
             if (!groups[clubName]) groups[clubName] = [];
             groups[clubName].push(user);
         });
@@ -621,6 +625,7 @@ export default function UsersManagement() {
                                     <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
                                         <th style={{ padding: '1rem', width: '40px' }}></th>
                                         <th style={{ padding: '1rem' }}>{t('member')}</th>
+                                        <th style={{ padding: '1rem' }}>ID Membre</th>
                                         <th style={{ padding: '1rem' }}>Email</th>
                                         <th style={{ padding: '1rem' }}>Saison</th>
                                         <th style={{ padding: '1rem' }}>{t('role')}</th>
@@ -645,7 +650,8 @@ export default function UsersManagement() {
                                                     setEditFormData({
                                                         password: '',
                                                         officialRole: user.officialRole || '',
-                                                        season: user.season || '2025/2026'
+                                                        season: user.season || '2025/2026',
+                                                        memberNumberDigits: user.memberNumber ? (user.memberNumber.match(/\d+$/) || [])[0] || '' : ''
                                                     });
                                                 }}
                                                 style={{
@@ -675,6 +681,11 @@ export default function UsersManagement() {
                                                         <div style={{ fontWeight: 600 }}>{user.firstName ? `${user.firstName} ${user.lastName}` : user.name}</div>
                                                         <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{t('registeredOn')} {new Date(user.createdAt).toLocaleDateString(language === 'ar' ? 'ar-TN' : 'fr-FR')}</div>
                                                     </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                                                        {user.role === 'club' ? 'Pas d\'ID' : (user.memberNumber || 'En attente')}
+                                                    </span>
                                                 </td>
                                                 <td style={{ padding: '1rem' }}>
                                                     <div style={{ fontSize: '0.9rem' }}>{user.email}</div>
@@ -812,7 +823,7 @@ export default function UsersManagement() {
                                                             >-</button>
                                                         )}
                                                         <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#f59e0b', minWidth: '20px', textAlign: 'center' }}>
-                                                            {user.bonusPoints === undefined ? 1 : user.bonusPoints}
+                                                            {user.bonusPoints === undefined ? (user.season === '2025/2026' ? 1 : 2) : user.bonusPoints}
                                                         </span>
                                                         {currentUser?.role === 'admin' && (
                                                             <button 
@@ -895,7 +906,7 @@ export default function UsersManagement() {
                                         {selectedEditUser.role}
                                     </span>
                                     <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
-                                        ID: {selectedEditUser.memberNumber || 'N/A'}
+                                        ID: {selectedEditUser.role === 'club' ? 'Pas d\'ID' : (selectedEditUser.memberNumber || 'N/A')}
                                     </span>
                                 </div>
                             </div>
@@ -927,6 +938,35 @@ export default function UsersManagement() {
                                     <option value="2026/2027">2026 / 2027 (Nouveaux Inscrits)</option>
                                 </select>
                             </div>
+
+                            {(selectedEditUser.role === 'admin' || selectedEditUser.role === 'national') && (
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                                        Numéro de Membre Réservé (National/Admin)
+                                    </label>
+                                    <select
+                                        className="card"
+                                        style={{ width: '100%', padding: '12px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.8)', color: 'white' }}
+                                        value={editFormData.memberNumberDigits}
+                                        onChange={(e) => setEditFormData({ ...editFormData, memberNumberDigits: e.target.value })}
+                                    >
+                                        <option value="">-- Sélectionner un numéro --</option>
+                                        {Array.from({length: 15}, (_, i) => (101380 + i).toString()).filter(num => {
+                                            const isUsed = users.some(u => {
+                                                if (u._id === selectedEditUser._id) return false;
+                                                if (!u.memberNumber) return false;
+                                                const digits = (u.memberNumber.match(/\d+$/) || [])[0];
+                                                return digits === num;
+                                            });
+                                            return !isUsed;
+                                        }).map(num => (
+                                            <option key={num} value={num}>
+                                                {((selectedEditUser.firstName || 'A').charAt(0) + (selectedEditUser.lastName || 'A').charAt(0)).toUpperCase()}{num}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
@@ -971,11 +1011,19 @@ export default function UsersManagement() {
                                 disabled={isSaving}
                                 onClick={async () => {
                                     setIsSaving(true);
-                                    await updateUser(selectedEditUser._id, {
+                                    const updatePayload = {
                                         officialRole: editFormData.officialRole,
                                         season: editFormData.season,
                                         password: editFormData.password || undefined
-                                    });
+                                    };
+                                    
+                                    if ((selectedEditUser.role === 'admin' || selectedEditUser.role === 'national') && editFormData.memberNumberDigits) {
+                                        const fL = (selectedEditUser.firstName || 'A').charAt(0).toUpperCase();
+                                        const lL = (selectedEditUser.lastName || 'A').charAt(0).toUpperCase();
+                                        updatePayload.memberNumber = `${fL}${lL}${editFormData.memberNumberDigits}`;
+                                    }
+
+                                    await updateUser(selectedEditUser._id, updatePayload);
                                     setIsSaving(false);
                                     setSelectedEditUser(null);
                                 }}
@@ -1126,7 +1174,7 @@ export default function UsersManagement() {
                                                     </span>
                                                 </td>
                                                 <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
-                                                    {user.bonusPoints || 0} pts
+                                                    {user.bonusPoints === undefined ? (user.season === '2025/2026' ? 1 : 2) : user.bonusPoints} pts
                                                 </td>
                                             </tr>
                                         ))

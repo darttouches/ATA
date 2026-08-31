@@ -80,6 +80,7 @@ export async function GET(req) {
 
                     const allApprovedItems = Array.from(itemsMap.values()).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
                     const approvedEventsCount = allApprovedItems.length;
+                    const clubScore = approvedEventsCount + 5;
 
                     // Build member query for this club
                     const memberQuery = {
@@ -110,6 +111,7 @@ export async function GET(req) {
                         logo: club.logo,
                         coverImage: club.coverImage,
                         approvedEventsCount,
+                        clubScore,
                         approvedEvents: allApprovedItems,
                         activeMembersCount,
                         totalMembers,
@@ -121,8 +123,8 @@ export async function GET(req) {
 
             // Sort: nb events approved desc, then % active members desc, then total members desc
             clubRankings.sort((a, b) => {
-                if (b.approvedEventsCount !== a.approvedEventsCount) {
-                    return b.approvedEventsCount - a.approvedEventsCount;
+                if (b.clubScore !== a.clubScore) {
+                    return b.clubScore - a.clubScore;
                 }
                 if (b.activeMembersPercent !== a.activeMembersPercent) {
                     return b.activeMembersPercent - a.activeMembersPercent;

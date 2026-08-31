@@ -109,10 +109,10 @@ export default function RankingModal({ isOpen, onClose }) {
         }
         filtered.sort((a, b) => {
             if (rankingSort === 'desc') {
-                if (b.approvedEventsCount !== a.approvedEventsCount) return b.approvedEventsCount - a.approvedEventsCount;
+                if (b.clubScore !== a.clubScore) return b.clubScore - a.clubScore;
                 return b.activeMembersPercent - a.activeMembersPercent;
             } else {
-                if (a.approvedEventsCount !== b.approvedEventsCount) return a.approvedEventsCount - b.approvedEventsCount;
+                if (a.clubScore !== b.clubScore) return a.clubScore - b.clubScore;
                 return a.activeMembersPercent - b.activeMembersPercent;
             }
         });
@@ -348,7 +348,7 @@ export default function RankingModal({ isOpen, onClose }) {
                                                 </div>
                                             </td>
                                             <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: '#f59e0b', fontSize: '1rem' }}>
-                                                {club.approvedEventsCount} pts
+                                                {club.clubScore} pts
                                             </td>
                                         </tr>
                                     ))
@@ -491,7 +491,7 @@ export default function RankingModal({ isOpen, onClose }) {
                                                     Score de départ (compte activé)
                                                     <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>par Système</div>
                                                 </td>
-                                                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>+1</td>
+                                                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>+2</td>
                                             </tr>
                                             <tr>
                                                 <td colSpan="3" style={{ padding: '1rem', textAlign: 'center', fontSize: '0.8rem', opacity: 0.4, fontStyle: 'italic' }}>

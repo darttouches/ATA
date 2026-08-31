@@ -61,7 +61,7 @@ const UserSchema = new mongoose.Schema({
     },
     bonusPoints: {
         type: Number,
-        default: 1,
+        default: 2,
     },
     lastActive: {
         type: Date,

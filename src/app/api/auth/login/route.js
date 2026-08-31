@@ -19,7 +19,31 @@ export async function POST(req) {
         }
 
         // Explicitly select password because it is set to select: false in schema
-        const user = await User.findOne({ email }).select('+password');
+        // If same email exists in multiple seasons (re-registration), pick the most recent active account first
+        const candidates = await User.find({ email }).select('+password').lean();
+        if (!candidates || candidates.length === 0) {
+            return NextResponse.json(
+                { error: 'Email ou mot de passe incorrect' },
+                { status: 401 }
+            );
+        }
+
+        // Sort: prefer active accounts, then most recent season, then most recent createdAt
+        candidates.sort((a, b) => {
+            const aActive = a.isActive !== false ? 1 : 0;
+            const bActive = b.isActive !== false ? 1 : 0;
+            if (bActive !== aActive) return bActive - aActive; // active first
+            // Then sort by season descending (e.g. '2026/2027' > '2025/2026')
+            const aSeason = a.season || '2025/2026';
+            const bSeason = b.season || '2025/2026';
+            if (bSeason !== aSeason) return bSeason.localeCompare(aSeason);
+            // Then by most recent creation
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        // Re-fetch the chosen user with a proper mongoose document (needed for .save())
+        const chosenId = candidates[0]._id;
+        const user = await User.findById(chosenId).select('+password');
 
         if (!user) {
             return NextResponse.json(
@@ -60,6 +84,15 @@ export async function POST(req) {
                 );
             }
         }
+
+        // Even if approved, member must have paid to access the platform
+        if (user.role !== 'admin' && user.status === 'approved' && user.isPaid === false) {
+            return NextResponse.json(
+                { error: 'PAYMENT_PENDING', errorCode: 'PAYMENT_PENDING' },
+                { status: 403 }
+            );
+        }
+
 
         // Generate a new Session ID
         const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);

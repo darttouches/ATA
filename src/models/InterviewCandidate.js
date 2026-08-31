@@ -30,6 +30,10 @@ const InterviewCandidateSchema = new mongoose.Schema({
     }],
 
     rulesConfirmed: { type: Boolean, default: false },
+
+    // Marked true once a User account is created with this code (prevents reuse)
+    accountCreated: { type: Boolean, default: false },
+    accountCreatedAt: { type: Date },
 }, { timestamps: true });
 
 if (process.env.NODE_ENV === 'development' && mongoose.models.InterviewCandidate) {

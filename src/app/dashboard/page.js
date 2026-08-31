@@ -16,12 +16,14 @@ export default function DashboardHome() {
     const [isRulesOpen, setIsRulesOpen] = useState(false);
 
     const [selectedMember, setSelectedMember] = useState(null);
+    const [selectedSeason, setSelectedSeason] = useState('2026/2027');
 
     useEffect(() => {
         const loadData = async () => {
+            setLoading(true);
             try {
                 const [statsRes, userRes] = await Promise.all([
-                    fetch('/api/dashboard/stats'),
+                    fetch(`/api/dashboard/stats?season=${selectedSeason}`),
                     fetch('/api/auth/me')
                 ]);
                 const statsData = await statsRes.json();
@@ -39,7 +41,7 @@ export default function DashboardHome() {
             }
         };
         loadData();
-    }, []);
+    }, [selectedSeason]);
 
     if (loading) return <div className="container" style={{ padding: '2rem' }}>{t('loading')}</div>;
 
@@ -198,10 +200,30 @@ export default function DashboardHome() {
 
                 {/* Membership Activity Curve */}
                 <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--card-border)', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <TrendingUp size={20} className="text-primary" /> {t('engagementPerformance')}
-                        </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <TrendingUp size={20} className="text-primary" /> {t('engagementPerformance')}
+                            </h3>
+                            <select
+                                value={selectedSeason}
+                                onChange={(e) => setSelectedSeason(e.target.value)}
+                                style={{
+                                    background: 'rgba(56, 189, 248, 0.1)',
+                                    color: '#38bdf8',
+                                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    outline: 'none',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value="2026/2027">Saison 2026/2027</option>
+                                <option value="2025/2026">Saison 2025/2026</option>
+                            </select>
+                        </div>
                         <button 
                             onClick={() => setIsRankingOpen(true)}
                             style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)' }}

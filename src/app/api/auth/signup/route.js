@@ -74,6 +74,14 @@ export async function POST(req) {
             );
         }
 
+        // Prevent code reuse — one code = one account
+        if (candidate.accountCreated) {
+            return NextResponse.json(
+                { error: 'Ce code d\'entretien a déjà été utilisé pour créer un compte. Veuillez contacter l\'administration.' },
+                { status: 400 }
+            );
+        }
+
         const targetSeason = '2026/2027';
 
         // Check if user already exists for current season
@@ -87,6 +95,29 @@ export async function POST(req) {
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Generate memberNumber: First letter of firstName + First letter of lastName + sequential digits starting from 101395
+        const firstLetter = (firstName || 'A').charAt(0).toUpperCase();
+        const lastLetter = (lastName || 'A').charAt(0).toUpperCase();
+        
+        // Find existing users to determine max sequence
+        const existingUsers = await User.find({ season: targetSeason, memberNumber: { $exists: true } }).select('memberNumber').lean();
+        let maxNumber = 101394; // Base before the first normal user (101395)
+        
+        for (const u of existingUsers) {
+            if (u.memberNumber) {
+                const match = u.memberNumber.match(/\d{6}$/);
+                if (match) {
+                    const num = parseInt(match[0], 10);
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+        }
+        
+        const nextDigits = maxNumber + 1;
+        const memberNumber = `${firstLetter}${lastLetter}${nextDigits}`;
 
         // Create user for 2026/2027 season
         const user = await User.create({
@@ -103,6 +134,13 @@ export async function POST(req) {
             season: targetSeason,
             role: 'membre',
             status: 'pending', // Explicitly set pending for new signups
+            memberNumber: memberNumber,
+        });
+
+        // Mark interview code as used (one-time use)
+        await InterviewCandidate.findByIdAndUpdate(candidate._id, {
+            accountCreated: true,
+            accountCreatedAt: new Date()
         });
 
         return NextResponse.json(
