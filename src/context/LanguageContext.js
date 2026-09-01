@@ -68,6 +68,16 @@ export const translations = {
         invalidToken: "Jeton de réinitialisation invalide ou manquant.",
         requestNewLink: "Demander un nouveau lien.",
         resetSuccessRedirect: "Votre mot de passe a été réinitialisé. Redirection vers la page de connexion...",
+        
+        // Recruitment
+        recruitmentTitle: "📢 Remarque : Statut de la Période d'Inscription",
+        recruitmentDays: "Il reste",
+        recruitmentDaysAfter: "jour(s) avant la fermeture des inscriptions.",
+        recruitmentClosesAt: "(Clôture prévue le",
+        recruitmentOpen: "La période d'inscription pour cette saison est actuellement ouverte.",
+        registrationClosedTitle: "Inscriptions Fermées",
+        registrationClosedMessage: "La période d'inscription pour cette saison n'est pas ouverte actuellement.",
+        backToHome: "Accéder à l'accueil",
 
         // Home
         brandName: "Touches D'Art",
@@ -640,6 +650,16 @@ export const translations = {
         invalidToken: "Invalid or missing reset token.",
         requestNewLink: "Request a new link.",
         resetSuccessRedirect: "Your password has been reset. Redirecting to login page...",
+        
+        // Recruitment 
+        recruitmentTitle: "📢 Note: Registration Period Status",
+        recruitmentDays: "There are",
+        recruitmentDaysAfter: "day(s) left before registration closes.",
+        recruitmentClosesAt: "(Closure planned for",
+        recruitmentOpen: "The registration period for this season is currently open.",
+        registrationClosedTitle: "Registrations Closed",
+        registrationClosedMessage: "The registration period for this season is not currently open.",
+        backToHome: "Back to Home",
         meetingTA: "TA Meeting",
         createMeeting: "Create Meeting",
         scheduleMeeting: "Schedule Meeting",
@@ -1176,6 +1196,16 @@ export const translations = {
         invalidToken: "رابط إعادة التعيين غير صالح أو مفقود.",
         requestNewLink: "طلب رابط جديد.",
         resetSuccessRedirect: "تمت إعادة تعيين كلمة المرور بنجاح. جاري توجيهك لصفحة تسجيل الدخول...",
+        
+        // Recruitment
+        recruitmentTitle: "📢 ملاحظة: حالة فترة التسجيل",
+        recruitmentDays: "يتبقى",
+        recruitmentDaysAfter: "يوم (أيام) قبل إغلاق التسجيل.",
+        recruitmentClosesAt: "(الإغلاق المقرر في",
+        recruitmentOpen: "فترة التسجيل لهذا الموسم مفتوحة حاليا.",
+        registrationClosedTitle: "التسجيل مغلق",
+        registrationClosedMessage: "فترة التسجيل لهذا الموسم غير مفتوحة حاليا.",
+        backToHome: "العودة للرئيسية",
 
         ataWaves: "أمواج أطا",
         latestEpisodes: "أحدث الحلقات",

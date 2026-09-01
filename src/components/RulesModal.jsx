@@ -203,7 +203,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                 {activeLang === 'ar' ? 'Charte & Règlement Intérieur' : activeLang === 'en' ? 'Association Rules & Regulations' : 'Charte & Règlement Intérieur'}
                             </h2>
                             <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255,255,255,0.6)' }}>
-                                {activeLang === 'ar' ? 'القواعد والإرشادات الرسمية لجمعية لمسات الفن' : activeLang === 'en' ? 'Official guidelines and principles of Touches d\'Art Association' : 'Règles et principes officiels de l\'association Touches d\'Art'}
+                                {activeLang === 'ar' ? 'القواعد والإرشادات الرسمية لجمعية لمسات فنية' : activeLang === 'en' ? 'Official guidelines and principles of Touches d\'Art Association' : 'Règles et principes officiels de l\'association Touches d\'Art'}
                             </p>
                         </div>
                     </div>

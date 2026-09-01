@@ -130,22 +130,112 @@ function InterviewRoomContent() {
         scrollToBottom();
     }, [chatHistory, isTyping]);
 
+    const audioIdRef = useRef(0);
+
+    const tryOnlineTTS = (text, activeLang) => {
+        audioIdRef.current += 1;
+        const currentId = audioIdRef.current;
+        safeEmitEvent('keyDown', 'Bouche');
+
+        const chunks = text.split(/ \.\.\.\. |\n|(?<=[.!?])\s+/).filter(c => c.trim().length > 0);
+        const subChunks = [];
+        
+        chunks.forEach(chunk => {
+            let remaining = chunk;
+            while (remaining.length > 0) {
+                let currentPart = remaining.substring(0, 150);
+                if (remaining.length > 150) {
+                     const lastSpace = currentPart.lastIndexOf(' ');
+                     if (lastSpace > 0) currentPart = currentPart.substring(0, lastSpace);
+                }
+                subChunks.push(currentPart.trim());
+                remaining = remaining.substring(currentPart.length).trim();
+            }
+        });
+
+        if (subChunks.length === 0) return;
+
+        if (!window.currentOnlineAudio) {
+            window.currentOnlineAudio = new Audio();
+        }
+        
+        const audio = window.currentOnlineAudio;
+        let index = 0;
+
+        const playNext = () => {
+            if (audioIdRef.current !== currentId || index >= subChunks.length) {
+                if (audioIdRef.current === currentId) {
+                    safeEmitEvent('keyUp', 'Bouche');
+                }
+                return;
+            }
+
+            const chunkToPlay = subChunks[index];
+            const url = `/api/tts?lang=${activeLang}&text=${encodeURIComponent(chunkToPlay)}`;
+            
+            let handled = false;
+            const cleanup = () => {
+                audio.removeEventListener('ended', handleEnded);
+                audio.removeEventListener('error', handleError);
+            };
+
+            const handleEnded = () => {
+                if (handled) return; handled = true;
+                cleanup();
+                index++;
+                playNext();
+            };
+            
+            const handleError = (e) => {
+                if (handled) return; handled = true;
+                console.warn('Backend TTS skipped chunk', e);
+                cleanup();
+                index++;
+                playNext(); 
+            };
+
+            audio.addEventListener('ended', handleEnded);
+            audio.addEventListener('error', handleError);
+            
+            audio.src = url;
+            audio.load();
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(handleError);
+            }
+        };
+
+        playNext();
+    };
+
     const speak = (text) => {
         if (!text) return;
-        if (synth.current) {
+        const activeLang = 'fr';
+        
+        const allVoices = typeof window !== 'undefined' ? window.speechSynthesis?.getVoices() || [] : [];
+        const nativeVoice = allVoices.find(v => v.lang.startsWith(activeLang));
+
+        if (nativeVoice && synth.current) {
             synth.current.cancel();
+            audioIdRef.current += 1;
+            const currentId = audioIdRef.current;
+
             const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = nativeVoice;
             utterance.lang = 'fr-FR';
             utterance.onstart = () => {
                 safeEmitEvent('keyDown', 'Bouche');
             };
             utterance.onend = () => {
-                safeEmitEvent('keyUp', 'Bouche');
+                if (audioIdRef.current === currentId) safeEmitEvent('keyUp', 'Bouche');
             };
             utterance.onerror = () => {
-                safeEmitEvent('keyUp', 'Bouche');
+                if (audioIdRef.current === currentId) safeEmitEvent('keyUp', 'Bouche');
+                tryOnlineTTS(text, activeLang);
             };
-            synth.current.speak(utterance);
+            setTimeout(() => synth.current?.speak(utterance), 50);
+        } else {
+            tryOnlineTTS(text, activeLang);
         }
     };
 

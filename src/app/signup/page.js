@@ -294,11 +294,11 @@ export default function Signup() {
                     </div>
                     
                     <h1 className={styles.title} style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-                        Inscriptions Fermées
+                        {t('registrationClosedTitle')}
                     </h1>
                     
                     <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.04)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        {recruitmentStatus.statusMessage || "La période d'inscription pour cette saison n'est pas ouverte actuellement."}
+                        {recruitmentStatus.statusMessage || t('registrationClosedMessage')}
                     </p>
                     
                     <button 
@@ -306,7 +306,7 @@ export default function Signup() {
                         className="btn btn-primary"
                         style={{ width: '100%', padding: '0.85rem 1.25rem', fontSize: '0.95rem', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px' }}
                     >
-                        <Home size={18} /> Accéder à l'accueil
+                        <Home size={18} /> {t('backToHome')}
                     </button>
                 </div>
             </div>
@@ -364,18 +364,18 @@ export default function Signup() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#e2e8f0', fontWeight: 600 }}>
-                                📢 Remarque : Statut de la Période d'Inscription
+                                {t('recruitmentTitle')}
                             </h4>
                             <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#cbd5e1', lineHeight: '1.4' }}>
                                 {recruitmentStatus.daysRemaining !== null ? (
                                     <>
-                                        Il reste <strong style={{ color: '#38bdf8', fontSize: '0.95rem' }}>{recruitmentStatus.daysRemaining} jour(s)</strong> avant la fermeture des inscriptions pour cette saison.
+                                        {t('recruitmentDays')} <strong style={{ color: '#38bdf8', fontSize: '0.95rem' }}>{recruitmentStatus.daysRemaining}</strong> {t('recruitmentDaysAfter')}
                                         {recruitmentStatus.endDate && (
-                                            <span style={{ opacity: 0.8 }}> (Clôture prévue le {new Date(recruitmentStatus.endDate).toLocaleDateString('fr-FR')})</span>
+                                            <span style={{ opacity: 0.8 }}> {t('recruitmentClosesAt')} {new Date(recruitmentStatus.endDate).toLocaleDateString('fr-FR')})</span>
                                         )}
                                     </>
                                 ) : (
-                                    <span>La période d'inscription pour cette saison est actuellement ouverte.</span>
+                                    <span>{t('recruitmentOpen')}</span>
                                 )}
                             </p>
                         </div>

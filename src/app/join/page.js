@@ -9,9 +9,9 @@ import { Calendar, Lock, Home, Loader2, AlertCircle } from 'lucide-react';
 export default function JoinPage() {
     // Step 0 is the start screen so we can get user interaction for autplaying audio
     const [step, setStep] = useState(0);
-    const { language } = useContext(LanguageContext) || { language: 'fr' }; 
+    const { language } = useContext(LanguageContext) || { language: 'fr' };
     const lang = language === 'en' ? 'en' : (language === 'ar' ? 'ar' : 'fr');
-    
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [answerFeedback, setAnswerFeedback] = useState(null);
     const [audioCompleted, setAudioCompleted] = useState(false);
@@ -20,21 +20,21 @@ export default function JoinPage() {
     useEffect(() => {
         setAudioCompleted(false);
     }, [step]);
-    
+
     // Data states
     const [questions, setQuestions] = useState([]);
     const [allRules, setAllRules] = useState([]);
     const [testRules, setTestRules] = useState([]);
-    
+
     // Quiz state
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [score, setScore] = useState(0);
-    
+
     // Typing test state
     const [currentRuleIndex, setCurrentRuleIndex] = useState(0);
     const [typedText, setTypedText] = useState('');
     const [typeError, setTypeError] = useState('');
-    
+
     // Interview request state
     const [interviewForm, setInterviewForm] = useState({
         firstName: '', lastName: '', email: '', phone: '', interviewDate: ''
@@ -42,7 +42,7 @@ export default function JoinPage() {
     const [loadingInterview, setLoadingInterview] = useState(false);
     const [generatedCode, setGeneratedCode] = useState('');
     const [codeCopied, setCodeCopied] = useState(false);
-    
+
     // Recruitment Period State
     const [recruitmentStatus, setRecruitmentStatus] = useState({
         loading: true,
@@ -73,7 +73,7 @@ export default function JoinPage() {
         const tzOffset = end.getTimezoneOffset() * 60000;
         return new Date(end.getTime() - tzOffset).toISOString().slice(0, 16);
     };
-    
+
     const synth = useRef(null);
     const splineRef = useRef(null);
 
@@ -128,7 +128,7 @@ export default function JoinPage() {
                 const shuffled = [...rData.data].sort(() => 0.5 - Math.random());
                 setTestRules(shuffled.slice(0, 3));
             }
-        } catch(e) { console.error(e); }
+        } catch (e) { console.error(e); }
     }
 
     const rvReadyRef = useRef(false);
@@ -234,7 +234,7 @@ export default function JoinPage() {
                             loading: false,
                             isPeriodActive: true,
                             daysRemaining: daysRem,
-                            statusMessage: end 
+                            statusMessage: end
                                 ? `Période d'inscription ouverte ! Clôture dans ${daysRem} jour(s).`
                                 : "Période d'inscription actuellement ouverte.",
                             startDate: recruitment.startDate,
@@ -255,17 +255,17 @@ export default function JoinPage() {
 
         fetchInitial();
         fetchRecruitmentSettings();
-        
+
         // Stop background music to hear the robot
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new Event('stop-bg-music'));
         }
-        
+
         return () => {
-             // Resume music when leaving this page
-             if (typeof window !== 'undefined') {
-                 window.dispatchEvent(new Event('play-bg-music'));
-             }
+            // Resume music when leaving this page
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('play-bg-music'));
+            }
         };
     }, []);
 
@@ -304,24 +304,18 @@ export default function JoinPage() {
 
     const speak = (text, forceLang) => {
         if (!text) return;
-
         const activeLang = forceLang || langRef.current;
-
-        // Map lang to ResponsiveVoice voice names
-        const rvVoiceMap = {
-            ar: 'Arabic Male',
-            fr: 'French Female',
-            en: 'UK English Female',
-        };
 
         const allVoices = voicesRef.current.length > 0
             ? voicesRef.current
             : (typeof window !== 'undefined' ? window.speechSynthesis?.getVoices() || [] : []);
 
-        // Check if native voice exists for this lang
-        const nativeVoice = allVoices.find(v => v.lang.startsWith(activeLang));
+        // Windows local Arabic voices are notoriously buggy and often fail silently.
+        // Force the use of the reliable backend Google TTS for Arabic.
+        const nativeVoice = activeLang === 'ar'
+            ? undefined
+            : allVoices.find(v => v.lang.startsWith(activeLang));
 
-        // Prefer native voice if available (no internet required)
         if (nativeVoice && synth.current) {
             synth.current.cancel();
             audioIdRef.current += 1;
@@ -329,9 +323,9 @@ export default function JoinPage() {
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.voice = nativeVoice;
-            utterance.lang = nativeVoice.lang;
+            utterance.lang = activeLang === 'ar' ? 'ar-SA' : (activeLang === 'fr' ? 'fr-FR' : 'en-US');
             utterance.rate = activeLang === 'ar' ? 0.85 : 1;
-            utterance.volume = 1;
+
             utterance.onstart = () => {
                 setIsPlaying(true);
                 safeEmitEvent('keyDown', 'Mouth Move 2');
@@ -342,93 +336,116 @@ export default function JoinPage() {
                 safeEmitEvent('keyUp', 'Mouth Move 2');
             };
             utterance.onerror = (e) => {
-                console.warn('Native TTS failed, trying ResponsiveVoice...', e.error);
+                console.warn('Native TTS failed, trying online TTS...', e);
                 setIsPlaying(false);
-                if (audioIdRef.current === currentId) setAudioCompleted(true);
                 safeEmitEvent('keyUp', 'Mouth Move 2');
-                tryResponsiveVoice(text, activeLang, rvVoiceMap);
+                tryOnlineTTS(text, activeLang);
             };
             setTimeout(() => synth.current?.speak(utterance), 50);
-
         } else {
-            // Fallback: use ResponsiveVoice (online, supports Arabic natively)
-            tryResponsiveVoice(text, activeLang, rvVoiceMap);
+            tryOnlineTTS(text, activeLang);
         }
     };
 
-    const tryResponsiveVoice = (text, activeLang, rvVoiceMap) => {
-        // Wait up to 3s for RV to be available then try
-        const attempt = (retries = 0) => {
-            if (typeof window !== 'undefined' && window.responsiveVoice) {
-                window.responsiveVoice.cancel();
-                audioIdRef.current += 1;
-                const currentId = audioIdRef.current;
+    const tryOnlineTTS = (text, activeLang) => {
+        audioIdRef.current += 1;
+        const currentId = audioIdRef.current;
+        setIsPlaying(true);
+        safeEmitEvent('keyDown', 'Bouche');
 
-                const rvVoice = rvVoiceMap[activeLang] || 'French Female';
-                setIsPlaying(true);
-                safeEmitEvent('keyDown', 'Bouche');
-                window.responsiveVoice.speak(text, rvVoice, {
-                    rate: activeLang === 'ar' ? 0.85 : 1,
-                    onend: () => {
-                        setIsPlaying(false);
-                        if (audioIdRef.current === currentId) setAudioCompleted(true);
-                        safeEmitEvent('keyUp', 'Mouth Move 2');
-                    },
-                    onerror: () => {
-                        setIsPlaying(false);
-                        if (audioIdRef.current === currentId) setAudioCompleted(true);
-                        safeEmitEvent('keyUp', 'Mouth Move 2');
-                    }
-                });
-            } else if (retries < 6) {
-                // Script still loading, retry in 500ms
-                setTimeout(() => attempt(retries + 1), 500);
-            } else {
-                console.warn('ResponsiveVoice non disponible après attente. Vérifiez votre connexion internet.');
+        // Split text by rules separator or sentences, keeping chunks under 150 chars
+        const chunks = text.split(/ \.\.\.\. |\n|(?<=[.!?])\s+/).filter(c => c.trim().length > 0);
+        const subChunks = [];
+
+        chunks.forEach(chunk => {
+            let remaining = chunk;
+            while (remaining.length > 0) {
+                let currentPart = remaining.substring(0, 150);
+                if (remaining.length > 150) {
+                    const lastSpace = currentPart.lastIndexOf(' ');
+                    if (lastSpace > 0) currentPart = currentPart.substring(0, lastSpace);
+                }
+                subChunks.push(currentPart.trim());
+                remaining = remaining.substring(currentPart.length).trim();
+            }
+        });
+
+        if (subChunks.length === 0) return;
+
+        if (!window.currentOnlineAudio) {
+            window.currentOnlineAudio = new Audio();
+        }
+
+        const audio = window.currentOnlineAudio;
+        let index = 0;
+
+        const playNext = () => {
+            if (audioIdRef.current !== currentId || index >= subChunks.length) {
+                if (audioIdRef.current === currentId) {
+                    setIsPlaying(false);
+                    setAudioCompleted(true);
+                    safeEmitEvent('keyUp', 'Bouche');
+                }
+                return;
+            }
+
+            const chunkToPlay = subChunks[index];
+            const url = `/api/tts?lang=${activeLang}&text=${encodeURIComponent(chunkToPlay)}`;
+
+            let handled = false;
+            const cleanup = () => {
+                audio.removeEventListener('ended', handleEnded);
+                audio.removeEventListener('error', handleError);
+            };
+
+            const handleEnded = () => {
+                if (handled) return; handled = true;
+                cleanup();
+                index++;
+                playNext();
+            };
+
+            const handleError = (e) => {
+                if (handled) return; handled = true;
+                console.warn('Backend TTS skipped chunk', e);
+                cleanup();
+                index++;
+                playNext(); // Skip and continue
+            };
+
+            audio.addEventListener('ended', handleEnded);
+            audio.addEventListener('error', handleError);
+
+            audio.src = url;
+            audio.load();
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(handleError);
             }
         };
-        attempt();
+
+        playNext();
     };
 
     const stopSpeaking = () => {
         if (synth.current) synth.current.cancel();
-        if (typeof window !== 'undefined' && window.responsiveVoice) {
-            window.responsiveVoice.cancel();
-        }
+        audioIdRef.current += 1; // Cancels ongoing online TTS loop
         setIsPlaying(false);
         safeEmitEvent('keyUp', 'Bouche');
+
+        // Try to stop any globally playing audio tag if we stored it
+        if (window.currentOnlineAudio) {
+            window.currentOnlineAudio.pause();
+            window.currentOnlineAudio.currentTime = 0;
+        }
     };
 
     const triggerRulesAudio = (rulesList) => {
-        if (!synth.current || rulesList.length === 0) return;
-        synth.current.cancel();
-        audioIdRef.current += 1;
-        const currentId = audioIdRef.current;
-        
+        if (rulesList.length === 0) return;
+
         // Combine all rules into one block of text to read sequentially
         const combinedText = rulesList.map((r, i) => `${i + 1}. ${r.fullText[lang]}`).join(' .... ');
-        let utterance = new SpeechSynthesisUtterance(combinedText);
-        
-        if (lang === 'ar') utterance.lang = 'ar-SA';
-        else if (lang === 'fr') utterance.lang = 'fr-FR';
-        else utterance.lang = 'en-US';
-        
-        utterance.onstart = () => {
-            setIsPlaying(true);
-            safeEmitEvent('keyDown', 'Bouche');
-        };
-        utterance.onend = () => {
-            setIsPlaying(false);
-            if (audioIdRef.current === currentId) setAudioCompleted(true);
-            safeEmitEvent('keyUp', 'Bouche');
-        };
-        utterance.onerror = () => {
-            setIsPlaying(false);
-            if (audioIdRef.current === currentId) setAudioCompleted(true);
-            safeEmitEvent('keyUp', 'Bouche');
-        };
-        
-        synth.current.speak(utterance);
+        speak(combinedText);
     };
 
     // Auto-play whenever entering a step that has text
@@ -448,12 +465,12 @@ export default function JoinPage() {
             // Read all rules aloud
             triggerRulesAudio(allRules);
         }
-        
+
         // Stop playing if entering a quiet step
         if (step === 4 || step === 9 || step === 0) {
             stopSpeaking();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentRuleIndex, lang, allRules, testRules]);
 
     // ── Text normalisation (mobile & desktop safe) ──────────────────────────
@@ -604,7 +621,7 @@ export default function JoinPage() {
             });
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || "Erreur serveur");
-            
+
             setGeneratedCode(data.code);
             setStep(10);
         } catch (err) {
@@ -622,10 +639,10 @@ export default function JoinPage() {
     // Dictionary for hardcoded UI strings
     const i18n = {
         ar: {
-            step0intro: "مرحباً! اضغط لبدء رحلة الانضمام إلى جمعية لمسات الفن",
+            step0intro: "مرحباً! اضغط لبدء رحلة الانضمام إلى جمعية لمسات فنية",
             startBtn: "🚀 ابدأ التجربة",
-            step1: "مرحباً! أنا الروبوت المساعد لجمعية لمسات الفن. سأرافقك في رحلة انضمامك للجمعية.",
-            step2: "\"لمسات الفن\" هي جمعية ثقافية تحتضن مجموعة من الشباب المبدعين ذوي المواهب المتنوعة، مثل تنظيم الفعاليات، تنشيط الجماهير، الصحافة والإعلام، الرسم، الغناء، وغيرها من الفنون والمواهب.",
+            step1: "مرحباً! أنا الروبوت المساعد لجمعية لمسات فنية. سأرافقك في رحلة انضمامك للجمعية.",
+            step2: "\"لمسات فنية\" هي جمعية ثقافية تحتضن مجموعة من الشباب المبدعين ذوي المواهب المتنوعة، مثل تنظيم الفعاليات، تنشيط الجماهير، الصحافة والإعلام، الرسم، الغناء، وغيرها من الفنون والمواهب.",
             step3: "أهدافنا:\n- ترسيخ قيم التطوع والمبادرة في أوساط الشباب.\n- دعم السياحة الداخلية.\n- الترويج للمعالم التاريخية في تونس.\n\nمجالات نشاطنا:\n1. المجال الثقافي والفني.\n2. المجال الاجتماعي والتربوي.\n3. المجال الترفيهي.",
             step6: "ممتاز! لقد اجتزت الاختبار بنجاح. الآن، لنتعرف على جميع القواعد الهامة لعمل الجمعية.",
             step7Title: "قواعد الجمعية",
@@ -642,6 +659,11 @@ export default function JoinPage() {
             verifyBtn: "تحقق من الإجابة ✓",
             finalFormTitle: "مرحباً بك في العائلة! يرجى إكمال تسجيلك النهائي",
             submit: "إرسال طلب الانضمام",
+            recruitmentTitle: "📢 ملاحظة: حالة فترة التسجيل",
+            recruitmentDays: "يتبقى",
+            recruitmentDaysAfter: "يوم (أيام) قبل إغلاق التسجيل.",
+            recruitmentClosesAt: "(الإغلاق المقرر في",
+            recruitmentOpen: "فترة التسجيل لهذا الموسم مفتوحة حاليا."
         },
         fr: {
             step0intro: "Bonjour ! Cliquez pour démarrer votre processus d'intégration à Touches D'Art.",
@@ -664,6 +686,11 @@ export default function JoinPage() {
             verifyBtn: "Vérifier la réponse ✓",
             finalFormTitle: "Félicitations ! Vous avez terminé l'intégration.",
             submit: "Ouvrir le formulaire d'inscription",
+            recruitmentTitle: "📢 Remarque : Statut de la Période d'Inscription",
+            recruitmentDays: "Il reste",
+            recruitmentDaysAfter: "jour(s) avant la fermeture des inscriptions.",
+            recruitmentClosesAt: "(Clôture prévue le",
+            recruitmentOpen: "La période d'inscription pour cette saison est actuellement ouverte."
         },
         en: {
             step0intro: "Welcome! Click to start your Touches D'Art onboarding journey.",
@@ -686,9 +713,14 @@ export default function JoinPage() {
             verifyBtn: "Verify Answer ✓",
             finalFormTitle: "Congratulations! You completed the onboarding.",
             submit: "Open Registration Form",
+            recruitmentTitle: "📢 Note: Registration Period Status",
+            recruitmentDays: "There are",
+            recruitmentDaysAfter: "day(s) left before registration closes.",
+            recruitmentClosesAt: "(Closure planned for",
+            recruitmentOpen: "The registration period for this season is currently open."
         }
     };
-    
+
     // Fallback dictionary
     const getText = (key) => i18n[lang]?.[key] || i18n['fr'][key];
 
@@ -713,10 +745,10 @@ export default function JoinPage() {
         switch (step) {
             case 0:
                 return (
-                    <div className={styles.messageBubble} style={{textAlign: 'center'}}>
+                    <div className={styles.messageBubble} style={{ textAlign: 'center' }}>
                         <h3>{getText('step0intro')}</h3>
-                        <div className={styles.controls} style={{justifyContent: 'center', marginTop: '30px'}}>
-                            <button onClick={() => setStep(1)} className={`${styles.btn} ${styles.btnPrimary}`} style={{fontSize: '1.2rem', padding: '15px 30px'}}>
+                        <div className={styles.controls} style={{ justifyContent: 'center', marginTop: '30px' }}>
+                            <button onClick={() => setStep(1)} className={`${styles.btn} ${styles.btnPrimary}`} style={{ fontSize: '1.2rem', padding: '15px 30px' }}>
                                 {getText('startBtn')}
                             </button>
                         </div>
@@ -814,7 +846,7 @@ export default function JoinPage() {
                                 {getText('play')}
                             </button>
                             {isPlaying && <button onClick={stopSpeaking} className={styles.btn}>{getText('stop')}</button>}
-                            
+
                             <button onClick={async () => {
                                 setScore(0);
                                 setCurrentQuestionIndex(0);
@@ -837,32 +869,32 @@ export default function JoinPage() {
                     </div>
                 );
             case 7:
-                 if (allRules.length === 0) return <p>Loading rules...</p>;
-                 return (
-                     <div className={styles.messageBubble}>
-                        <h4 style={{margin: '0 0 10px 0'}}>{getText('step7Title')}</h4>
-                        <p style={{fontSize: '0.9rem', color: '#94a3b8', marginBottom: '15px'}}>{getText('step7Subtitle')}</p>
-                        
+                if (allRules.length === 0) return <p>Loading rules...</p>;
+                return (
+                    <div className={styles.messageBubble}>
+                        <h4 style={{ margin: '0 0 10px 0' }}>{getText('step7Title')}</h4>
+                        <p style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '15px' }}>{getText('step7Subtitle')}</p>
+
                         <div style={{ maxHeight: 'min(50vh, 450px)', overflowY: 'auto', paddingRight: '10px', textAlign: 'start' }}>
                             {allRules.map((rule, idx) => (
                                 <div key={idx} style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '10px', textAlign: 'start', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
-                                    <strong style={{color: '#60a5fa', fontSize: '0.8rem', display: 'block', marginBottom: '2px'}}>{translateCategory(rule.category)}</strong>
-                                    <p style={{margin: '0', fontSize: '0.95rem'}}>{rule.fullText[lang]}</p>
+                                    <strong style={{ color: '#60a5fa', fontSize: '0.8rem', display: 'block', marginBottom: '2px' }}>{translateCategory(rule.category)}</strong>
+                                    <p style={{ margin: '0', fontSize: '0.95rem' }}>{rule.fullText[lang]}</p>
                                 </div>
                             ))}
                         </div>
-                        
-                        <div className={styles.controls} style={{marginTop: '20px'}}>
+
+                        <div className={styles.controls} style={{ marginTop: '20px' }}>
                             <button onClick={() => triggerRulesAudio(allRules)} className={styles.btn}>{getText('play')}</button>
-                            
+
                             {audioCompleted && (
-                                <button onClick={() => setStep(9)} className={`${styles.btn} ${styles.btnPrimary}`} style={{marginLeft: 'auto'}}>
+                                <button onClick={() => setStep(9)} className={`${styles.btn} ${styles.btnPrimary}`} style={{ marginLeft: 'auto' }}>
                                     {getText('next')}
                                 </button>
                             )}
                         </div>
-                     </div>
-                 );
+                    </div>
+                );
             case 9:
                 return (
                     <div className={styles.messageBubble}>
@@ -883,7 +915,7 @@ export default function JoinPage() {
                                     placeholder="Prénom"
                                     required
                                     value={interviewForm.firstName}
-                                    onChange={e => setInterviewForm({...interviewForm, firstName: e.target.value})}
+                                    onChange={e => setInterviewForm({ ...interviewForm, firstName: e.target.value })}
                                 />
                                 <input
                                     type="text"
@@ -891,7 +923,7 @@ export default function JoinPage() {
                                     placeholder="Nom"
                                     required
                                     value={interviewForm.lastName}
-                                    onChange={e => setInterviewForm({...interviewForm, lastName: e.target.value})}
+                                    onChange={e => setInterviewForm({ ...interviewForm, lastName: e.target.value })}
                                 />
                             </div>
                             <input
@@ -900,7 +932,7 @@ export default function JoinPage() {
                                 placeholder="Numéro de téléphone"
                                 required
                                 value={interviewForm.phone}
-                                onChange={e => setInterviewForm({...interviewForm, phone: e.target.value})}
+                                onChange={e => setInterviewForm({ ...interviewForm, phone: e.target.value })}
                             />
                             <input
                                 type="email"
@@ -908,7 +940,7 @@ export default function JoinPage() {
                                 placeholder="Adresse email"
                                 required
                                 value={interviewForm.email}
-                                onChange={e => setInterviewForm({...interviewForm, email: e.target.value})}
+                                onChange={e => setInterviewForm({ ...interviewForm, email: e.target.value })}
                             />
                             <div style={{ marginTop: '0.25rem' }}>
                                 <label style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.4rem' }}>
@@ -924,7 +956,7 @@ export default function JoinPage() {
                                     className={styles.inputField}
                                     required
                                     value={interviewForm.interviewDate}
-                                    onChange={e => setInterviewForm({...interviewForm, interviewDate: e.target.value})}
+                                    onChange={e => setInterviewForm({ ...interviewForm, interviewDate: e.target.value })}
                                     min={getMinInterviewDateTime()}
                                     max={getMaxInterviewDateTime()}
                                 />
@@ -946,10 +978,10 @@ export default function JoinPage() {
                     <div className={styles.messageBubble} style={{ textAlign: 'center' }}>
                         <h2 style={{ color: '#10b981', marginBottom: '0.5rem' }}>✅ Demande confirmée !</h2>
                         <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            Votre rendez-vous d'entretien est enregistré.<br/>
+                            Votre rendez-vous d'entretien est enregistré.<br />
                             <strong>Conservez précieusement ce code.</strong> Il vous permettra d'accéder à votre salle d'entretien à la date choisie.
                         </p>
-                        
+
                         <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '10px', padding: '0.85rem', marginBottom: '1rem', color: '#7dd3fc', fontSize: '0.85rem', textAlign: 'left' }}>
                             📧 <strong>Email envoyé !</strong> Un message de confirmation trilingue contenant votre code, rappel du rendez-vous et avertissement sur le retard a été envoyé à votre adresse email.
                         </div>
@@ -989,7 +1021,7 @@ export default function JoinPage() {
                         <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.4)', borderRadius: '10px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
                             <p style={{ color: '#f43f5e', fontWeight: 700, marginBottom: '0.4rem', fontSize: '0.9rem' }}>⚠️ Règle stricte sur le retard (15 min max)</p>
                             <p style={{ color: '#fecdd3', fontSize: '0.85rem', margin: 0, lineHeight: '1.6' }}>
-                                Vous devez accéder à la salle d'entretien à l'heure exacte ou dans un <strong>délai maximal de 15 minutes</strong> après l'heure prévue.<br/>
+                                Vous devez accéder à la salle d'entretien à l'heure exacte ou dans un <strong>délai maximal de 15 minutes</strong> après l'heure prévue.<br />
                                 <strong>Au-delà de 15 minutes de retard</strong>, votre code deviendra automatiquement <strong>invalide et inutilisable</strong>.
                             </p>
                         </div>
@@ -1026,16 +1058,16 @@ export default function JoinPage() {
                     <div style={{ width: '70px', height: '70px', background: 'rgba(239, 68, 68, 0.15)', border: '2px solid rgba(239, 68, 68, 0.4)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
                         <Lock size={36} color="#ef4444" />
                     </div>
-                    
+
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#ffffff', marginBottom: '1rem' }}>
                         Inscriptions Fermées
                     </h1>
-                    
+
                     <p style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem', background: 'rgba(255,255,255,0.04)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                         {recruitmentStatus.statusMessage || "Les inscriptions sont actuellement fermées ou hors période autorisée."}
                     </p>
-                    
-                    <button 
+
+                    <button
                         onClick={() => window.location.href = '/'}
                         className={`${styles.btn} ${styles.btnPrimary}`}
                         style={{ width: '100%', padding: '0.85rem 1.5rem', fontSize: '1rem', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px' }}
@@ -1078,18 +1110,18 @@ export default function JoinPage() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 600 }}>
-                                📢 Remarque : Statut de la Période d'Inscription
+                                {getText('recruitmentTitle')}
                             </h4>
                             <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.4' }}>
                                 {recruitmentStatus.daysRemaining !== null ? (
                                     <>
-                                        Il reste <strong style={{ color: '#38bdf8' }}>{recruitmentStatus.daysRemaining} jour(s)</strong> avant la fermeture des inscriptions.
+                                        {getText('recruitmentDays')} <strong style={{ color: '#38bdf8' }}>{recruitmentStatus.daysRemaining}</strong> {getText('recruitmentDaysAfter')}
                                         {recruitmentStatus.endDate && (
-                                            <span style={{ opacity: 0.8 }}> (Clôture prévue le {new Date(recruitmentStatus.endDate).toLocaleDateString('fr-FR')})</span>
+                                            <span style={{ opacity: 0.8 }}> {getText('recruitmentClosesAt')} {new Date(recruitmentStatus.endDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : lang === 'en' ? 'en-US' : 'fr-FR')})</span>
                                         )}
                                     </>
                                 ) : (
-                                    <span>La période d'inscription pour cette saison est actuellement ouverte.</span>
+                                    <span>{getText('recruitmentOpen')}</span>
                                 )}
                             </p>
                         </div>
@@ -1111,19 +1143,19 @@ export default function JoinPage() {
                         }
                     `}</style>
                     <div className={`${styles.splineWrapper} ${answerFeedback === 'correct' ? styles.correctFeedback : answerFeedback === 'wrong' ? styles.wrongFeedback : ''}`}>
-                        <Spline 
-                            scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode" 
+                        <Spline
+                            scene="https://prod.spline.design/14vMjuI-SUR2PrJP/scene.splinecode"
                             onLoad={(spline) => { splineRef.current = spline; }}
-                            onError={() => {}}
+                            onError={() => { }}
                         />
-                        {/* Solid mask over "Built with Spline" badge — matches Spline's dark background */}
+                        {/* Solid mask over "Built with Spline" badge — matches computed chatBox background */}
                         <div aria-hidden="true" style={{
                             position: 'absolute',
                             bottom: 0,
                             right: 0,
                             width: '220px',
                             height: '60px',
-                            background: '#0d1117',
+                            background: '#192436',
                             zIndex: 20,
                             pointerEvents: 'none'
                         }} />
@@ -1134,7 +1166,7 @@ export default function JoinPage() {
                             right: 0,
                             width: '100%',
                             height: '30px',
-                            background: 'linear-gradient(to top, #0d1117 60%, transparent 100%)',
+                            background: 'linear-gradient(to top, #192436 60%, transparent 100%)',
                             zIndex: 19,
                             pointerEvents: 'none'
                         }} />

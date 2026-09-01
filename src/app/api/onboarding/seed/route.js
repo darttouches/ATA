@@ -6,7 +6,7 @@ import QuizQuestion from '@/models/QuizQuestion';
 export async function GET() {
     try {
         await dbConnect();
-        
+
         // Clear old ones to populate with the comprehensive ones
         await Rule.deleteMany({});
         await QuizQuestion.deleteMany({});
@@ -40,7 +40,7 @@ export async function GET() {
                 },
                 shortTextToType: { fr: 'respect des engagements', en: 'respect commitments', ar: 'احترام الالتزامات' }
             },
-            
+
             // Discipline et comportement
             {
                 category: 'Discipline et comportement',
@@ -114,7 +114,7 @@ export async function GET() {
                 fullText: {
                     fr: 'Respect des intervenants : Les invités, formateurs et partenaires sont traités avec professionnalisme en toute circonstance.',
                     en: 'Respect for speakers: Guests, trainers and partners are treated professionally at all times.',
-                    ar: 'احترام المتدخلين: يتم التعامع مع الضيوف والمدربين والشركاء باحترافية في جميع الأوقات.' 
+                    ar: 'احترام المتدخلين: يتم التعامع مع الضيوف والمدربين والشركاء باحترافية في جميع الأوقات.'
                 },
                 shortTextToType: { fr: 'respect des partenaires', en: 'respect for partners', ar: 'احترام الشركاء' }
             },
@@ -123,7 +123,7 @@ export async function GET() {
                 fullText: {
                     fr: 'Respect des lieux : Les membres veillent à préserver la propreté et l\'intégrité des espaces utilisés lors des événements.',
                     en: 'Respect for premises: Members ensure the cleanliness and integrity of the spaces used during events.',
-                    ar: 'احترام الأماكن: يحرص الأعضاء على الحفاظ على نظافة وسلامة الأماكن المستخدمة أثناء الفعاليات.' 
+                    ar: 'احترام الأماكن: يحرص الأعضاء على الحفاظ على نظافة وسلامة الأماكن المستخدمة أثناء الفعاليات.'
                 },
                 shortTextToType: { fr: 'propreté des espaces', en: 'cleanliness of spaces', ar: 'نظافة الأماكن' }
             },
@@ -152,7 +152,7 @@ export async function GET() {
                 fullText: {
                     fr: 'Interdiction de l\'usurpation : Il est strictement interdit d\'utiliser le nom, le logo ou l\'identité de Touches d\'art à des fins personnelles.',
                     en: 'Prohibition of usurpation: It is strictly forbidden to use the name, logo or identity of Touches d\'art for personal purposes.',
-                    ar: 'منع الانتحال: يمنع منعا باتا استخدام اسم أو شعار أو هوية لمسات الفن لأغراض شخصية.'
+                    ar: 'منع الانتحال: يمنع منعا باتا استخدام اسم أو شعار أو هوية لمسات فنية لأغراض شخصية.'
                 },
                 shortTextToType: { fr: 'interdiction d usurpation', en: 'prohibition of usurpation', ar: 'منع الانتحال' }
             },
@@ -161,8 +161,8 @@ export async function GET() {
                 fullText: {
                     fr: 'Utilisation de l\'image : Toute publication représentant officiellement Touches d\'art doit respecter son identité et ses valeurs.',
                     en: 'Use of image: Any publication officially representing Touches d\'art must respect its identity and values.',
-                    ar: 'استخدام الصورة: أي منشور يمثل جمعية لمسات الفن رسميا يجب أن يحترم هويتها وقيمها.'
-                },
+                    ar: 'استخدام الصورة: أي منشور يمثل جمعية لمسات فنية رسميا يجب أن يحترم هويتها وقيمها.'
+                },  
                 shortTextToType: { fr: 'respecter son identité', en: 'respect its identity', ar: 'احترام هويتها' }
             },
             {
@@ -197,7 +197,7 @@ export async function GET() {
                 fullText: {
                     fr: 'Communication officielle : Seules les personnes dûment autorisées peuvent s\'exprimer officiellement au nom de Touches d\'art.',
                     en: 'Official communication: Only duly authorized persons may speak officially on behalf of Touches d\'art.',
-                    ar: 'التواصل الرسمي: يُسمح فقط للأشخاص المخولين حسب الأصول بالتحدث رسميًا باسم لمسات الفن.'
+                    ar: 'التواصل الرسمي: يُسمح فقط للأشخاص المخولين حسب الأصول بالتحدث رسميًا باسم لمسات فنية.'
                 },
                 shortTextToType: { fr: 'personnes autorisées', en: 'authorized persons', ar: 'الأشخاص المخولين' }
             },
@@ -244,7 +244,7 @@ export async function GET() {
                 fullText: {
                     fr: 'Esprit d\'équipe : La compétition personnelle et les rivalités internes sont incompatibles avec les valeurs de Touches d\'art.',
                     en: 'Team spirit: Personal competition and internal rivalries are incompatible with the values of Touches d\'art.',
-                    ar: 'روح الفريق: التنافس الشخصي والخلافات الداخلية تتنافى مع قيم لمسات الفن.'
+                    ar: 'روح الفريق: التنافس الشخصي والخلافات الداخلية تتنافى مع قيم لمسات فنية.'
                 },
                 shortTextToType: { fr: 'rivalités internes incompatibles', en: 'rivalries incompatible', ar: 'الخلافات الداخلية تتنافى' }
             },
@@ -270,10 +270,10 @@ export async function GET() {
 
         const questionsToInsert = [
             {
-                questionText: { 
-                    ar: 'ما هي طبيعة القوى العاملة أو الأعضاء الذين تستهدفهم جمعية "لمسات الفن"؟', 
-                    fr: 'Qui est principalement accueilli par l\'association "Touches d\'Art" ?', 
-                    en: 'Who is primarily welcomed by the "Touches d\'Art" association?' 
+                questionText: {
+                    ar: 'ما هي طبيعة القوى العاملة أو الأعضاء الذين تستهدفهم جمعية "لمسات فنية  "؟',
+                    fr: 'Qui est principalement accueilli par l\'association "Touches d\'Art" ?',
+                    en: 'Who is primarily welcomed by the "Touches d\'Art" association?'
                 },
                 options: [
                     { text: { ar: 'الشباب المبدعون ذوو المواهب المختلفة', fr: 'De jeunes créatifs aux talents variés', en: 'Young creatives with varied talents' }, isCorrect: true },
@@ -282,10 +282,10 @@ export async function GET() {
                 ]
             },
             {
-                questionText: { 
-                    ar: 'أي من الأهداف التالية ينتمي لأهداف الجمعية الأساسية؟', 
-                    fr: 'Lequel de ces éléments figure parmi les objectifs de l\'association ?', 
-                    en: 'Which of the following is among the objectives of the association?' 
+                questionText: {
+                    ar: 'أي من الأهداف التالية ينتمي لأهداف الجمعية الأساسية؟',
+                    fr: 'Lequel de ces éléments figure parmi les objectifs de l\'association ?',
+                    en: 'Which of the following is among the objectives of the association?'
                 },
                 options: [
                     { text: { ar: 'دعم السياحة الداخلية والترويج للمعالم التاريخية', fr: 'Soutenir le tourisme intérieur et les monuments historiques', en: 'Supporting domestic tourism and historical monuments' }, isCorrect: true },
@@ -294,10 +294,10 @@ export async function GET() {
                 ]
             },
             {
-                questionText: { 
-                    ar: 'ما الهدف من المجال الاجتماعي والتربوي بالجمعية؟', 
-                    fr: 'Dans quel but l\'association a-t-elle créé le Domaine Social & Éducatif ?', 
-                    en: 'For what purpose did the association create the Social & Educational Field?' 
+                questionText: {
+                    ar: 'ما الهدف من المجال الاجتماعي والتربوي بالجمعية؟',
+                    fr: 'Dans quel but l\'association a-t-elle créé le Domaine Social & Éducatif ?',
+                    en: 'For what purpose did the association create the Social & Educational Field?'
                 },
                 options: [
                     { text: { ar: 'لزيادة مبيعات المنتجات الفنية', fr: 'Pour vendre des produits', en: 'To sell art products' }, isCorrect: false },
@@ -306,10 +306,10 @@ export async function GET() {
                 ]
             },
             {
-                questionText: { 
-                    ar: 'وفقاً لمجال النشاط الترفيهي، ماذا تفعل الجمعية للجمهور؟', 
-                    fr: 'Que propose le Domaine Récréatif au grand public ?', 
-                    en: 'What does the Recreational Field offer to the general public?' 
+                questionText: {
+                    ar: 'وفقاً لمجال النشاط الترفيهي، ماذا تفعل الجمعية للجمهور؟',
+                    fr: 'Que propose le Domaine Récréatif au grand public ?',
+                    en: 'What does the Recreational Field offer to the general public?'
                 },
                 options: [
                     { text: { ar: 'تفتح أبوابها للجمهور عبر أنشطة متنوعة ورحلات ترفيهية', fr: 'Il ouvre ses portes au public via diverses activités et sorties', en: 'Opens doors to the public through various activities and outings' }, isCorrect: true },
@@ -318,10 +318,10 @@ export async function GET() {
                 ]
             },
             {
-                questionText: { 
-                    ar: 'أي من الأنشطة التالية ذُكر ضمن مواهب أعضاء "لمسات الفن"؟', 
-                    fr: 'Lequel de ces talents est cité dans la présentation de "Touches d\'Art" ?', 
-                    en: 'Which of these talents is mentioned in the presentation of "Touches d\'Art"?' 
+                questionText: {
+                    ar: 'أي من الأنشطة التالية ذُكر ضمن مواهب أعضاءلمسات فنية"؟',
+                    fr: 'Lequel de ces talents est cité dans la présentation de "Touches d\'Art" ?',
+                    en: 'Which of these talents is mentioned in the presentation of "Touches d\'Art"?'
                 },
                 options: [
                     { text: { ar: 'تطوير ألعاب الفيديو الاستراتيجية', fr: 'Le développement de jeux vidéo tactiques', en: 'The development of tactical video games' }, isCorrect: false },
@@ -330,10 +330,10 @@ export async function GET() {
                 ]
             },
             {
-                questionText: { 
-                    ar: 'ما هي إحدى القيم المذكورة التي تحرص الجمعية على ترسيخها؟', 
-                    fr: 'Selon les objectifs, quelle valeur l\'association souhaite-t-elle ancrer chez les jeunes ?', 
-                    en: 'According to the objectives, what value does the association wish to anchor among youth?' 
+                questionText: {
+                    ar: 'ما هي إحدى القيم المذكورة التي تحرص الجمعية على ترسيخها؟',
+                    fr: 'Selon les objectifs, quelle valeur l\'association souhaite-t-elle ancrer chez les jeunes ?',
+                    en: 'According to the objectives, what value does the association wish to anchor among youth?'
                 },
                 options: [
                     { text: { ar: 'قيمة التطوع وروح المبادرة', fr: 'Les valeurs du bénévolat et de l\'esprit d\'initiative', en: 'The values of volunteering and initiative' }, isCorrect: true },
@@ -345,9 +345,9 @@ export async function GET() {
         await Rule.insertMany(rulesToInsert);
         await QuizQuestion.insertMany(questionsToInsert);
 
-        return NextResponse.json({ 
-            success: true, 
-            message: `Base de données ré-initialisée et remplie avec ${rulesToInsert.length} nouvelles règles et ${questionsToInsert.length} questions avec succès !` 
+        return NextResponse.json({
+            success: true,
+            message: `Base de données ré-initialisée et remplie avec ${rulesToInsert.length} nouvelles règles et ${questionsToInsert.length} questions avec succès !`
         }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
