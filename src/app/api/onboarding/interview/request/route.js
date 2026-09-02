@@ -3,6 +3,8 @@ import dbConnect from '@/lib/db';
 import InterviewCandidate from '@/models/InterviewCandidate';
 import InterviewContent from '@/models/InterviewContent';
 import Settings from '@/models/Settings';
+import User from '@/models/User';
+import Notification from '@/models/Notification';
 import { sendInterviewCodeEmail } from '@/lib/mail';
 
 function generateCode() {
@@ -142,6 +144,35 @@ export async function POST(req) {
             });
         } catch (emailError) {
             console.error("Impossible d'envoyer l'email au candidat (email error):", emailError);
+        }
+
+        // Notify admins and national bureau members about the new interview request
+        try {
+            const notifRecipients = await User.find(
+                { role: { $in: ['admin', 'national'] }, isActive: { $ne: false } },
+                '_id'
+            );
+
+            if (notifRecipients.length > 0) {
+                const formattedDate = new Date(interviewDate).toLocaleDateString('fr-FR', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+
+                const notifDocs = notifRecipients.map(u => ({
+                    recipient: u._id,
+                    type: 'new_candidate',
+                    title: '🎓 Nouvelle demande d\'entretien',
+                    message: `${firstName} ${lastName} a soumis une demande d'entretien pour le ${formattedDate}. Code : ${candidate.code}`,
+                    link: '/dashboard/interviews'
+                }));
+
+                // Insert one by one to trigger the push-notification post('save') middleware
+                for (const doc of notifDocs) {
+                    await new Notification(doc).save();
+                }
+            }
+        } catch (notifError) {
+            console.error('Erreur lors de l\'envoi des notifications aux admins:', notifError);
         }
 
         return NextResponse.json({ success: true, code: candidate.code }, { status: 201 });

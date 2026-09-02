@@ -222,7 +222,7 @@ export default function NotificationsPage() {
                                         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
                                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                     >
-                                        {notification.link.includes('reclamations') || notification.link.includes('management') ? <AlertCircle size={18} /> : <ExternalLink size={18} />}
+                                        {notification.link.includes('reclamations') || notification.link.includes('management') || notification.link.includes('interviews') ? <AlertCircle size={18} /> : <ExternalLink size={18} />}
                                     </a>
                                 )}
                             </div>
