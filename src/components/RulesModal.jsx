@@ -12,6 +12,28 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
 
+    const tDict = {
+        addRule: { fr: 'Ajouter une règle', ar: 'إضافة قاعدة', en: 'Add a rule' },
+        ruleNumber: { fr: 'Règle', ar: 'قاعدة', en: 'Rule' },
+        loading: { fr: 'Chargement des règles...', ar: 'جاري تحميل القواعد...', en: 'Loading rules...' },
+        cancel: { fr: 'Annuler', ar: 'إلغاء', en: 'Cancel' },
+        save: { fr: 'Enregistrer', ar: 'حفظ', en: 'Save' },
+        saving: { fr: 'Enregistrement...', ar: 'جاري الحفظ...', en: 'Saving...' },
+        categories: {
+            'Engagement': { ar: 'الالتزام', en: 'Commitment' },
+            'Discipline et comportement': { ar: 'الانضباط والسلوك', en: 'Discipline and behavior' },
+            'Réunions et communication': { ar: 'الاجتماعات والتواصل', en: 'Meetings and communication' },
+            'Activités et événements': { ar: 'الأنشطة والفعاليات', en: 'Activities and events' },
+            'Éthique': { ar: 'الأخلاقيات', en: 'Ethics' },
+            'Responsabilités des membres': { ar: 'مسؤوليات الأعضاء', en: 'Member responsibilities' }
+        }
+    };
+
+    const getCategoryName = (cat) => {
+        if (activeLang === 'fr') return cat;
+        return tDict.categories[cat]?.[activeLang] || cat;
+    };
+
     // Admin edit/create form state
     const [showAdminForm, setShowAdminForm] = useState(false);
     const [editingRuleId, setEditingRuleId] = useState(null);
@@ -265,7 +287,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                 fontWeight: 700, cursor: 'pointer'
                             }}
                         >
-                            <Plus size={16} /> Ajouter une règle
+                            <Plus size={16} /> {tDict.addRule[activeLang]}
                         </button>
                     )}
                 </div>
@@ -301,7 +323,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                         borderColor: selectedCategory === cat ? 'var(--primary)' : 'rgba(255,255,255,0.1)'
                                     }}
                                 >
-                                    {cat === 'all' ? (activeLang === 'ar' ? 'الكل' : activeLang === 'en' ? 'All' : 'Toutes') : cat}
+                                    {cat === 'all' ? (activeLang === 'ar' ? 'الكل' : activeLang === 'en' ? 'All' : 'Toutes') : getCategoryName(cat)}
                                 </button>
                             ))}
                         </div>
@@ -311,7 +333,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                 {/* Rules List Container */}
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.5)' }}>
-                        Chargement des règles...
+                        {tDict.loading[activeLang]}
                     </div>
                 ) : filteredRules.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '3rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -344,7 +366,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                                 padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem',
                                                 fontWeight: 800, border: '1px solid rgba(124, 58, 237, 0.3)'
                                             }}>
-                                                Règle #{idx + 1}
+                                                {tDict.ruleNumber[activeLang]} #{idx + 1}
                                             </span>
                                             {rule.category && (
                                                 <span style={{
@@ -352,7 +374,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                                     padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem',
                                                     fontWeight: 600
                                                 }}>
-                                                    {rule.category}
+                                                    {getCategoryName(rule.category)}
                                                 </span>
                                             )}
                                         </div>
@@ -507,7 +529,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                     className="btn btn-secondary"
                                     style={{ padding: '8px 16px', fontSize: '0.85rem' }}
                                 >
-                                    Annuler
+                                    {tDict.cancel[activeLang]}
                                 </button>
                                 <button
                                     type="submit"
@@ -515,7 +537,7 @@ export default function RulesModal({ isOpen, onClose, currentUser, onRulesUpdate
                                     className="btn btn-primary"
                                     style={{ padding: '8px 20px', fontSize: '0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}
                                 >
-                                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                                    {saving ? tDict.saving[activeLang] : tDict.save[activeLang]}
                                 </button>
                             </div>
                         </form>

@@ -19,14 +19,14 @@ const InterviewCandidateSchema = new mongoose.Schema({
     // Assigned questions for this specific candidate
     questions: [{
         originalId: { type: mongoose.Schema.Types.ObjectId, ref: 'InterviewContent' },
-        text: { type: String }, // Saved text in case global question changes
+        text: { type: mongoose.Schema.Types.Mixed }, // Object { fr, ar, en }
         answer: { type: String, default: '' },
         answeredAt: { type: Date }
     }],
     
     // Assigned remarks
     remarks: [{
-        text: { type: String }
+        text: { type: mongoose.Schema.Types.Mixed }
     }],
 
     rulesConfirmed: { type: Boolean, default: false },

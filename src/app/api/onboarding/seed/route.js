@@ -40,6 +40,15 @@ export async function GET() {
                 },
                 shortTextToType: { fr: 'respect des engagements', en: 'respect commitments', ar: 'احترام الالتزامات' }
             },
+            {
+                category: 'Engagement',
+                fullText: {
+                    fr: 'Impact des scores : Le score de votre club ainsi que votre score membre personnel sont intimement liés. Ils ont une importance majeure pour le classement, le bon déroulement des activités et l\'accès aux opportunités exclusives de l\'association.',
+                    en: 'Impact of scores: Your club score and your personal member score are closely linked. They are of major importance for the ranking, the proper conduct of activities, and gaining access to exclusive opportunities within the association.',
+                    ar: 'تأثير النقاط: إن نقاط ناديك ونقاطك الشخصية كعضو مرتبطة ببعضها ارتباطاً وثيقاً. وهي ذات أهمية كبرى للترتيب، وحسن سير الأنشطة، والوصول إلى الفرص الحصرية للجمعية.'
+                },
+                shortTextToType: { fr: 'importance des scores', en: 'impact of scores', ar: 'أهمية النقاط' }
+            },
 
             // Discipline et comportement
             {

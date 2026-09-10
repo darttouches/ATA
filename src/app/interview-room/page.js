@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LogIn, Send, CheckCircle2, LogOut, Calendar, User, Sparkles, HelpCircle, Lock, Home, Loader2, Bot } from 'lucide-react';
 import Link from 'next/link';
 import Spline from '@splinetool/react-spline';
+import { useLanguage } from '@/context/LanguageContext';
 
 function InterviewRoomContent() {
     const router = useRouter();
@@ -17,6 +18,49 @@ function InterviewRoomContent() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [hasAttemptedUrlCode, setHasAttemptedUrlCode] = useState(false);
+    
+    const { language } = useLanguage();
+
+    const getLocalizedText = (text) => {
+        if (!text) return '';
+        if (typeof text === 'string') return text;
+        return text[language] || text.fr || text.en || text.ar || 'Sans texte';
+    };
+
+    const tLang = language || 'fr';
+    const uiTexts = {
+        fr: {
+            welcome: (f, l) => `Bienvenue ${f} ${l}. Je suis Arto, votre robot assistant d'entretien. Nous allons commencer avec vos questions.`,
+            completed: (f) => `Bonjour ${f}, votre entretien avec Arto a été soumis et enregistré avec succès. Merci !`,
+            remarksIntro: "Voici quelques remarques importantes concernant votre candidature :",
+            confirmRules: "Avez-vous bien pris connaissance de nos consignes et vous engagez-vous à respecter les règles de l'association ?",
+            defaultQuestion: "Veuillez répondre à la question suivante.",
+            replyRules: "Oui, je m'engage à respecter les règles.",
+            finished: "Félicitations ! Votre entretien est officiellement terminé. L'équipe d'administration étudiera votre dossier.",
+            closedText: "L'entretien avec Arto est clôturé. Merci pour vos réponses. L'administration vous contactera prochainement."
+        },
+        ar: {
+            welcome: (f, l) => `مرحبا ${f} ${l}. أنا أرتو، الروبوت المساعد للمقابلة. سنبدأ الآن بأسئلتك.`,
+            completed: (f) => `مرحبا ${f}، تم إرسال مقابلتك مع أرتو وتسجيلها بنجاح. شكرا لك!`,
+            remarksIntro: "فيما يلي بعض الملاحظات المهمة بخصوص ترشيحك:",
+            confirmRules: "هل قرأت تعليماتنا بعناية وهل تلتزم باحترام قواعد الجمعية؟",
+            defaultQuestion: "الرجاء الإجابة على السؤال التالي.",
+            replyRules: "نعم، ألتزم باحترام القواعد.",
+            finished: "تهانينا! انتهت مقابلتك رسميًا. سيقوم فريق الإدارة بدراسة ملفك.",
+            closedText: "انتهت المقابلة مع أرتو. شكرا لإجاباتك. سوف تتصل بك الإدارة قريبا."
+        },
+        en: {
+            welcome: (f, l) => `Welcome ${f} ${l}. I am Arto, your interview assistant robot. We will now begin with your questions.`,
+            completed: (f) => `Hello ${f}, your interview with Arto has been successfully submitted and recorded. Thank you!`,
+            remarksIntro: "Here are some important remarks regarding your application:",
+            confirmRules: "Have you read our guidelines carefully and do you commit to respecting the association's rules?",
+            defaultQuestion: "Please answer the following question.",
+            replyRules: "Yes, I commit to respecting the rules.",
+            finished: "Congratulations! Your interview is officially over. The administration team will review your application.",
+            closedText: "The interview with Arto is closed. Thank you for your answers. The administration will contact you shortly."
+        }
+    };
+    const t = uiTexts[tLang] || uiTexts.fr;
 
     // Spline & Voice refs
     const splineRef = useRef(null);
@@ -210,7 +254,12 @@ function InterviewRoomContent() {
 
     const speak = (text) => {
         if (!text) return;
-        const activeLang = 'fr';
+        const activeLang = language || 'fr';
+        
+        // Map 2-letter lang to SpeechSynthesis locale
+        let synthLang = 'fr-FR';
+        if (activeLang === 'ar') synthLang = 'ar-SA';
+        if (activeLang === 'en') synthLang = 'en-US';
         
         const allVoices = typeof window !== 'undefined' ? window.speechSynthesis?.getVoices() || [] : [];
         const nativeVoice = allVoices.find(v => v.lang.startsWith(activeLang));
@@ -222,7 +271,7 @@ function InterviewRoomContent() {
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.voice = nativeVoice;
-            utterance.lang = 'fr-FR';
+            utterance.lang = synthLang;
             utterance.onstart = () => {
                 safeEmitEvent('keyDown', 'Bouche');
             };
@@ -297,7 +346,7 @@ function InterviewRoomContent() {
                         body: JSON.stringify({ candidateId: id, nextStatus: 'in-progress' })
                     });
                     
-                    const welcomeMsg = `Bienvenue ${data.data.firstName} ${data.data.lastName}. Je suis Arto, votre robot assistant d'entretien. Nous allons commencer avec vos questions.`;
+                    const welcomeMsg = t.welcome(data.data.firstName, data.data.lastName);
                     setChatHistory([{ sender: 'bot', text: welcomeMsg }]);
                     speak(welcomeMsg);
                     
@@ -321,14 +370,14 @@ function InterviewRoomContent() {
                     const hist = [];
                     data.data.questions.forEach((q, idx) => {
                         if (idx <= nextUnanswered || nextUnanswered === -1) {
-                             if (q.text) hist.push({ sender: 'bot', text: q.text });
+                             if (q.text) hist.push({ sender: 'bot', text: getLocalizedText(q.text) });
                              if (q.answer) hist.push({ sender: 'user', text: q.answer });
                         }
                     });
                     setChatHistory(hist);
                 } else if (data.data.status === 'completed') {
                     setCurrentStep(999);
-                    setChatHistory([{ sender: 'bot', text: `Bonjour ${data.data.firstName}, votre entretien avec Arto a été soumis et enregistré avec succès. Merci !` }]);
+                    setChatHistory([{ sender: 'bot', text: t.completed(data.data.firstName) }]);
                 }
             }
         } catch(err) {
@@ -345,17 +394,18 @@ function InterviewRoomContent() {
         const qLen = candidateData.questions ? candidateData.questions.length : 0;
         
         if (currentStep >= 0 && currentStep < qLen) {
-            const questionText = candidateData.questions[currentStep].text || "Veuillez répondre à la question suivante.";
+            const questionText = candidateData.questions[currentStep].text ? getLocalizedText(candidateData.questions[currentStep].text) : t.defaultQuestion;
             setChatHistory(prev => [...prev, { sender: 'bot', text: questionText }]);
             speak(questionText);
         } else if (currentStep === qLen && qLen > 0) {
             const rLen = candidateData.remarks ? candidateData.remarks.length : 0;
             if (rLen > 0) {
-                setChatHistory(prev => [...prev, { sender: 'bot', text: "Voici quelques remarques importantes concernant votre candidature :" }]);
+                setChatHistory(prev => [...prev, { sender: 'bot', text: t.remarksIntro }]);
                 candidateData.remarks.forEach(r => {
                     setTimeout(() => {
-                        setChatHistory(prev => [...prev, { sender: 'bot', text: r.text }]);
-                        speak(r.text);
+                        const rText = getLocalizedText(r.text);
+                        setChatHistory(prev => [...prev, { sender: 'bot', text: rText }]);
+                        speak(rText);
                     }, 1000);
                 });
                 
@@ -364,7 +414,7 @@ function InterviewRoomContent() {
                 setCurrentStep(qLen + 1);
             }
         } else if (currentStep === qLen + 1) {
-             const confirmMsg = "Avez-vous bien pris connaissance de nos consignes et vous engagez-vous à respecter les règles de l'association ?";
+             const confirmMsg = t.confirmRules;
              setChatHistory(prev => [...prev, { sender: 'bot', text: confirmMsg }]);
              speak(confirmMsg);
         }
@@ -408,8 +458,8 @@ function InterviewRoomContent() {
                 body: JSON.stringify({ candidateId, nextStatus: 'completed', rulesConfirmed: true })
             });
             
-            const msg = "Félicitations ! Votre entretien est officiellement terminé. L'équipe d'administration étudiera votre dossier.";
-            setChatHistory(prev => [...prev, { sender: 'user', text: "Oui, je m'engage à respecter les règles." }]);
+            const msg = t.finished;
+            setChatHistory(prev => [...prev, { sender: 'user', text: t.replyRules }]);
             setTimeout(() => {
                  setChatHistory(prev => [...prev, { sender: 'bot', text: msg }]);
                  speak(msg);
@@ -640,7 +690,7 @@ function InterviewRoomContent() {
 
                     {currentStep === 999 && (
                         <div style={{ width: '100%', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', padding: '10px' }}>
-                            L'entretien avec Arto est clôturé. Merci pour vos réponses. L'administration vous contactera prochainement.
+                            {t.closedText}
                         </div>
                     )}
                 </div>

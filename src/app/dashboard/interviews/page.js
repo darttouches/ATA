@@ -17,14 +17,19 @@ export default function InterviewsManagement() {
     
     // Modals & Forms
     const [selectedCandidate, setSelectedCandidate] = useState(null);
-    const [contentForm, setContentForm] = useState({ text: '', isDefault: true });
+    const [contentForm, setContentForm] = useState({ text: { fr: '', ar: '', en: '' }, isDefault: true });
     
     // Specific assigning
     const [assignedQ, setAssignedQ] = useState([]);
     const [assignedR, setAssignedR] = useState([]);
-    const [customQuestionText, setCustomQuestionText] = useState('');
-    const [customRemarkText, setCustomRemarkText] = useState('');
-    
+    const [customQuestionText, setCustomQuestionText] = useState({ fr: '', ar: '', en: '' });
+    const [customRemarkText, setCustomRemarkText] = useState({ fr: '', ar: '', en: '' });
+
+    const getDisplayText = (text) => {
+        if (!text) return '';
+        if (typeof text === 'string') return text;
+        return text.fr || text.en || text.ar || 'Sans texte';
+    };    
     useEffect(() => {
         fetchData();
     }, []);
@@ -60,7 +65,7 @@ export default function InterviewsManagement() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type, text: contentForm.text, isDefault: contentForm.isDefault })
             });
-            setContentForm({ text: '', isDefault: true });
+            setContentForm({ text: { fr: '', ar: '', en: '' }, isDefault: true });
             fetchData();
         } catch (err) { alert(err.message); }
     };
@@ -149,6 +154,22 @@ export default function InterviewsManagement() {
         }
     };
 
+    const handleDeleteCandidate = async (e, id) => {
+        e.stopPropagation();
+        if (!confirm('Voulez-vous vraiment supprimer ce candidat ? Cette action est irréversible.')) return;
+        try {
+            const res = await fetch(`/api/admin/interviews/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                fetchData();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Erreur lors de la suppression');
+            }
+        } catch (err) {
+            alert('Erreur: ' + err.message);
+        }
+    };
+
     const handleAddGlobalQuestionToCandidate = (gq) => {
         setAssignedQ([...assignedQ, { originalId: gq._id, text: gq.text }]);
     };
@@ -156,14 +177,14 @@ export default function InterviewsManagement() {
         setAssignedR([...assignedR, { text: gr.text }]);
     };
     const handleAddCustomQuestion = () => {
-        if (!customQuestionText) return;
-        setAssignedQ([...assignedQ, { text: customQuestionText }]);
-        setCustomQuestionText('');
+        if (!customQuestionText.fr && !customQuestionText.ar && !customQuestionText.en) return;
+        setAssignedQ([...assignedQ, { text: { ...customQuestionText } }]);
+        setCustomQuestionText({ fr: '', ar: '', en: '' });
     };
     const handleAddCustomRemark = () => {
-        if (!customRemarkText) return;
-        setAssignedR([...assignedR, { text: customRemarkText }]);
-        setCustomRemarkText('');
+        if (!customRemarkText.fr && !customRemarkText.ar && !customRemarkText.en) return;
+        setAssignedR([...assignedR, { text: { ...customRemarkText } }]);
+        setCustomRemarkText({ fr: '', ar: '', en: '' });
     };
 
     const removeAssignedQ = (idx) => setAssignedQ(assignedQ.filter((_, i) => i !== idx));
@@ -198,9 +219,12 @@ export default function InterviewsManagement() {
                     <div className={styles.card}>
                         <h3>Ajouter une question prédéfinie</h3>
                         <form onSubmit={(e) => handleAddContent(e, 'question')} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input type="text" className={styles.input} value={contentForm.text} onChange={e => setContentForm({...contentForm, text: e.target.value})} required placeholder="Ex: Pourquoi voulez-vous rejoindre l'association ATA ?" />
-                                <button className="btn btn-primary" type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                                <input type="text" className={styles.input} value={contentForm.text.fr} onChange={e => setContentForm({...contentForm, text: { ...contentForm.text, fr: e.target.value }})} required placeholder="Français - Ex: Pourquoi voulez-vous rejoindre l'association ATA ?" />
+                                <input type="text" className={styles.input} value={contentForm.text.ar} onChange={e => setContentForm({...contentForm, text: { ...contentForm.text, ar: e.target.value }})} required placeholder="Arabe - Ex: لماذا تريد الانضمام إلى جمعية ATA؟" dir="rtl" />
+                                <input type="text" className={styles.input} value={contentForm.text.en} onChange={e => setContentForm({...contentForm, text: { ...contentForm.text, en: e.target.value }})} required placeholder="Anglais - Ex: Why do you want to join ATA?" />
+                                
+                                <button className="btn btn-primary" type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', width: 'fit-content' }}>
                                     <Plus size={18}/> Ajouter
                                 </button>
                             </div>
@@ -239,7 +263,7 @@ export default function InterviewsManagement() {
                                                 <Star size={14} fill={q.isDefault !== false ? '#fbbf24' : 'none'} />
                                                 {q.isDefault !== false ? 'Par défaut' : 'Définir par défaut'}
                                             </button>
-                                            <span style={{ fontSize: '0.95rem' }}>{q.text}</span>
+                                            <span style={{ fontSize: '0.95rem' }}>{getDisplayText(q.text)}</span>
                                         </div>
                                         <button onClick={() => handleDeleteContent(q._id)} className={styles.deleteBtn}><Trash2 size={16}/></button>
                                     </div>
@@ -253,9 +277,12 @@ export default function InterviewsManagement() {
                     <div className={styles.card}>
                         <h3>Ajouter une remarque / conseil prédéfini</h3>
                         <form onSubmit={(e) => handleAddContent(e, 'remark')} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input type="text" className={styles.input} value={contentForm.text} onChange={e => setContentForm({...contentForm, text: e.target.value})} required placeholder="Ex: Vous êtes tenu d'assister aux réunions mensuelles." />
-                                <button className="btn btn-primary" type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                                <input type="text" className={styles.input} value={contentForm.text.fr} onChange={e => setContentForm({...contentForm, text: { ...contentForm.text, fr: e.target.value }})} required placeholder="Français - Ex: Vous êtes tenu d'assister aux réunions mensuelles." />
+                                <input type="text" className={styles.input} value={contentForm.text.ar} onChange={e => setContentForm({...contentForm, text: { ...contentForm.text, ar: e.target.value }})} required placeholder="Arabe - Ex: يجب عليك حضور الاجتماعات الشهرية." dir="rtl" />
+                                <input type="text" className={styles.input} value={contentForm.text.en} onChange={e => setContentForm({...contentForm, text: { ...contentForm.text, en: e.target.value }})} required placeholder="Anglais - Ex: You are required to attend monthly meetings." />
+                                
+                                <button className="btn btn-primary" type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', width: 'fit-content' }}>
                                     <Plus size={18}/> Ajouter
                                 </button>
                             </div>
@@ -294,7 +321,7 @@ export default function InterviewsManagement() {
                                                 <Star size={14} fill={r.isDefault !== false ? '#fbbf24' : 'none'} />
                                                 {r.isDefault !== false ? 'Par défaut' : 'Définir par défaut'}
                                             </button>
-                                            <span style={{ fontSize: '0.95rem' }}>{r.text}</span>
+                                            <span style={{ fontSize: '0.95rem' }}>{getDisplayText(r.text)}</span>
                                         </div>
                                         <button onClick={() => handleDeleteContent(r._id)} className={styles.deleteBtn}><Trash2 size={16}/></button>
                                     </div>
@@ -310,12 +337,21 @@ export default function InterviewsManagement() {
                             <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Aucun candidat en attente d'entretien.</p>
                         ) : (
                             candidates.map(cand => (
-                                <div key={cand._id} className={styles.candidateCard} onClick={() => openCandidateModal(cand)}>
+                                <div key={cand._id} className={styles.candidateCard} onClick={() => openCandidateModal(cand)} style={{ position: 'relative' }}>
                                     <div className={styles.candHeader}>
                                         <h4>{cand.firstName} {cand.lastName}</h4>
-                                        <span className={styles.badge} style={{background: cand.status === 'completed' ? '#10b981' : (cand.status === 'in-progress' ? '#f59e0b' : '#3b82f6')}}>
-                                            {cand.status === 'completed' ? 'Entretien Réalisé' : (cand.status === 'in-progress' ? 'En cours' : 'En attente')}
-                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span className={styles.badge} style={{background: cand.status === 'completed' ? '#10b981' : (cand.status === 'in-progress' ? '#f59e0b' : '#3b82f6')}}>
+                                                {cand.status === 'completed' ? 'Entretien Réalisé' : (cand.status === 'in-progress' ? 'En cours' : 'En attente')}
+                                            </span>
+                                            <button 
+                                                onClick={(e) => handleDeleteCandidate(e, cand._id)} 
+                                                className={styles.deleteBtn} 
+                                                title="Supprimer le candidat"
+                                            >
+                                                <Trash2 size={16}/>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className={styles.candDetails}>
                                         <p><Calendar size={14}/> {new Date(cand.interviewDate).toLocaleString('fr-FR')}</p>
@@ -438,7 +474,7 @@ export default function InterviewsManagement() {
                                     <div className={styles.qaList}>
                                         {selectedCandidate.questions.map((q, idx) => (
                                             <div key={idx} className={styles.qaItem}>
-                                                <div className={styles.qText}><strong>Q{idx + 1}:</strong> {q.text}</div>
+                                                <div className={styles.qText}><strong>Q{idx + 1}:</strong> {getDisplayText(q.text)}</div>
                                                 <div className={styles.aText}><strong>Réponse Candidat:</strong> {q.answer || <em style={{color: '#94a3b8'}}>[Pas de réponse]</em>}</div>
                                             </div>
                                         ))}
@@ -446,7 +482,7 @@ export default function InterviewsManagement() {
                                     <h3 style={{marginTop: '20px', color: '#f59e0b'}}>Remarques adressées</h3>
                                     <ul className={styles.remarkViewList}>
                                         {selectedCandidate.remarks.map((r, idx) => (
-                                            <li key={idx}>{r.text}</li>
+                                            <li key={idx}>{getDisplayText(r.text)}</li>
                                         ))}
                                     </ul>
                                 </div>
@@ -473,7 +509,7 @@ export default function InterviewsManagement() {
                                                 ) : (
                                                     assignedQ.map((q, i) => (
                                                         <div key={i} className={styles.setupItem}>
-                                                            <span>{q.text}</span>
+                                                            <span>{getDisplayText(q.text)}</span>
                                                             <button onClick={()=>removeAssignedQ(i)}><X size={14}/></button>
                                                         </div>
                                                     ))
@@ -483,12 +519,14 @@ export default function InterviewsManagement() {
                                             <div style={{marginTop: '10px'}}>
                                                 <label style={{fontSize:'0.8rem', color: '#94a3b8'}}>Depuis Liste Prédéfinie :</label>
                                                 <div className={styles.pillList}>
-                                                    {globalQuestions.map(gq => <button key={gq._id} onClick={()=>handleAddGlobalQuestionToCandidate(gq)} className={styles.pillBtn}><Plus size={12}/> {gq.text.substring(0, 30)}...</button>)}
+                                                    {globalQuestions.map(gq => <button key={gq._id} onClick={()=>handleAddGlobalQuestionToCandidate(gq)} className={styles.pillBtn}><Plus size={12}/> {getDisplayText(gq.text).substring(0, 30)}...</button>)}
                                                 </div>
                                             </div>
-                                            <div style={{marginTop: '10px', display:'flex', gap:'5px'}}>
-                                                <input type="text" placeholder="Question spécifique..." className={styles.input} style={{padding:'0.5rem'}} value={customQuestionText} onChange={e=>setCustomQuestionText(e.target.value)} />
-                                                <button onClick={handleAddCustomQuestion} className="btn btn-primary" style={{padding:'0.5rem'}}><Plus size={16}/></button>
+                                            <div style={{marginTop: '10px', display:'flex', flexDirection: 'column', gap:'5px'}}>
+                                                <input type="text" placeholder="Question SPÉCIFIQUE (Fr)..." className={styles.input} style={{padding:'0.5rem'}} value={customQuestionText.fr} onChange={e=>setCustomQuestionText({...customQuestionText, fr: e.target.value})} />
+                                                <input type="text" placeholder="سؤال خاص (Ar)..." className={styles.input} style={{padding:'0.5rem'}} dir="rtl" value={customQuestionText.ar} onChange={e=>setCustomQuestionText({...customQuestionText, ar: e.target.value})} />
+                                                <input type="text" placeholder="Specific question (En)..." className={styles.input} style={{padding:'0.5rem'}} value={customQuestionText.en} onChange={e=>setCustomQuestionText({...customQuestionText, en: e.target.value})} />
+                                                <button onClick={handleAddCustomQuestion} className="btn btn-primary" style={{padding:'0.5rem', width: 'fit-content'}}><Plus size={16}/> Ajouter Spécifique</button>
                                             </div>
                                         </div>
 
@@ -500,7 +538,7 @@ export default function InterviewsManagement() {
                                                 ) : (
                                                     assignedR.map((r, i) => (
                                                         <div key={i} className={styles.setupItem}>
-                                                            <span>{r.text}</span>
+                                                            <span>{getDisplayText(r.text)}</span>
                                                             <button onClick={()=>removeAssignedR(i)}><X size={14}/></button>
                                                         </div>
                                                     ))
@@ -510,12 +548,14 @@ export default function InterviewsManagement() {
                                             <div style={{marginTop: '10px'}}>
                                                 <label style={{fontSize:'0.8rem', color: '#94a3b8'}}>Depuis Liste Prédéfinie :</label>
                                                 <div className={styles.pillList}>
-                                                    {globalRemarks.map(gr => <button key={gr._id} onClick={()=>handleAddGlobalRemarkToCandidate(gr)} className={styles.pillBtn}><Plus size={12}/> {gr.text.substring(0, 30)}...</button>)}
+                                                    {globalRemarks.map(gr => <button key={gr._id} onClick={()=>handleAddGlobalRemarkToCandidate(gr)} className={styles.pillBtn}><Plus size={12}/> {getDisplayText(gr.text).substring(0, 30)}...</button>)}
                                                 </div>
                                             </div>
-                                            <div style={{marginTop: '10px', display:'flex', gap:'5px'}}>
-                                                <input type="text" placeholder="Remarque spécifique..." className={styles.input} style={{padding:'0.5rem'}} value={customRemarkText} onChange={e=>setCustomRemarkText(e.target.value)} />
-                                                <button onClick={handleAddCustomRemark} className="btn btn-warning" style={{padding:'0.5rem', background: '#f59e0b'}}><Plus size={16}/></button>
+                                            <div style={{marginTop: '10px', display:'flex', flexDirection: 'column', gap:'5px'}}>
+                                                <input type="text" placeholder="Remarque SPÉCIFIQUE (Fr)..." className={styles.input} style={{padding:'0.5rem'}} value={customRemarkText.fr} onChange={e=>setCustomRemarkText({...customRemarkText, fr: e.target.value})} />
+                                                <input type="text" placeholder="ملاحظة خاصة (Ar)..." className={styles.input} style={{padding:'0.5rem'}} dir="rtl" value={customRemarkText.ar} onChange={e=>setCustomRemarkText({...customRemarkText, ar: e.target.value})} />
+                                                <input type="text" placeholder="Specific remark (En)..." className={styles.input} style={{padding:'0.5rem'}} value={customRemarkText.en} onChange={e=>setCustomRemarkText({...customRemarkText, en: e.target.value})} />
+                                                <button onClick={handleAddCustomRemark} className="btn btn-warning" style={{padding:'0.5rem', background: '#f59e0b', width: 'fit-content'}}><Plus size={16}/> Ajouter Spécifique</button>
                                             </div>
                                         </div>
                                     </div>
