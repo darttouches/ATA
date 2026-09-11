@@ -29,7 +29,9 @@ export async function GET(req) {
         }
 
         const members = await User.find(query)
-            .select('firstName lastName name email profileImage bonusPoints club preferredClub role officialRole')
+            .select('firstName lastName name email profileImage bonusPoints club preferredClub role officialRole season')
+            .populate('club', 'name')
+            .populate('preferredClub', 'name')
             .sort({ firstName: 1 });
 
         return NextResponse.json({ success: true, data: members });

@@ -34,6 +34,9 @@ const InterviewCandidateSchema = new mongoose.Schema({
     // Marked true once a User account is created with this code (prevents reuse)
     accountCreated: { type: Boolean, default: false },
     accountCreatedAt: { type: Date },
+
+    // Track if the 1-hour interview reminder has been sent
+    reminderSent: { type: Boolean, default: false }
 }, { timestamps: true });
 
 if (process.env.NODE_ENV === 'development' && mongoose.models.InterviewCandidate) {

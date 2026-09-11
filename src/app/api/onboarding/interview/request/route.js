@@ -100,6 +100,20 @@ export async function POST(req) {
             }
         }
 
+        // Limit: one candidature per email per year (unless the previous was deleted)
+        const currentYearStart = new Date(new Date().getFullYear(), 0, 1);
+        const existingCandidature = await InterviewCandidate.findOne({
+            email: { $regex: new RegExp(`^${email.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i') },
+            createdAt: { $gte: currentYearStart }
+        });
+
+        if (existingCandidature) {
+            return NextResponse.json(
+                { success: false, error: 'Cette adresse e-mail a déjà été utilisée pour une candidature cette année. Une seule candidature par an est autorisée.' },
+                { status: 400 }
+            );
+        }
+
         let code;
         let isUnique = false;
         while (!isUnique) {

@@ -130,3 +130,97 @@ export const sendInterviewCodeEmail = async ({ to, firstName, lastName, code, in
         html
     });
 };
+
+export const sendInterviewReminderEmail = async ({ to, firstName, lastName, code, interviewDate }) => {
+    const dateObj = new Date(interviewDate);
+    
+    // Formatting times
+    const timeFR = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const timeAR = dateObj.toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' });
+    const timeEN = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+    .container { max-width: 650px; margin: 0 auto; background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; color: white; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 800; }
+    .header p { margin: 8px 0 0 0; opacity: 0.9; font-size: 13px; }
+    .code-box { background: rgba(245, 158, 11, 0.15); border: 2px dashed #f59e0b; border-radius: 12px; padding: 20px; text-align: center; margin: 25px 20px; }
+    .code { font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #fbbf24; margin: 8px 0; }
+    .section { padding: 20px 25px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .lang-title { font-size: 16px; font-weight: 700; color: #38bdf8; margin-bottom: 10px; }
+    .info-row { margin: 8px 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; }
+    .warning-box { background: rgba(244, 63, 94, 0.15); border-left: 4px solid #f43f5e; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 13.5px; color: #fecdd3; line-height: 1.5; }
+    .warning-box-rtl { background: rgba(244, 63, 94, 0.15); border-right: 4px solid #f43f5e; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 13.5px; color: #fecdd3; line-height: 1.5; text-align: right; }
+    .footer { background: #0f172a; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Association Touches d'Art</h1>
+      <p>Rappel : Votre entretien commence dans 1 heure | تذكير: مقابلتك تبدأ بعد ساعة | Reminder: Your interview starts in 1 hour</p>
+    </div>
+
+    <div class="section">
+      <div class="lang-title">🇫🇷 Français</div>
+      <div class="info-row">Bonjour <strong>${firstName} ${lastName}</strong>,</div>
+      <div class="info-row">Ceci est un rappel automatique. Votre entretien virtuel approche et commencera dans exactement <strong>1 heure (à ${timeFR})</strong>.</div>
+      <div class="info-row">Veuillez vous assurer d'avoir une connexion stable. Pour rejoindre la salle, vous aurez besoin de votre code d'accès :</div>
+      <div class="warning-box">
+        ⚠️ <strong>Remarque importante sur le retard :</strong><br>
+        Vous disposez d'un délai maximum de retard autorisé de <strong>15 minutes</strong> après l'heure prévue. 
+        Au-delà de ces 15 minutes, votre code deviendra automatiquement invalide.
+      </div>
+    </div>
+
+    <div class="code-box">
+      <div style="font-size: 12px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px;">CODE ROOM ENTRETIEN</div>
+      <div class="code">${code}</div>
+      <div style="font-size: 13px; color: #cbd5e1;">Vous pouvez rejoindre la salle au plus tôt 5 minutes avant l'heure prévue.</div>
+    </div>
+
+    <div class="section" dir="rtl" style="text-align: right;">
+      <div class="lang-title" style="text-align: right;">🇹🇳 العربية</div>
+      <div class="info-row">مرحباً <strong>${firstName} ${lastName}</strong>،</div>
+      <div class="info-row">هذا تذكير تلقائي. مقابلتك ستبدأ بعد <strong>ساعة واحدة بالضبط (على الساعة ${timeAR})</strong>.</div>
+      <div class="info-row">يرجى استخدام الرمز الخاص بك للدخول إلى غرفة المقابلة. يمكنك الدخول قبل 5 دقائق كحد أقصى.</div>
+      <div class="warning-box-rtl">
+        ⚠️ <strong>ملاحظة هامة حول التأخير:</strong><br>
+        يُسمح بتأخير أقصاه <strong>15 دقيقة</strong> فقط عن الموعد المحدد. 
+        بعد انقضاء 15 دقيقة، سينتهي الرمز تلقائياً.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="lang-title">🇬🇧 English</div>
+      <div class="info-row">Hello <strong>${firstName} ${lastName}</strong>,</div>
+      <div class="info-row">This is an automated reminder. Your virtual interview will begin in exactly <strong>1 hour (at ${timeEN})</strong>.</div>
+      <div class="info-row">Please use your code to join the room. You can join up to 5 minutes early.</div>
+      <div class="warning-box">
+        ⚠️ <strong>Important Note on Delay:</strong><br>
+        You have a maximum allowed delay of <strong>15 minutes</strong> after the scheduled time. 
+        After this 15-minute grace period, your code will automatically expire.
+      </div>
+    </div>
+
+    <div class="footer">
+      Association Touches d'Art &copy; ${new Date().getFullYear()} — Tous droits réservés.
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    return sendEmail({
+        to,
+        subject: `⏰ Rappel d'Entretien (1 heure restante) - Touches d'Art`,
+        html
+    });
+};
+

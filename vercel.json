@@ -2,5 +2,11 @@
     "framework": "nextjs",
     "regions": [
         "cdg1"
+    ],
+    "crons": [
+        {
+            "path": "/api/cron/reminders",
+            "schedule": "*/15 * * * *"
+        }
     ]
 }

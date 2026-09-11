@@ -18,14 +18,29 @@ export async function POST(req) {
             return NextResponse.json({ success: false, error: "Code d'entretien introuvable. Veuillez vérifier votre saisie." }, { status: 404 });
         }
 
-        // Validate 15-minute delay limit
+        // Validate exact time window (max 16 minutes late, and max 5 minutes early)
         if (candidate.interviewDate) {
             const scheduledTime = new Date(candidate.interviewDate).getTime();
-            const expiryTime = scheduledTime + 15 * 60 * 1000; // 15 minutes grace period
-            if (Date.now() > expiryTime) {
+            const minAllowedTime = scheduledTime - 5 * 60 * 1000; // 5 minutes before
+            const expiryTime = scheduledTime + 16 * 60 * 1000; // 16 minutes grace period
+            const now = Date.now();
+
+            if (now < minAllowedTime) {
+                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const optionsTime = { hour: '2-digit', minute: '2-digit' };
+                const dateStr = new Date(candidate.interviewDate).toLocaleDateString('fr-FR', optionsDate);
+                const timeStr = new Date(candidate.interviewDate).toLocaleTimeString('fr-FR', optionsTime);
+
                 return NextResponse.json({ 
                     success: false, 
-                    error: "Le code d'entretien a expiré. Vous avez dépassé le délai de retard maximal autorisé (15 minutes après l'heure prévue)." 
+                    error: `Ce code n'est utilisable qu'à l'heure exacte de votre entretien prévu le ${dateStr} à ${timeStr}.` 
+                }, { status: 400 });
+            }
+
+            if (now > expiryTime) {
+                return NextResponse.json({ 
+                    success: false, 
+                    error: "Le code d'entretien a expiré. Vous avez dépassé le délai de retard maximal autorisé (16 minutes après l'heure prévue)." 
                 }, { status: 400 });
             }
         }

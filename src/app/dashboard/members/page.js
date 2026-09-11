@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Minus, Award, Shield, User, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Search, Plus, Minus, Award, Shield, User, Loader2, ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
 
@@ -11,6 +11,19 @@ export default function MembersPointsPage() {
     const [search, setSearch] = useState('');
     const [updatingId, setUpdatingId] = useState(null);
     const [roleUpdatingId, setRoleUpdatingId] = useState(null);
+    const [filterClub, setFilterClub] = useState('all');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [viewMode, setViewMode] = useState('members'); // 'members' | 'clubs'
+    const [collapsedSeasons, setCollapsedSeasons] = useState(new Set()); // empty = all open
+
+    const toggleSeason = (season) => {
+        setCollapsedSeasons(prev => {
+            const next = new Set(prev);
+            if (next.has(season)) next.delete(season);
+            else next.add(season);
+            return next;
+        });
+    };
 
     const fetchMembers = useCallback(async () => {
         try {
@@ -74,10 +87,52 @@ export default function MembersPointsPage() {
         }
     }, []);
 
-    const filteredMembers = members.filter(m =>
-        (m.firstName + ' ' + m.lastName).toLowerCase().includes(search.toLowerCase()) ||
-        m.email.toLowerCase().includes(search.toLowerCase())
-    );
+    const clubsList = useMemo(() => {
+        const set = new Set();
+        members.forEach(m => {
+            const clubName = m.club?.name || m.preferredClub?.name;
+            if (clubName) set.add(clubName);
+        });
+        return Array.from(set).sort();
+    }, [members]);
+
+    const { displayedMembers, groupedSeasons } = useMemo(() => {
+        let filtered = members.filter(m =>
+            (m.firstName + ' ' + m.lastName).toLowerCase().includes(search.toLowerCase()) ||
+            (m.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            m.email.toLowerCase().includes(search.toLowerCase())
+        );
+
+        if (viewMode === 'clubs') {
+            filtered = filtered.filter(m => m.role === 'club');
+        } else {
+            // Only regular members (not club accounts)
+            filtered = filtered.filter(m => m.role !== 'club');
+            if (filterClub !== 'all') {
+                filtered = filtered.filter(m => {
+                    const clubName = m.club?.name || m.preferredClub?.name;
+                    return clubName === filterClub;
+                });
+            }
+        }
+
+        filtered.sort((a, b) => {
+            const ptsA = a.bonusPoints || 0;
+            const ptsB = b.bonusPoints || 0;
+            return sortOrder === 'desc' ? ptsB - ptsA : ptsA - ptsB;
+        });
+
+        const groups = {};
+        filtered.forEach(m => {
+            const s = m.season || '2025/2026';
+            if (!groups[s]) groups[s] = [];
+            groups[s].push(m);
+        });
+
+        const seasons = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+        
+        return { displayedMembers: filtered, groupedSeasons: seasons.map(s => ({ season: s, members: groups[s] })) };
+    }, [members, search, filterClub, sortOrder, viewMode]);
 
     if (loading) return (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
@@ -97,9 +152,14 @@ export default function MembersPointsPage() {
                 padding: '1.5rem',
                 borderRadius: '16px',
                 border: '1px solid var(--card-border)',
-                marginBottom: '2rem'
+                marginBottom: '2rem',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                alignItems: 'center'
             }}>
-                <div style={{ position: 'relative' }}>
+                {/* Search */}
+                <div style={{ position: 'relative', flex: '1 1 220px' }}>
                     <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} size={18} />
                     <input
                         type="text"
@@ -116,118 +176,215 @@ export default function MembersPointsPage() {
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                {filteredMembers.map(member => (
-                    <div key={member._id} className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', overflow: 'hidden', position: 'relative' }}>
-                                {member.profileImage ? (
-                                    <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
-                                ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>
-                                        {member.firstName?.charAt(0)}
-                                    </div>
-                                )}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {member.firstName} {member.lastName}
-                                    <span style={{
-                                        fontSize: '0.65rem',
-                                        padding: '2px 8px',
-                                        borderRadius: '10px',
-                                        background: member.role === 'admin' ? '#ef444422' : (member.role === 'president' ? 'var(--primary-bg)' : (member.role === 'national' ? 'rgba(124, 58, 237, 0.1)' : 'rgba(255,255,255,0.05)')),
-                                        color: member.role === 'admin' ? '#ef4444' : (member.role === 'president' ? 'var(--primary)' : (member.role === 'national' ? 'var(--primary)' : '#94a3b8')),
-                                        border: `1px solid ${member.role === 'admin' ? '#ef444444' : (member.role === 'president' ? 'var(--primary-border)' : (member.role === 'national' ? 'var(--primary-border)' : 'rgba(255,255,255,0.1)'))}`,
-                                        textTransform: 'capitalize'
-                                    }}>
-                                        {member.role === 'president' ? t('president') : (member.role === 'national' ? t('nationalBoardMember') : (member.role === 'admin' ? 'Admin' : t('member')))}
-                                    </span>
-                                </h3>
-                                <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{member.email}</p>
-                            </div>
-                        </div>
-
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '1rem',
-                            background: 'rgba(255,255,255,0.03)',
+                {/* Club dropdown — only in Membres mode */}
+                {viewMode === 'members' && (
+                    <select
+                        value={filterClub}
+                        onChange={(e) => setFilterClub(e.target.value)}
+                        style={{
+                            background: '#1e293b',
+                            border: '1px solid var(--card-border)',
+                            color: '#e2e8f0',
+                            padding: '0.75rem 1rem',
                             borderRadius: '12px',
-                            border: '1px solid rgba(255,255,255,0.05)'
-                        }}>
-                            <div>
-                                <span style={{ fontSize: '0.75rem', opacity: 0.5, display: 'block' }}>{t('bonusPoints')}</span>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>
-                                    {member.bonusPoints || 0}
-                                </span>
-                            </div>
-                            <Award size={24} className="text-primary" style={{ opacity: 0.5 }} />
-                        </div>
+                            minWidth: '190px',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="all" style={{ background: '#1e293b', color: '#e2e8f0' }}>Tous les clubs</option>
+                        {clubsList.map(c => (
+                            <option key={c} value={c} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c}</option>
+                        ))}
+                    </select>
+                )}
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label style={{ fontSize: '0.75rem', opacity: 0.7, fontWeight: 600 }}>Poste / Rôle Officiel (pour la carte)</label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <input
-                                    type="text"
-                                    defaultValue={member.officialRole || ''}
-                                    placeholder="Ex: Vice-Président, Secrétaire..."
-                                    id={`role-${member._id}`}
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.6rem 0.8rem',
-                                        fontSize: '0.85rem',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        border: '1px solid var(--card-border)',
-                                        borderRadius: '8px',
-                                        color: 'white'
-                                    }}
-                                />
-                                <button
-                                    onClick={() => handleUpdateOfficialRole(member._id, document.getElementById(`role-${member._id}`).value)}
-                                    className="btn btn-primary"
-                                    style={{ padding: '0 1rem', fontSize: '0.75rem' }}
-                                    disabled={roleUpdatingId === member._id}
-                                >
-                                    {roleUpdatingId === member._id ? <Loader2 className="animate-spin" size={14} /> : 'OK'}
-                                </button>
-                            </div>
-                        </div>
+                {/* Membres / Clubs toggle */}
+                <button
+                    onClick={() => {
+                        setViewMode(prev => prev === 'members' ? 'clubs' : 'members');
+                        setFilterClub('all');
+                    }}
+                    style={{
+                        padding: '0.75rem 1.2rem',
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        borderRadius: '12px',
+                        border: '1px solid var(--card-border)',
+                        background: viewMode === 'clubs' ? 'rgba(16,185,129,0.15)' : 'rgba(124,58,237,0.15)',
+                        color: viewMode === 'clubs' ? '#10b981' : '#a78bfa',
+                        fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        borderColor: viewMode === 'clubs' ? 'rgba(16,185,129,0.4)' : 'rgba(124,58,237,0.4)'
+                    }}
+                >
+                    {viewMode === 'members' ? '👤 Membres' : '🏛️ Clubs'}
+                </button>
 
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                                onClick={() => handleUpdatePoints(member._id, 1)}
-                                disabled={updatingId === member._id}
-                                className="btn btn-secondary"
-                                style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
-                            >
-                                <Plus size={14} /> 1
-                            </button>
-                            <button
-                                onClick={() => handleUpdatePoints(member._id, 2)}
-                                disabled={updatingId === member._id}
-                                className="btn btn-secondary"
-                                style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
-                            >
-                                <Plus size={14} /> 2
-                            </button>
-                            <button
-                                onClick={() => handleUpdatePoints(member._id, -1)}
-                                disabled={updatingId === member._id}
-                                className="btn btn-secondary"
-                                style={{ flex: 1, gap: '4px', fontSize: '0.85rem', color: '#f43f5e' }}
-                            >
-                                <Minus size={14} /> 1
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                {/* Sort */}
+                <button
+                    onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                    style={{
+                        padding: '0.75rem 1.2rem',
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        borderRadius: '12px',
+                        border: '1px solid var(--card-border)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'white',
+                        fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                    }}
+                    title="Trier par points"
+                >
+                    {sortOrder === 'desc' ? <ArrowDown size={16} /> : <ArrowUp size={16} />}
+                    Score {sortOrder === 'desc' ? '↓' : '↑'}
+                </button>
             </div>
 
-            {filteredMembers.length === 0 && (
+            {groupedSeasons.map(({ season, members: seasonMembers }) => {
+                const isCollapsed = collapsedSeasons.has(season);
+                return (
+                <div key={season} style={{ marginBottom: '2rem' }}>
+                    <div
+                        onClick={() => toggleSeason(season)}
+                        style={{ 
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            marginBottom: isCollapsed ? '1rem' : '1.5rem',
+                            paddingBottom: '0.8rem',
+                            borderBottom: '2px solid rgba(255,255,255,0.1)',
+                            cursor: 'pointer', userSelect: 'none'
+                        }}
+                    >
+                        {isCollapsed 
+                            ? <ChevronRight size={20} color="var(--primary)" />
+                            : <ChevronDown size={20} color="var(--primary)" />}
+                        <Award size={20} color="var(--primary)" />
+                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>
+                            Saison {season}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)', padding: '2px 10px', borderRadius: '10px', color: 'white', fontWeight: 600 }}>
+                            {seasonMembers.length} membres
+                        </span>
+                        <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>
+                            {isCollapsed ? 'Cliquer pour afficher ▶' : 'Cliquer pour réduire ▼'}
+                        </span>
+                    </div>
+                    
+                    {!isCollapsed && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {seasonMembers.map(member => (
+                            <div key={member._id} className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.1)', overflow: 'hidden', position: 'relative' }}>
+                                        {member.profileImage ? (
+                                            <Image src={member.profileImage} alt="" fill style={{ objectFit: 'cover' }} />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                                {member.firstName?.charAt(0) || member.name?.charAt(0)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {member.firstName ? `${member.firstName} ${member.lastName}` : member.name}
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                padding: '2px 8px',
+                                                borderRadius: '10px',
+                                                background: member.role === 'admin' ? '#ef444422' : (member.role === 'president' ? 'var(--primary-bg)' : (member.role === 'national' ? 'rgba(124, 58, 237, 0.1)' : 'rgba(255,255,255,0.05)')),
+                                                color: member.role === 'admin' ? '#ef4444' : (member.role === 'president' ? 'var(--primary)' : (member.role === 'national' ? 'var(--primary)' : '#94a3b8')),
+                                                border: `1px solid ${member.role === 'admin' ? '#ef444444' : (member.role === 'president' ? 'var(--primary-border)' : (member.role === 'national' ? 'var(--primary-border)' : 'rgba(255,255,255,0.1)'))}`,
+                                                textTransform: 'capitalize'
+                                            }}>
+                                                {member.role === 'president' ? t('president') : (member.role === 'national' ? t('nationalBoardMember') : (member.role === 'admin' ? 'Admin' : (member.role === 'club' ? 'Club' : t('member'))))}
+                                            </span>
+                                        </h3>
+                                        <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{member.email}</p>
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '1rem',
+                                    background: 'rgba(255,255,255,0.03)',
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(255,255,255,0.05)'
+                                }}>
+                                    <div>
+                                        <span style={{ fontSize: '0.75rem', opacity: 0.5, display: 'block' }}>{t('bonusPoints')}</span>
+                                        <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>
+                                            {member.bonusPoints || 0}
+                                        </span>
+                                    </div>
+                                    <Award size={24} className="text-primary" style={{ opacity: 0.5 }} />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                    <label style={{ fontSize: '0.75rem', opacity: 0.7, fontWeight: 600 }}>Poste / Rôle Officiel (pour la carte)</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            defaultValue={member.officialRole || ''}
+                                            placeholder="Ex: Vice-Président, Secrétaire..."
+                                            id={`role-${member._id}`}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.6rem 0.8rem',
+                                                fontSize: '0.85rem',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid var(--card-border)',
+                                                borderRadius: '8px',
+                                                color: 'white'
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => handleUpdateOfficialRole(member._id, document.getElementById(`role-${member._id}`).value)}
+                                            className="btn btn-primary"
+                                            style={{ padding: '0 1rem', fontSize: '0.75rem' }}
+                                            disabled={roleUpdatingId === member._id}
+                                        >
+                                            {roleUpdatingId === member._id ? <Loader2 className="animate-spin" size={14} /> : 'OK'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => handleUpdatePoints(member._id, 1)}
+                                        disabled={updatingId === member._id}
+                                        className="btn btn-secondary"
+                                        style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
+                                    >
+                                        <Plus size={14} /> 1
+                                    </button>
+                                    <button
+                                        onClick={() => handleUpdatePoints(member._id, 2)}
+                                        disabled={updatingId === member._id}
+                                        className="btn btn-secondary"
+                                        style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
+                                    >
+                                        <Plus size={14} /> 2
+                                    </button>
+                                    <button
+                                        onClick={() => handleUpdatePoints(member._id, -1)}
+                                        disabled={updatingId === member._id}
+                                        className="btn btn-secondary"
+                                        style={{ flex: 1, gap: '4px', fontSize: '0.85rem', color: '#f43f5e' }}
+                                    >
+                                        <Minus size={14} /> 1
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    )}
+                </div>
+                );
+            })}
+
+            {displayedMembers.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
                     <User size={48} style={{ margin: '0 auto 1rem', display: 'block' }} />
                     <p>{t('noMemberFound')}</p>
