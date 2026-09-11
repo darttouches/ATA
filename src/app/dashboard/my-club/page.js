@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Save, Globe, Facebook, Instagram, Youtube, Upload, Trash2, Plus, User } from 'lucide-react';
+import { Save, Globe, Facebook, Instagram, Youtube, Upload, Trash2, Plus, User, Users, Edit3, Check } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function MyClubManagement() {
@@ -10,6 +10,15 @@ export default function MyClubManagement() {
     const [availableMembers, setAvailableMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    // Bureau management
+    const [bureauMembers, setBureauMembers] = useState([]);
+    const [bureauSaving, setBureauSaving] = useState(false);
+    const [bureauMsg, setBureauMsg] = useState(null);
+
+    const BUREAU_ROLES = [
+        '', 'Président', 'Vice-Président', 'Secrétaire Général',
+        'Responsable RH', 'Responsable des Événements', 'Responsable Média', 'Membre du Bureau'
+    ];
 
     const fetchMembers = useCallback(async () => {
         const res = await fetch('/api/dashboard/members');
@@ -35,6 +44,17 @@ export default function MyClubManagement() {
         };
         load();
     }, [fetchClub, fetchMembers]);
+
+    // Load bureau members once club is loaded
+    useEffect(() => {
+        if (!club?._id) return;
+        fetch(`/api/clubs/bureau?clubId=${club._id}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) setBureauMembers(data.members);
+            })
+            .catch(console.error);
+    }, [club?._id]);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
@@ -109,6 +129,31 @@ export default function MyClubManagement() {
         const reviews = [...club.partnerReviews];
         reviews[index][field] = value;
         setClub({ ...club, partnerReviews: reviews });
+    };
+
+    const saveBureauRole = async (memberId, clubRole) => {
+        setBureauSaving(true);
+        setBureauMsg(null);
+        try {
+            const res = await fetch('/api/clubs/bureau', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ memberId, clubRole, clubId: club._id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setBureauMsg({ type: 'success', text: 'Poste mis à jour avec succès !' });
+                // Update local state
+                setBureauMembers(prev => prev.map(m => m._id === memberId ? { ...m, clubRole } : m));
+            } else {
+                setBureauMsg({ type: 'error', text: data.error });
+            }
+        } catch {
+            setBureauMsg({ type: 'error', text: 'Erreur réseau.' });
+        } finally {
+            setBureauSaving(false);
+            setTimeout(() => setBureauMsg(null), 3000);
+        }
     };
 
     return (
@@ -197,6 +242,84 @@ export default function MyClubManagement() {
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* Bureau Management */}
+                <div className="card" style={{ marginBottom: '1.5rem', border: '1px solid rgba(124, 58, 237, 0.3)', background: 'rgba(124, 58, 237, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                        <div>
+                            <h3 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Users size={20} color="#a78bfa" /> Gestion du Bureau du Club
+                            </h3>
+                            <p style={{ fontSize: '0.8rem', opacity: 0.6, margin: 0 }}>Le poste attribué apparaitra dynamiquement sur la carte de membre de chaque adhérent.</p>
+                        </div>
+                        {bureauMsg && (
+                            <div style={{
+                                fontSize: '0.8rem', padding: '6px 12px', borderRadius: '8px',
+                                background: bureauMsg.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                color: bureauMsg.type === 'success' ? '#10b981' : '#ef4444',
+                                display: 'flex', alignItems: 'center', gap: '6px'
+                            }}>
+                                <Check size={14} /> {bureauMsg.text}
+                            </div>
+                        )}
+                    </div>
+
+                    {bureauMembers.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                            Aucun membre trouvé pour ce club.
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {bureauMembers.map(member => (
+                                <div key={member._id} style={{
+                                    display: 'grid', gridTemplateColumns: '1fr 1fr auto',
+                                    gap: '1rem', alignItems: 'center',
+                                    padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)',
+                                    borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(124, 58, 237, 0.1)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700 }}>
+                                            {member.profileImage
+                                                ? <img src={member.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                : (member.firstName?.[0] || member.name?.[0] || <User size={16} />)}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{member.firstName || member.name} {member.lastName || ''}</div>
+                                            <div style={{ fontSize: '0.72rem', opacity: 0.5 }}>N° {member.memberNumber || 'N/A'}</div>
+                                        </div>
+                                    </div>
+
+                                    <select
+                                        value={member.clubRole || ''}
+                                        onChange={e => setBureauMembers(prev => prev.map(m => m._id === member._id ? { ...m, clubRole: e.target.value } : m))}
+                                        style={{
+                                            background: 'rgba(17, 34, 78, 0.5)', border: '1px solid rgba(124, 58, 237, 0.3)',
+                                            color: 'white', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', outline: 'none'
+                                        }}
+                                    >
+                                        {BUREAU_ROLES.map(r => (
+                                            <option key={r} value={r}>{r || '-- Aucun poste --'}</option>
+                                        ))}
+                                    </select>
+
+                                    <button
+                                        type="button"
+                                        disabled={bureauSaving}
+                                        onClick={() => saveBureauRole(member._id, member.clubRole)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                                            color: 'white', border: 'none', padding: '8px 16px',
+                                            borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem',
+                                            display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        <Edit3 size={14} /> Enregistrer
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="card" style={{ marginBottom: '1.5rem', border: '1px solid rgba(56, 189, 248, 0.2)' }}>

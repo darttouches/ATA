@@ -130,7 +130,7 @@ export async function POST(req) {
 export async function PUT(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { id, name, description, address, slug, chief, coverImage, activeMembers, socialLinks, coordinates, partnerReviews, clubEmail, clubPassword, isActive } = await req.json();
         await dbConnect();
@@ -181,9 +181,9 @@ export async function PUT(req) {
 export async function PATCH(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
-        const { id, chief, isActive, clubEmail, clubPassword } = await req.json();
+        const { id, chief, isActive, isVisible, clubEmail, clubPassword } = await req.json();
         await dbConnect();
 
         const club = await Club.findById(id);
@@ -193,6 +193,9 @@ export async function PATCH(req) {
         if (isActive !== undefined && isActive !== club.isActive) {
             club.isActive = isActive;
             await syncClubMembersActiveStatus(id, isActive);
+        }
+        if (isVisible !== undefined) {
+            club.isVisible = isVisible;
         }
 
         if (clubEmail) {
@@ -211,7 +214,7 @@ export async function PATCH(req) {
 export async function DELETE(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+        if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');

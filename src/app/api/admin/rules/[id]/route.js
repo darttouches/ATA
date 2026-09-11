@@ -10,8 +10,9 @@ export async function PUT(req, { params }) {
 
         await dbConnect();
         const body = await req.json();
+        const { id } = await params;
         
-        const rule = await Rule.findByIdAndUpdate(params.id, body, { new: true });
+        const rule = await Rule.findByIdAndUpdate(id, body, { new: true });
         if (!rule) return NextResponse.json({ error: 'Règle non trouvée' }, { status: 404 });
         
         return NextResponse.json({ success: true, data: rule }, { status: 200 });
@@ -26,7 +27,8 @@ export async function DELETE(req, { params }) {
         if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         await dbConnect();
-        const rule = await Rule.findByIdAndDelete(params.id);
+        const { id } = await params;
+        const rule = await Rule.findByIdAndDelete(id);
         if (!rule) return NextResponse.json({ error: 'Règle non trouvée' }, { status: 404 });
         
         return NextResponse.json({ success: true, data: {} }, { status: 200 });

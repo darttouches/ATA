@@ -5,6 +5,7 @@ import { BarChart3, TrendingUp, Users, Calendar, X, Award, ShieldCheck, MapPin, 
 import Link from 'next/link';
 import RankingModal from '@/components/RankingModal';
 import RulesModal from '@/components/RulesModal';
+import ClubRequestModal from '@/components/ClubRequestModal';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function DashboardHome() {
@@ -14,6 +15,7 @@ export default function DashboardHome() {
     const [loading, setLoading] = useState(true);
     const [isRankingOpen, setIsRankingOpen] = useState(false);
     const [isRulesOpen, setIsRulesOpen] = useState(false);
+    const [isClubRequestOpen, setIsClubRequestOpen] = useState(false);
 
     const [selectedMember, setSelectedMember] = useState(null);
     const [selectedSeason, setSelectedSeason] = useState('2026/2027');
@@ -74,6 +76,56 @@ export default function DashboardHome() {
                     <div>
                         <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>{t('totalActions')}</p>
                         <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{stats?.totalActions || 0}</h3>
+                    </div>
+                </div>
+            </div>
+
+            {/* Section : Demande d'Activité de Club */}
+            <div style={{
+                marginBottom: '1.5rem',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)',
+                padding: '1.75rem 2rem',
+                borderRadius: '20px',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                            <span style={{
+                                background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '4px 12px', borderRadius: '20px',
+                                fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px'
+                            }}>
+                                {t('warningTitle') || 'Avertissement Officiel'}
+                            </span>
+                        </div>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 12px 0', color: '#ffbaba', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <ShieldCheck size={24} color="#ef4444" />
+                            {t('agrementTitle') || 'Agrément et Activité des Clubs'}
+                        </h2>
+                        <p style={{ margin: 0, fontSize: '0.92rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'justify' }}>
+                            {t('agrementDesc1')}
+                            <strong>{t('agrementDesc2')}</strong>
+                            {t('agrementDesc3')}
+                        </p>
+                    </div>
+                    <div>
+                        <button
+                            onClick={() => setIsClubRequestOpen(true)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                                color: 'white', padding: '12px 24px', borderRadius: '14px', border: 'none',
+                                fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer',
+                                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)', transition: 'all 0.25s ease'
+                            }}
+                            className="hover:scale-105 active:scale-95"
+                        >
+                            <BookOpen size={20} />
+                            {t('agrementBtn') || "Faire une demande d'activité"}
+                            <ArrowRight size={18} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -412,6 +464,7 @@ export default function DashboardHome() {
             
             <RankingModal isOpen={isRankingOpen} onClose={() => setIsRankingOpen(false)} />
             <RulesModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} currentUser={currentUser} />
+            <ClubRequestModal isOpen={isClubRequestOpen} onClose={() => setIsClubRequestOpen(false)} />
         </div>
     );
 }

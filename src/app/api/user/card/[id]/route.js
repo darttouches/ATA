@@ -15,7 +15,7 @@ export async function GET(req, { params }) {
 
         const user = await User.findById(id)
             .populate('club', 'name logo color')
-            .select('name firstName lastName profileImage role status isPaid memberNumber club preferredClub facebook instagram whatsapp linkedin website phone email officialRole');
+            .select('name firstName lastName profileImage role status isPaid memberNumber club preferredClub facebook instagram whatsapp linkedin website phone email officialRole clubRole');
 
         if (!user) {
             return NextResponse.json({ error: 'Cette carte n\'existe plus ou le compte a été supprimé.' }, { status: 404 });

@@ -166,7 +166,7 @@ export default function MembershipCardPage({ params }) {
                         </h1>
                         <div className="role-chip">
                             <Award size={12} className="text-blue-600" />
-                            <span className="role-text">{userData.officialRole || (userData.role === 'membre' ? 'MEMBRE ACTIF' : userData.role?.toUpperCase())}</span>
+                            <span className="role-text">{userData.clubRole || userData.officialRole || (userData.role === 'membre' ? 'MEMBRE ACTIF' : userData.role?.toUpperCase())}</span>
                         </div>
                         <div className="club-name">
                             <MapPin size={10} /> {userData.club?.name || "Touches D'Art"}

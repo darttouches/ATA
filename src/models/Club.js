@@ -64,6 +64,10 @@ const ClubSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    isVisible: {
+        type: Boolean,
+        default: true, // false = masqué de la liste publique (sans suppression)
+    },
     approvedEventsCount: {
         type: Number,
         default: 0,

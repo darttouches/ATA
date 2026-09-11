@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, MapPin, Edit2, Upload, X, Camera, Lock, Mail, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Plus, Trash2, MapPin, Edit2, Upload, X, Camera, Lock, Mail, ShieldCheck, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
 
 export default function ClubsManagement() {
     const { t, formatDynamicText } = useLanguage();
     const [clubs, setClubs] = useState([]);
+    const [pendingRequests, setPendingRequests] = useState([]);
     const [chiefs, setChiefs] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [editId, setEditId] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null); // id of request being processed
+    const [toggleLoading, setToggleLoading] = useState(null); // id of club being toggled
+    const [visibilityLoading, setVisibilityLoading] = useState(null); // id of club being shown/hidden
     const [formData, setFormData] = useState({
         name: '', description: '', address: '', slug: '', chief: '', coverImage: '',
         coordinates: { lat: 36.8065, lng: 10.1815 },
@@ -35,10 +39,19 @@ export default function ClubsManagement() {
         if (res.ok) setChiefs(data.filter(u => u.role === 'president' || u.role === 'admin'));
     }, []);
 
+    const fetchPendingRequests = useCallback(async () => {
+        const res = await fetch('/api/admin/club-requests');
+        if (res.ok) {
+            const data = await res.json();
+            setPendingRequests(data);
+        }
+    }, []);
+
     useEffect(() => {
         fetchClubs();
         fetchChiefs();
-    }, [fetchClubs, fetchChiefs]);
+        fetchPendingRequests();
+    }, [fetchClubs, fetchChiefs, fetchPendingRequests]);
 
     const resetForm = () => {
         setFormData({
@@ -109,20 +122,62 @@ export default function ClubsManagement() {
     const toggleClubActive = async (club) => {
         const newStatus = !club.isActive;
         const confirmMsg = newStatus
-            ? `Voulez-vous réactiver le club "${club.name}" ? Ses membres non désactivés individuellement par l'admin seront réactivés.`
-            : `Voulez-vous désactiver le club "${club.name}" ? Tous ses membres seront aussi désactivés.`;
+            ? formatDynamicText(t('confirmReactivateClub') || `Voulez-vous réactiver le club "{clubName}" ? Ses membres non désactivés individuellement par l'admin seront réactivés.`, { clubName: club.name })
+            : formatDynamicText(t('confirmDeactivateClub') || `Voulez-vous désactiver le club "{clubName}" ? Tous ses membres seront aussi désactivés.`, { clubName: club.name });
 
         if (!confirm(confirmMsg)) return;
 
+        setToggleLoading(club._id);
         try {
             const res = await fetch('/api/admin/clubs', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: club._id, isActive: newStatus }),
             });
-            if (res.ok) fetchClubs();
+            if (res.ok) {
+                fetchClubs();
+            } else {
+                const data = await res.json();
+                alert(`❌ Erreur: ${data.error || 'Impossible de modifier le statut.'}`);
+            }
         } catch (err) {
             console.error('Error toggling club status:', err);
+            alert('❌ Erreur réseau. Veuillez réessayer.');
+        } finally {
+            setToggleLoading(null);
+        }
+    };
+
+    const handleRequestDecision = async (id, action) => {
+        const clubReq = pendingRequests.find(r => r._id === id);
+        const clubName = clubReq?.clubName || 'ce club';
+
+        const confirmMsg = action === 'approve'
+            ? formatDynamicText(t('confirmApproveRequest') || `Accepter la demande pour "{clubName}" ?\n\n✅ Cela va :\n- Créer la page du club\n- Créer le compte avec le rôle "club"\n- Attribuer 5 points de score au club\n- Assigner les postes du bureau aux membres`, { clubName })
+            : formatDynamicText(t('confirmRejectRequest') || `Refuser la demande pour "{clubName}" ?\n\nLe club ne sera pas créé.`, { clubName });
+
+        if (!confirm(confirmMsg)) return;
+
+        setActionLoading(id);
+        try {
+            const res = await fetch(`/api/admin/club-requests/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(action === 'approve' ? (t('clubApproved') || `✅ ${data.message}`).replace('{message}', data.message) : formatDynamicText(t('clubCreationRejected') || `✅ Demande refusée pour "{clubName}".`, { clubName }));
+                fetchPendingRequests();
+                fetchClubs();
+            } else {
+                alert(`❌ Erreur: ${data.error}`);
+            }
+        } catch (err) {
+            console.error('Error handling request:', err);
+            alert('❌ Erreur réseau. Veuillez réessayer.');
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -150,6 +205,32 @@ export default function ClubsManagement() {
             }
         };
         reader.readAsDataURL(file);
+    };
+
+    const toggleClubVisible = async (club) => {
+        const newVisible = club.isVisible === false ? true : false;
+        const msg = newVisible
+            ? formatDynamicText(t('confirmShowClub') || `Réafficher "{clubName}" dans la liste publique des clubs ?`, { clubName: club.name })
+            : formatDynamicText(t('confirmHideClub') || `Masquer "{clubName}" de la liste publique des clubs ?\n\nLe club ne sera pas supprimé, juste invisible sur le site.`, { clubName: club.name });
+        if (!confirm(msg)) return;
+        setVisibilityLoading(club._id);
+        try {
+            const res = await fetch('/api/admin/clubs', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: club._id, isVisible: newVisible }),
+            });
+            if (res.ok) {
+                fetchClubs();
+            } else {
+                const data = await res.json();
+                alert(`❌ Erreur: ${data.error || 'Impossible de modifier la visibilité.'}`);
+            }
+        } catch (err) {
+            alert('❌ Erreur réseau.');
+        } finally {
+            setVisibilityLoading(null);
+        }
     };
 
     const updateChief = async (clubId, chiefId) => {
@@ -221,16 +302,91 @@ export default function ClubsManagement() {
                 </button>
             </div>
 
+            {pendingRequests.length > 0 && (
+                <div style={{ marginBottom: '3rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', color: '#f59e0b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ShieldAlert size={20} />
+                        {t('pendingActivityRequests') || "Demandes d'Activité en Attente"} ({pendingRequests.length})
+                    </h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {pendingRequests.map(req => (
+                            <div key={req._id} className="card" style={{ borderLeft: '4px solid #f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{req.clubName}</h3>
+                                    <span style={{ fontSize: '0.7rem', background: '#f59e0b', color: 'white', padding: '2px 8px', borderRadius: '10px' }}>{t('waiting') || 'En attente'}</span>
+                                </div>
+                                <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '0.5rem' }}><MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} /> {req.location}</p>
+                                <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '0.5rem' }}><Mail size={14} style={{ display: 'inline', marginRight: '4px' }} /> {req.email}</p>
+                                
+                                <div style={{ flex: 1, marginTop: '1rem', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px' }}>
+                                    <h4 style={{ fontSize: '0.8rem', opacity: 0.7, margin: '0 0 0.5rem 0' }}>{t('proposedBureau') || 'Bureau proposé :'}</h4>
+                                    <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.8rem', opacity: 0.9 }}>
+                                        <li><strong>Président:</strong> {req.president?.firstName || req.president?.name}</li>
+                                        <li><strong>Vice-Pres:</strong> {req.vicePresident?.firstName || req.vicePresident?.name}</li>
+                                        <li><strong>Secrétaire:</strong> {req.secretary?.firstName || req.secretary?.name}</li>
+                                        <li><strong>RH:</strong> {req.hr?.firstName || req.hr?.name}</li>
+                                        <li><strong>Événements:</strong> {req.events?.firstName || req.events?.name}</li>
+                                        <li><strong>Média:</strong> {req.communication?.firstName || req.communication?.name}</li>
+                                    </ul>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button
+                                        onClick={() => handleRequestDecision(req._id, 'approve')}
+                                        disabled={!!actionLoading}
+                                        style={{
+                                            flex: 1, background: actionLoading === req._id ? '#059669' : '#10b981',
+                                            color: 'white', border: 'none', padding: '8px', borderRadius: '8px',
+                                            fontWeight: 600, cursor: actionLoading ? 'not-allowed' : 'pointer',
+                                            opacity: actionLoading && actionLoading !== req._id ? 0.5 : 1,
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {actionLoading === req._id ? (t('processing') || '⏳ Traitement...') : (t('acceptAndCreate') || '✅ Accepter & Créer')}
+                                    </button>
+                                    <button
+                                        onClick={() => handleRequestDecision(req._id, 'reject')}
+                                        disabled={!!actionLoading}
+                                        style={{
+                                            flex: 1, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444',
+                                            border: '1px solid #ef4444', padding: '8px', borderRadius: '8px',
+                                            fontWeight: 600, cursor: actionLoading ? 'not-allowed' : 'pointer',
+                                            opacity: actionLoading && actionLoading !== req._id ? 0.5 : 1,
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {actionLoading === req._id ? (t('processingShort') || '⏳ ...') : (t('rejectBtn') || '❌ Refuser')}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>{t('activeClubs') || 'Clubs Actifs'}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                 {clubs.map(club => (
-                    <div key={club._id} className="card" style={{ position: 'relative', opacity: club.isActive === false ? 0.6 : 1 }}>
-                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '10px', zIndex: 10 }}>
+                    <div key={club._id} className="card" style={{ position: 'relative', opacity: (club.isActive === false || club.isVisible === false) ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '8px', zIndex: 10 }}>
                             <button
                                 onClick={() => handleEdit(club)}
                                 style={{ background: 'rgba(15, 23, 42, 0.7)', border: 'none', color: 'var(--primary)', padding: '6px', borderRadius: '50%', cursor: 'pointer' }}
                                 title={t('edit') || 'Modifier'}
                             >
                                 <Edit2 size={16} />
+                            </button>
+                            <button
+                                onClick={() => toggleClubVisible(club)}
+                                disabled={visibilityLoading === club._id}
+                                style={{
+                                    background: 'rgba(15, 23, 42, 0.7)', border: 'none',
+                                    color: club.isVisible === false ? '#f59e0b' : 'rgba(255,255,255,0.5)',
+                                    padding: '6px', borderRadius: '50%', cursor: 'pointer'
+                                }}
+                                title={club.isVisible === false ? 'Réafficher sur le site' : 'Masquer du site public'}
+                            >
+                                {club.isVisible === false ? <Eye size={16} /> : <EyeOff size={16} />}
                             </button>
                             <button
                                 onClick={() => deleteClub(club._id)}
@@ -261,22 +417,36 @@ export default function ClubsManagement() {
                                 display: 'flex', alignItems: 'center', gap: '4px'
                             }}>
                                 {club.isActive !== false ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
-                                {club.isActive !== false ? 'Club Actif' : 'Club Inactif'}
+                                {club.isActive !== false ? (t('clubActive') || 'Club Actif') : (t('clubInactive') || 'Club Inactif')}
                             </div>
+                            {club.isVisible === false && (
+                                <div style={{
+                                    position: 'absolute', top: '8px', left: '8px',
+                                    background: 'rgba(245, 158, 11, 0.9)',
+                                    color: 'white', fontSize: '0.65rem', padding: '2px 7px', borderRadius: '12px', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: '4px'
+                                }}>
+                                    <EyeOff size={11} /> {t('hiddenFromSite') || 'Masqué du site'}
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0 }}>{formatDynamicText(club.name)}</h3>
                             <button
                                 onClick={() => toggleClubActive(club)}
+                                disabled={toggleLoading === club._id}
                                 style={{
-                                    fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer',
+                                    fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px',
+                                    cursor: toggleLoading === club._id ? 'not-allowed' : 'pointer',
                                     border: '1px solid rgba(255,255,255,0.2)',
                                     background: club.isActive !== false ? 'rgba(244, 63, 94, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                                    color: club.isActive !== false ? '#f43f5e' : '#10b981'
+                                    color: club.isActive !== false ? '#f43f5e' : '#10b981',
+                                    opacity: toggleLoading === club._id ? 0.6 : 1,
+                                    transition: 'all 0.2s'
                                 }}
                             >
-                                {club.isActive !== false ? 'Désactiver' : 'Réactiver'}
+                                {toggleLoading === club._id ? (t('processingShort') || '⏳...') : (club.isActive !== false ? (t('deactivate') || 'Désactiver') : (t('reactivate') || 'Réactiver'))}
                             </button>
                         </div>
 

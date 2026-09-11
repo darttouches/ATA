@@ -91,6 +91,7 @@ const UserSchema = new mongoose.Schema({
     linkedin: String,
     website: String,
     officialRole: String, // Assigned by admin/president
+    clubRole: String, // Bureau role in the club: Président, Vice-Président, etc. (editable by club account or admin)
     interviewCode: {
         type: String,
         required: false,

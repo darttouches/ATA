@@ -14,7 +14,9 @@ export async function GET() {
             .limit(12)
             .lean();
 
-        const clubs = await Club.find({}).lean();
+        const clubs = await Club.find({ isVisible: { $ne: false } })
+            .select('name slug description coverImage isActive address')
+            .lean();
 
         const partners = await Partner.find({ active: true })
             .sort({ order: 1 })
