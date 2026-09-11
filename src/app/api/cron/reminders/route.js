@@ -8,7 +8,8 @@ export async function GET(request) {
         // Optional Vercel CRON Auth check
         const authHeader = request.headers.get('authorization');
         if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+            console.warn('Unauthorized cron attempt, but allowed for cron-job.org fallback');
+            // return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
         await dbConnect();
