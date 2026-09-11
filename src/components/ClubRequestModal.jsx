@@ -11,6 +11,8 @@ export default function ClubRequestModal({ isOpen, onClose }) {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
+    const [isReactivation, setIsReactivation] = useState(false);
+    const [existingClubs, setExistingClubs] = useState([]);
 
     const [formData, setFormData] = useState({
         clubName: "Touches D'Art ",
@@ -42,6 +44,7 @@ export default function ClubRequestModal({ isOpen, onClose }) {
                 events: '',
                 communication: ''
             });
+            setIsReactivation(false);
 
             // Fetch all members. Assume we filter valid (active) members on the frontend or backend.
             fetch('/api/users')
@@ -58,6 +61,15 @@ export default function ClubRequestModal({ isOpen, onClose }) {
                     setError(t('errorLoadingMembers') || "Impossible de charger les membres.");
                 })
                 .finally(() => setLoading(false));
+
+            fetch('/api/clubs')
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setExistingClubs(data);
+                    }
+                })
+                .catch(err => console.error("Failed to fetch clubs", err));
         }
     }, [isOpen]);
 
@@ -95,7 +107,7 @@ export default function ClubRequestModal({ isOpen, onClose }) {
     const handleChange = (e) => {
         const { name, value } = e.target;
         // Prevent removing the prefix "Touches D'Art " for clubName
-        if (name === 'clubName' && !value.startsWith("Touches D'Art ")) {
+        if (name === 'clubName' && !isReactivation && !value.startsWith("Touches D'Art ")) {
             return;
         }
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -209,13 +221,50 @@ export default function ClubRequestModal({ isOpen, onClose }) {
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <label style={{ fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Shield size={18} color="#a78bfa" />
-                                    {t('clubNameLabel') || "Nom du Club"} <span style={{ color: '#ef4444' }}>*</span>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Shield size={18} color="#a78bfa" />
+                                        {t('clubNameLabel') || "Nom du Club"} <span style={{ color: '#ef4444' }}>*</span>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => {
+                                            const newIsReactivation = !isReactivation;
+                                            setIsReactivation(newIsReactivation);
+                                            setFormData(prev => ({ ...prev, clubName: newIsReactivation ? '' : "Touches D'Art " }));
+                                        }}
+                                        style={{ 
+                                            background: isReactivation ? 'rgba(124, 58, 237, 0.2)' : 'rgba(255, 255, 255, 0.05)', 
+                                            border: `1px solid ${isReactivation ? 'rgba(124, 58, 237, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`, 
+                                            color: isReactivation ? '#a78bfa' : 'rgba(255, 255, 255, 0.7)', 
+                                            padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' 
+                                        }}
+                                    >
+                                        {isReactivation ? (t('newClubRequest') || 'Nouvelle création') : (t('reactivateExisting') || 'Club existant (Réactiver)')}
+                                    </button>
                                 </label>
-                                <input
-                                    type="text"
-                                    name="clubName"
+                                {isReactivation ? (
+                                    <select
+                                        name="clubName"
+                                        value={formData.clubName}
+                                        onChange={handleChange}
+                                        style={{
+                                            background: 'rgba(17, 34, 78, 0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                                            color: 'white', padding: '12px', borderRadius: '10px', fontSize: '0.95rem',
+                                            outline: 'none'
+                                        }}
+                                    >
+                                        <option value="" disabled>{t('selectExistingClub') || '-- Sélectionner le club --'}</option>
+                                        {existingClubs.map(c => (
+                                            <option key={c._id} value={c.name} style={{ color: 'white', background: '#0f172a' }}>
+                                                {c.name} {c.isActive === false ? '(Inactif)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        name="clubName"
                                     value={formData.clubName}
                                     onChange={handleChange}
                                     placeholder={`Touches D'Art [${t('clubLabel') || 'Votre établissement'}]`}
@@ -225,6 +274,7 @@ export default function ClubRequestModal({ isOpen, onClose }) {
                                         outline: 'none'
                                     }}
                                 />
+                                )}
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
