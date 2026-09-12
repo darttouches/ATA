@@ -588,6 +588,11 @@ export default function JoinPage() {
         e.preventDefault();
         setTypeError('');
 
+        if (!interviewForm.rulesConfirmed) {
+            setTypeError('Vous devez confirmer avoir lu et accepté les règles pour continuer.');
+            return;
+        }
+
         const reqDate = new Date(interviewForm.interviewDate);
         const leadDays = recruitmentStatus.interviewLeadTimeDays !== null ? recruitmentStatus.interviewLeadTimeDays : 2;
         const minLeadTime = new Date(Date.now() + leadDays * 24 * 60 * 60 * 1000);
@@ -983,8 +988,9 @@ export default function JoinPage() {
                             <button
                                 type="submit"
                                 className={`${styles.btn} ${styles.btnPrimary}`}
-                                style={{ justifyContent: 'center', marginTop: '0.5rem' }}
-                                disabled={loadingInterview}
+                                style={{ justifyContent: 'center', marginTop: '0.5rem', opacity: (!interviewForm.rulesConfirmed && !loadingInterview) ? 0.5 : 1 }}
+                                disabled={loadingInterview || !interviewForm.rulesConfirmed}
+                                title={!interviewForm.rulesConfirmed ? "Vous devez cocher la case ci-dessus avant de pouvoir soumettre" : ""}
                             >
                                 {loadingInterview ? '⏳ Génération du code...' : '✅ Confirmer et obtenir mon code'}
                             </button>
