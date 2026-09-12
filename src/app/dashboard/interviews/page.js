@@ -131,6 +131,10 @@ export default function InterviewsManagement() {
             alert("Erreur: Identifiant du candidat introuvable.");
             return;
         }
+        if (newDecision === 'accepted' && !selectedCandidate?.rulesConfirmed) {
+            alert("Impossible d'accepter ce candidat : il n'a pas confirmé sa conformité aux règles (Règles conformées: Non).");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/interviews/${candId}`, {
                 method: 'PUT',
@@ -433,17 +437,19 @@ export default function InterviewsManagement() {
                                     <button 
                                         type="button"
                                         onClick={() => handleCandidateDecision(selectedCandidate._id, 'accepted')}
+                                        disabled={!selectedCandidate.rulesConfirmed}
                                         className="btn btn-success"
                                         style={{ 
                                             padding: '0.75rem', 
                                             justifyContent: 'center', 
-                                            background: selectedCandidate.decision === 'accepted' ? '#10b981' : 'rgba(16, 185, 129, 0.2)',
-                                            borderColor: '#10b981',
-                                            color: 'white',
+                                            background: selectedCandidate.decision === 'accepted' ? '#10b981' : (selectedCandidate.rulesConfirmed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)'),
+                                            borderColor: selectedCandidate.rulesConfirmed ? '#10b981' : 'rgba(255,255,255,0.1)',
+                                            color: selectedCandidate.rulesConfirmed ? 'white' : 'rgba(255,255,255,0.3)',
                                             fontWeight: 'bold',
                                             fontSize: '0.95rem',
-                                            cursor: 'pointer'
+                                            cursor: selectedCandidate.rulesConfirmed ? 'pointer' : 'not-allowed'
                                         }}
+                                        title={!selectedCandidate.rulesConfirmed ? "Ce candidat n'a pas accepté les règles, vous ne pouvez pas l'accepter." : "Accepter le candidat"}
                                     >
                                         <CheckCircle2 size={18} /> Accepter le Candidat
                                     </button>
