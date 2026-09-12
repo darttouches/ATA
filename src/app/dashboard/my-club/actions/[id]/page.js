@@ -282,7 +282,7 @@ export default function ActionDetailsPage({ params }) {
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Membres autorisés à scanner</label>
                             <p style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '1rem' }}>Sélectionnez les personnes qui auront le bouton "Scanner NFC" pour cet événement.</p>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
-                                {members.filter(m => m.role === 'admin' || m.role === 'national' || (action && action.club && (m.club?._id === action.club._id || m.club === action.club._id || m.preferredClub?._id === action.club._id))).map(member => (
+                                {members.filter(m => m.status === 'approved' && m.isActive !== false && m.isPaid && (m.role === 'admin' || m.role === 'national' || (action && action.club && (m.club?._id === action.club._id || m.club === action.club._id || m.preferredClub?._id === action.club._id)))).map(member => (
                                     <label key={member._id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
                                         <input
                                             type="checkbox"

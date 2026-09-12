@@ -435,7 +435,7 @@ export default function ChefContentManagement() {
                                     <p style={{ fontSize: '0.8rem', opacity: 0.4 }}>Chargement des membres...</p>
                                 ) : (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.4rem', maxHeight: '130px', overflowY: 'auto' }}>
-                                        {clubMembers.map(m => (
+                                        {clubMembers.filter(m => m.status === 'approved' && m.isActive !== false && m.isPaid).map(m => (
                                             <label key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: formData.authorizedScanners.includes(m._id) ? 'rgba(99,102,241,0.15)' : 'transparent' }}>
                                                 <input
                                                     type="checkbox"

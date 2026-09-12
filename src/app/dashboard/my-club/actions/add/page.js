@@ -36,20 +36,22 @@ export default function AddActionPage() {
                     if (membersData.success && Array.isArray(membersData.data)) {
                         const allMembers = membersData.data;
                         const filtered = allMembers.filter(m => 
-                            m.role === 'admin' || 
-                            m.role === 'national' || 
-                            (userData.club && (
-                                (m.club?._id?.toString() || m.club?.toString()) === (userData.club?._id?.toString() || userData.club?.toString()) || 
-                                (m.preferredClub?._id?.toString() || m.preferredClub?.toString()) === (userData.club?._id?.toString() || userData.club?.toString())
-                            )) ||
-                            // Also if admin/national organizes it, they just see everyone or default
-                            // Let's just fallback to allow them if they are national/admin
-                            userData.role === 'admin' || userData.role === 'national'
+                            m.status === 'approved' && m.isActive !== false && m.isPaid && (
+                                m.role === 'admin' || 
+                                m.role === 'national' || 
+                                (userData.club && (
+                                    (m.club?._id?.toString() || m.club?.toString()) === (userData.club?._id?.toString() || userData.club?.toString()) || 
+                                    (m.preferredClub?._id?.toString() || m.preferredClub?.toString()) === (userData.club?._id?.toString() || userData.club?.toString())
+                                )) ||
+                                // Also if admin/national organizes it, they just see everyone or default
+                                // Let's just fallback to allow them if they are national/admin
+                                userData.role === 'admin' || userData.role === 'national'
+                            )
                         );
                         
                         // if admin/national, they can just pick anyone
                         if (userData.role === 'admin' || userData.role === 'national') {
-                            setEligibleScanners(allMembers);
+                            setEligibleScanners(allMembers.filter(m => m.status === 'approved' && m.isActive !== false && m.isPaid));
                         } else {
                             setEligibleScanners(filtered);
                         }

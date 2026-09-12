@@ -453,7 +453,13 @@ export default function AdminContentModeration() {
                                     <p style={{ fontSize: '0.8rem', opacity: 0.4 }}>Chargement des membres...</p>
                                 ) : (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.4rem', maxHeight: '150px', overflowY: 'auto', paddingRight: '10px' }}>
-                                        {members.filter(m => formData.clubs.length === 0 || formData.clubs.includes(m.club) || formData.clubs.includes(m.club?._id)).map(m => (
+                                        {members.filter(m => {
+                                            if (m.status !== 'approved' || m.isActive === false || !m.isPaid) return false;
+                                            if (formData.clubs.length === 0) return true;
+                                            const mClubId = typeof m.club === 'object' ? m.club?._id : m.club;
+                                            const mPrefClubId = typeof m.preferredClub === 'object' ? m.preferredClub?._id : m.preferredClub;
+                                            return formData.clubs.includes(mClubId) || formData.clubs.includes(mPrefClubId);
+                                        }).map(m => (
                                             <label key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: formData.authorizedScanners.includes(m._id) ? 'rgba(99,102,241,0.15)' : 'transparent' }}>
                                                 <input
                                                     type="checkbox"
