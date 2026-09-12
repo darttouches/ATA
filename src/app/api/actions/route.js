@@ -13,25 +13,33 @@ export async function GET(req) {
         const { searchParams } = new URL(req.url);
         let club = searchParams.get('clubId');
 
-        // If no clubId is provided, try to find the user's club automatically
-        if (!club) {
-            const { getUser } = await import('@/lib/auth');
-            const sessionUser = await getUser();
+        const { getUser } = await import('@/lib/auth');
+        const sessionUser = await getUser();
+        if (!sessionUser) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
 
-            if (sessionUser) {
-                const user = await User.findById(sessionUser.userId || sessionUser._id || sessionUser.id).select('club role');
-                if (user) {
-                    // Admins and National Board members see all actions by default (club remains null)
-                    if (user.role !== 'admin' && user.role !== 'national') {
-                        if (user.club) {
-                            club = user.club;
-                        } else if (user.role === 'president') {
-                            const ownedClub = await Club.findOne({ chief: user._id });
-                            if (ownedClub) club = ownedClub._id;
-                        }
-                    }
-                }
-            }
+        const user = await User.findById(sessionUser.userId || sessionUser._id || sessionUser.id).select('club role');
+        let userClubId = user?.club?.toString() || null;
+        
+        if (!userClubId && user?.role === 'president') {
+            const ownedClub = await Club.findOne({ chief: user._id });
+            if (ownedClub) userClubId = ownedClub._id.toString();
+        }
+
+        // If no clubId is explicitly provided in query, use the user's club automatically
+        if (!club) {
+            club = userClubId;
+        }
+
+        // Must belong to a club unless admin or national
+        if (!club && user?.role !== 'admin' && user?.role !== 'national') {
+            return NextResponse.json({ success: true, data: [] }, { status: 200 });
+        }
+
+        // If querying a specific club, check authorization
+        if (club && club !== userClubId && user?.role !== 'admin' && user?.role !== 'national') {
+             return NextResponse.json({ success: false, error: 'Accès refusé. Vous n\'êtes pas membre de ce club.' }, { status: 403 });
         }
 
         let query = {};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Check, X, GalleryHorizontal, Home, ShieldCheck, Trash2, Edit2, Upload, XCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Check, X, GalleryHorizontal, Home, ShieldCheck, Trash2, Edit2, Upload, XCircle, CheckCircle2, Clock, Wifi } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -11,6 +11,7 @@ export default function AdminContentModeration() {
     const { t } = useLanguage();
     const [contents, setContents] = useState([]);
     const [clubs, setClubs] = useState([]);
+    const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editId, setEditId] = useState(null);
@@ -26,6 +27,7 @@ export default function AdminContentModeration() {
         link: '',
         status: 'approved',
         clubs: [],
+        authorizedScanners: [],
         program: {
             items: [],
             globalDuration: '',
@@ -56,10 +58,23 @@ export default function AdminContentModeration() {
         }
     }, []);
 
+    const fetchMembers = useCallback(async () => {
+        try {
+            const res = await fetch('/api/dashboard/members');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) setMembers(data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching members:', error);
+        }
+    }, []);
+
     useEffect(() => {
         fetchContents();
         fetchClubs();
-    }, [fetchContents, fetchClubs]);
+        fetchMembers();
+    }, [fetchContents, fetchClubs, fetchMembers]);
 
     const updateStatus = async (id, status) => {
         const res = await fetch('/api/admin/content', {
@@ -106,6 +121,7 @@ export default function AdminContentModeration() {
             link: item.link || '',
             status: item.status,
             clubs: loadedClubs,
+            authorizedScanners: (item.authorizedScanners || []).map(s => s._id || s),
             mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : ''),
             program: item.program || { items: [], globalDuration: '', partsCount: '' }
         });
@@ -124,6 +140,7 @@ export default function AdminContentModeration() {
                 id: editId,
                 photos: Array.isArray(formData.photos) ? formData.photos.filter(p => p && p.length > 5) : [],
                 mediaUrl: formData.mediaUrl || (formData.photos.length > 0 ? formData.photos[0] : ''),
+                authorizedScanners: formData.authorizedScanners || [],
                 program: formData.program ? {
                     ...formData.program,
                     partsCount: formData.program.partsCount ? parseInt(formData.program.partsCount) : undefined,
@@ -225,7 +242,7 @@ export default function AdminContentModeration() {
                         setEditId(null);
                         setFormData({
                             title: '', type: 'event', description: '', date: '', endDate: '', time: '',
-                            photos: [], videoUrl: '', link: '', status: 'approved', clubs: [],
+                            photos: [], videoUrl: '', link: '', status: 'approved', clubs: [], authorizedScanners: [],
                             program: { items: [], globalDuration: '', partsCount: '' }
                         });
                         setShowModal(true);
@@ -424,6 +441,41 @@ export default function AdminContentModeration() {
                                     minHeight="120px"
                                 />
                             </div>
+
+                            {/* Authorized NFC Scanners */}
+                            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.15)', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, marginBottom: '0.5rem' }}>
+                                    <Wifi size={16} color="var(--primary)" />
+                                    Membres autorisés à scanner les présences NFC
+                                </label>
+                                <p style={{ fontSize: '0.78rem', opacity: 0.6, marginBottom: '0.75rem' }}>Choisissez qui peut scanner les cartes membres lors de cet événement.</p>
+                                {members.length === 0 ? (
+                                    <p style={{ fontSize: '0.8rem', opacity: 0.4 }}>Chargement des membres...</p>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.4rem', maxHeight: '150px', overflowY: 'auto', paddingRight: '10px' }}>
+                                        {members.filter(m => formData.clubs.length === 0 || formData.clubs.includes(m.club) || formData.clubs.includes(m.club?._id)).map(m => (
+                                            <label key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: formData.authorizedScanners.includes(m._id) ? 'rgba(99,102,241,0.15)' : 'transparent' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.authorizedScanners.includes(m._id)}
+                                                    onChange={e => {
+                                                        const checked = e.target.checked;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            authorizedScanners: checked
+                                                                ? [...prev.authorizedScanners, m._id]
+                                                                : prev.authorizedScanners.filter(id => id !== m._id)
+                                                        }));
+                                                    }}
+                                                    style={{ accentColor: 'var(--primary)' }}
+                                                />
+                                                {m.firstName} {m.lastName} {m.club?.name ? `(${m.club.name})` : ''}
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             <div style={{ marginBottom: '1rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                                     <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('photosSelect')}</label>

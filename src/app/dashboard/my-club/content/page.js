@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Trash2, Calendar, Video, Image as ImageIcon, Lightbulb, CheckCircle2, Clock, XCircle, Upload, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Calendar, Video, Image as ImageIcon, Lightbulb, CheckCircle2, Clock, XCircle, Upload, Edit2, Wifi } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ProgramEditor from '@/components/ProgramEditor';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -15,6 +15,7 @@ export default function ChefContentManagement() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editId, setEditId] = useState(null);
+    const [clubMembers, setClubMembers] = useState([]);
     const [formData, setFormData] = useState({
         title: '',
         type: 'event',
@@ -25,6 +26,7 @@ export default function ChefContentManagement() {
         photos: [],
         videoUrl: '',
         link: '',
+        authorizedScanners: [],
         program: {
             items: [],
             globalDuration: '',
@@ -43,6 +45,11 @@ export default function ChefContentManagement() {
 
     useEffect(() => {
         fetchContents();
+        // Fetch club members for scanner selection
+        fetch('/api/dashboard/members')
+            .then(r => r.json())
+            .then(d => { if (d.success) setClubMembers(d.data || []); })
+            .catch(() => {});
     }, [fetchContents]);
 
     const [uploading, setUploading] = useState(0);
@@ -105,6 +112,7 @@ export default function ChefContentManagement() {
                 id: editId,
                 photos: Array.isArray(formData.photos) ? formData.photos.filter(p => p && p.length > 5) : [],
                 mediaUrl: formData.mediaUrl || (formData.photos.length > 0 ? formData.photos[0] : ''),
+                authorizedScanners: formData.authorizedScanners || [],
                 program: formData.program ? {
                     ...formData.program,
                     partsCount: formData.program.partsCount ? parseInt(formData.program.partsCount) : undefined,
@@ -151,6 +159,7 @@ export default function ChefContentManagement() {
             videoUrl: item.videoUrl || '',
             link: item.link || '',
             mediaUrl: item.mediaUrl || (photosArray.length > 0 ? photosArray[0] : ''),
+            authorizedScanners: (item.authorizedScanners || []).map(s => s._id || s),
             program: item.program || { items: [], globalDuration: '', partsCount: '' }
         });
         setShowModal(true);
@@ -413,6 +422,40 @@ export default function ChefContentManagement() {
                                         value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })}
                                     />
                                 </div>
+                            </div>
+
+                            {/* Authorized NFC Scanners */}
+                            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.15)', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, marginBottom: '0.5rem' }}>
+                                    <Wifi size={16} color="var(--primary)" />
+                                    Membres autorisés à scanner les présences NFC
+                                </label>
+                                <p style={{ fontSize: '0.78rem', opacity: 0.6, marginBottom: '0.75rem' }}>Choisissez qui peut scanner les cartes membres lors de cet événement.</p>
+                                {clubMembers.length === 0 ? (
+                                    <p style={{ fontSize: '0.8rem', opacity: 0.4 }}>Chargement des membres...</p>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.4rem', maxHeight: '130px', overflowY: 'auto' }}>
+                                        {clubMembers.map(m => (
+                                            <label key={m._id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: formData.authorizedScanners.includes(m._id) ? 'rgba(99,102,241,0.15)' : 'transparent' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.authorizedScanners.includes(m._id)}
+                                                    onChange={e => {
+                                                        const checked = e.target.checked;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            authorizedScanners: checked
+                                                                ? [...prev.authorizedScanners, m._id]
+                                                                : prev.authorizedScanners.filter(id => id !== m._id)
+                                                        }));
+                                                    }}
+                                                    style={{ accentColor: 'var(--primary)' }}
+                                                />
+                                                {m.firstName} {m.lastName}
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {(formData.type === 'event' || formData.type === 'formation') && (

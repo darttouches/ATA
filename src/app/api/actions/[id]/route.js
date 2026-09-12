@@ -17,6 +17,28 @@ export async function GET(req, { params }) {
             return NextResponse.json({ success: false, error: 'Action not found' }, { status: 404 });
         }
 
+        const { getUser } = await import('@/lib/auth');
+        const sessionUser = await getUser();
+        if (!sessionUser) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const User = (await import('@/models/User')).default;
+        const user = await User.findById(sessionUser.userId || sessionUser._id || sessionUser.id).select('club role');
+        
+        let userClubId = user?.club?.toString() || null;
+        if (!userClubId && user?.role === 'president') {
+            const Club = (await import('@/models/Club')).default;
+            const ownedClub = await Club.findOne({ chief: user._id });
+            if (ownedClub) userClubId = ownedClub._id.toString();
+        }
+
+        const actionClubId = action.club?._id?.toString() || action.club?.toString();
+        
+        if (actionClubId && actionClubId !== userClubId && user?.role !== 'admin' && user?.role !== 'national') {
+             return NextResponse.json({ success: false, error: 'Accès refusé. Vous n\'êtes pas membre de ce club.' }, { status: 403 });
+        }
+
         return NextResponse.json({ success: true, data: action }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -35,50 +57,11 @@ export async function PUT(req, { params }) {
             return NextResponse.json({ success: false, error: 'Action not found' }, { status: 404 });
         }
 
-        // Handle points awarding if attendees list is updated
+        // Points are no longer awarded immediately upon scan.
+        // They are strictly awarded in chunks of 3 consecutive attendances
+        // when the action is approved by admins.
         if (body.attendees && Array.isArray(body.attendees)) {
-            const User = (await import('@/models/User')).default;
-            const oldAttendeesMap = {};
-            action.attendees.forEach(a => {
-                const mid = a.member?._id?.toString() || a.member?.toString();
-                if (mid) oldAttendeesMap[mid] = a.present;
-            });
-
-            for (const newAtt of body.attendees) {
-                const mid = newAtt.member?._id?.toString() || newAtt.member?.toString();
-                if (!mid) continue;
-
-                const wasPresent = oldAttendeesMap[mid] || false;
-                const isPresentNow = newAtt.present || false;
-
-                if (!wasPresent && isPresentNow) {
-                    // +1 to score + history entry
-                    await User.findByIdAndUpdate(mid, {
-                        $inc: { bonusPoints: 1 },
-                        $push: {
-                            scoreHistory: {
-                                points: 1,
-                                reason: `Présence: ${action.title}`,
-                                addedBy: 'Système NFC',
-                                date: new Date()
-                            }
-                        }
-                    });
-                } else if (wasPresent && !isPresentNow) {
-                    // -1 to score + remove last attendance entry for this action
-                    await User.findByIdAndUpdate(mid, {
-                        $inc: { bonusPoints: -1 },
-                        $push: {
-                            scoreHistory: {
-                                points: -1,
-                                reason: `Présence annulée: ${action.title}`,
-                                addedBy: 'Système NFC',
-                                date: new Date()
-                            }
-                        }
-                    });
-                }
-            }
+            // Just letting Object.assign handle the attendees array swap below.
         }
 
         // Use Object.assign to update only provided fields

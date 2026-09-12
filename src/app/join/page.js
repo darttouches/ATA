@@ -37,7 +37,7 @@ export default function JoinPage() {
 
     // Interview request state
     const [interviewForm, setInterviewForm] = useState({
-        firstName: '', lastName: '', email: '', phone: '', interviewDate: ''
+        firstName: '', lastName: '', email: '', phone: '', interviewDate: '', rulesConfirmed: false
     });
     const [loadingInterview, setLoadingInterview] = useState(false);
     const [generatedCode, setGeneratedCode] = useState('');
@@ -663,7 +663,8 @@ export default function JoinPage() {
             recruitmentDays: "يتبقى",
             recruitmentDaysAfter: "يوم (أيام) قبل إغلاق التسجيل.",
             recruitmentClosesAt: "(الإغلاق المقرر في",
-            recruitmentOpen: "فترة التسجيل لهذا الموسم مفتوحة حاليا."
+            recruitmentOpen: "فترة التسجيل لهذا الموسم مفتوحة حاليا.",
+            confirmRules: "أؤكد أنني قرأت القواعد وأوافق على الالتزام بها."
         },
         fr: {
             step0intro: "Bonjour ! Cliquez pour démarrer votre processus d'intégration à Touches D'Art.",
@@ -690,7 +691,8 @@ export default function JoinPage() {
             recruitmentDays: "Il reste",
             recruitmentDaysAfter: "jour(s) avant la fermeture des inscriptions.",
             recruitmentClosesAt: "(Clôture prévue le",
-            recruitmentOpen: "La période d'inscription pour cette saison est actuellement ouverte."
+            recruitmentOpen: "La période d'inscription pour cette saison est actuellement ouverte.",
+            confirmRules: "Je confirme avoir lu et compris les règles, et je m'engage à les respecter."
         },
         en: {
             step0intro: "Welcome! Click to start your Touches D'Art onboarding journey.",
@@ -717,7 +719,8 @@ export default function JoinPage() {
             recruitmentDays: "There are",
             recruitmentDaysAfter: "day(s) left before registration closes.",
             recruitmentClosesAt: "(Closure planned for",
-            recruitmentOpen: "The registration period for this season is currently open."
+            recruitmentOpen: "The registration period for this season is currently open.",
+            confirmRules: "I confirm that I have read and understood the rules, and I agree to abide by them."
         }
     };
 
@@ -962,6 +965,21 @@ export default function JoinPage() {
                                 />
                             </div>
                             {typeError && <p className={styles.errorText}>{typeError}</p>}
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                                <input
+                                    type="checkbox"
+                                    id="rulesConfirmed"
+                                    required
+                                    checked={interviewForm.rulesConfirmed}
+                                    onChange={e => setInterviewForm({ ...interviewForm, rulesConfirmed: e.target.checked })}
+                                    style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', flexShrink: 0 }}
+                                />
+                                <label htmlFor="rulesConfirmed" style={{ fontSize: '0.85rem', color: '#cbd5e1', cursor: 'pointer', lineHeight: '1.4' }}>
+                                    {getText('confirmRules')}
+                                </label>
+                            </div>
+
                             <button
                                 type="submit"
                                 className={`${styles.btn} ${styles.btnPrimary}`}

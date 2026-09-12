@@ -40,7 +40,23 @@ export default function ActionsPage() {
         }
     };
 
+    const getAcademicYear = (dateStr) => {
+        const d = new Date(dateStr);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        return month >= 8 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
+    };
+
     if (loading) return <div className="container" style={{ padding: '2rem' }}>{t('loading')}</div>;
+
+    const groupedActions = actions.reduce((acc, action) => {
+        const year = getAcademicYear(action.startDate);
+        if (!acc[year]) acc[year] = [];
+        acc[year].push(action);
+        return acc;
+    }, {});
+
+    const sortedYears = Object.keys(groupedActions).sort((a, b) => b.localeCompare(a));
 
     return (
         <div>
@@ -82,7 +98,13 @@ export default function ActionsPage() {
                         </Link>
                     </div>
                 ) : (
-                    actions.map(action => (
+                    sortedYears.map(year => (
+                        <div key={year}>
+                            <h2 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                                Saison {year}
+                            </h2>
+                            <div style={{ display: 'grid', gap: '1rem' }}>
+                                {groupedActions[year].map(action => (
                         <div key={action._id} style={{
                             background: 'var(--card-bg)',
                             padding: '1.5rem',
@@ -131,8 +153,10 @@ export default function ActionsPage() {
                                 </button>
                             </div>
                         </div>
-                    ))
-                )}
+                    ))}
+                    </div>
+                </div>
+                )))}
             </div>
         </div>
     );

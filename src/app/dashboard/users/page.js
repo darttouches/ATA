@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle, Calendar, Lock, UserPlus, Sparkles, Tag, UserX, Link as LinkIcon, Copy, Trophy, ArrowUp, ArrowDown, Search, X } from 'lucide-react';
+import { Trash2, UserCog, ShieldCheck, Download, CheckSquare, Square, CheckCircle2, XCircle, Calendar, Lock, UserPlus, Sparkles, Tag, UserX, Link as LinkIcon, Copy, Trophy, ArrowUp, ArrowDown, Search, X, Building2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useLanguage } from '@/context/LanguageContext';
 import Image from 'next/image';
@@ -9,6 +9,7 @@ import Image from 'next/image';
 export default function UsersManagement() {
     const { t, language } = useLanguage();
     const [users, setUsers] = useState([]);
+    const [clubs, setClubs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedUsers, setSelectedUsers] = useState(new Set());
     const [currentUser, setCurrentUser] = useState(null);
@@ -18,7 +19,8 @@ export default function UsersManagement() {
         password: '',
         officialRole: '',
         season: '2025/2026',
-        memberNumberDigits: ''
+        memberNumberDigits: '',
+        clubId: ''
     });
     const [isSaving, setIsSaving] = useState(false);
     const [copiedUserId, setCopiedUserId] = useState(null);
@@ -150,12 +152,22 @@ export default function UsersManagement() {
         setLoading(false);
     }, []);
 
+    const fetchClubs = useCallback(async () => {
+        try {
+            const res = await fetch('/api/admin/clubs');
+            const data = await res.json();
+            if (res.ok) setClubs(data);
+        } catch (error) {
+            console.error('Error fetching clubs:', error);
+        }
+    }, []);
+
     useEffect(() => {
         const loadData = async () => {
-            await Promise.all([fetchCurrentUser(), fetchUsers()]);
+            await Promise.all([fetchCurrentUser(), fetchUsers(), fetchClubs()]);
         };
         loadData();
-    }, [fetchCurrentUser, fetchUsers]);
+    }, [fetchCurrentUser, fetchUsers, fetchClubs]);
 
     const updateUser = async (userId, updateData) => {
         // Prevent role update if current user is 'national'
@@ -656,7 +668,8 @@ export default function UsersManagement() {
                                                         password: '',
                                                         officialRole: user.officialRole || '',
                                                         season: user.season || '2025/2026',
-                                                        memberNumberDigits: user.memberNumber ? (user.memberNumber.match(/\d+$/) || [])[0] || '' : ''
+                                                        memberNumberDigits: user.memberNumber ? (user.memberNumber.match(/\d+$/) || [])[0] || '' : '',
+                                                        clubId: user.club?._id || user.preferredClub?._id || ''
                                                     });
                                                 }}
                                                 style={{
@@ -987,6 +1000,24 @@ export default function UsersManagement() {
                                 />
                             </div>
 
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Building2 size={16} color="var(--primary)" />
+                                    Modifier le club
+                                </label>
+                                <select
+                                    className="card"
+                                    style={{ width: '100%', padding: '12px', border: '1px solid var(--card-border)', background: 'rgba(17, 34, 78, 0.8)', color: 'white' }}
+                                    value={editFormData.clubId}
+                                    onChange={(e) => setEditFormData({ ...editFormData, clubId: e.target.value })}
+                                >
+                                    <option value="">-- Aucun club --</option>
+                                    {clubs.filter(c => c.isActive !== false).sort((a, b) => a.name.localeCompare(b.name)).map(club => (
+                                        <option key={club._id} value={club._id}>{club.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div style={{ marginBottom: '2rem' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
                                     {t('adminNewPassword') || t('newPassword')}
@@ -1016,11 +1047,18 @@ export default function UsersManagement() {
                                 disabled={isSaving}
                                 onClick={async () => {
                                     setIsSaving(true);
+                                    const originalClubId = selectedEditUser.club?._id || selectedEditUser.preferredClub?._id || '';
                                     const updatePayload = {
                                         officialRole: editFormData.officialRole,
                                         season: editFormData.season,
                                         password: editFormData.password || undefined
                                     };
+
+                                    // Include club change if modified
+                                    if (editFormData.clubId !== originalClubId) {
+                                        updatePayload.club = editFormData.clubId || null;
+                                        updatePayload.preferredClub = editFormData.clubId || null;
+                                    }
                                     
                                     if ((selectedEditUser.role === 'admin' || selectedEditUser.role === 'national') && editFormData.memberNumberDigits) {
                                         const fL = (selectedEditUser.firstName || 'A').charAt(0).toUpperCase();

@@ -23,6 +23,15 @@ const ContentSchema = new mongoose.Schema({
         ref: 'Club',
         required: false, // conservé pour rétrocompatibilité
     },
+    authorizedScanners: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    }],
+    attendees: [{
+        member: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        present: { type: Boolean, default: false },
+        scannedAt: { type: Date }
+    }],
     clubs: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',

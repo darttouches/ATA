@@ -4,35 +4,6 @@ import Action from '@/models/Action';
 import { getUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
-async function syncContentToAction(content, user) {
-    if (!content || (content.type !== 'event' && content.type !== 'formation')) return;
-    if (content.status !== 'approved') return;
-
-    try {
-        const exists = await Action.findOne({ contentRef: content._id });
-        if (!exists) {
-            await Action.create({
-                title: content.title,
-                description: content.description,
-                startDate: content.date || new Date(),
-                localTime: content.time || '00:00',
-                club: content.club || (content.clubs && content.clubs[0]) || null,
-                author: user.userId,
-                status: 'approved',
-                contentRef: content._id
-            });
-        } else {
-            await Action.findByIdAndUpdate(exists._id, {
-                title: content.title,
-                startDate: content.date || exists.startDate,
-                localTime: content.time || exists.localTime
-            });
-        }
-    } catch (err) {
-        console.error('Error syncing to Action', err);
-    }
-}
-
 export async function GET() {
     try {
         const user = await getUser();
@@ -52,7 +23,7 @@ export async function POST(req) {
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const body = await req.json();
-        const { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, clubs: clubsRaw, onHome, isBestOff, program } = body;
+        const { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, clubs: clubsRaw, authorizedScanners, onHome, isBestOff, program } = body;
         // clubs = tableau d'IDs, on garde aussi club (premier) pour rétrocompatiblité
         const clubs = Array.isArray(clubsRaw) ? clubsRaw.filter(Boolean) : (clubsRaw ? [clubsRaw] : []);
         const club = clubs[0] || null;
@@ -89,13 +60,13 @@ export async function POST(req) {
             status: status || 'approved',
             club,
             clubs,
+            authorizedScanners: authorizedScanners || [],
             author: user.userId,
             onHome: onHome || false,
             isBestOff: isBestOff || false,
             program: cleanProgram
         });
 
-        await syncContentToAction(content, user);
 
         return NextResponse.json(content);
     } catch (error) {
@@ -118,9 +89,7 @@ export async function PATCH(req) {
             { new: true }
         );
 
-        if (updatedContent) {
-            await syncContentToAction(updatedContent, user);
-        }
+
 
         return NextResponse.json(updatedContent);
     } catch (error) {
@@ -134,7 +103,7 @@ export async function PUT(req) {
         if (!user || (user.role !== 'admin' && user.role !== 'national')) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
 
         const body = await req.json();
-        const { id, title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, clubs: clubsRaw, program } = body;
+        const { id, title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, clubs: clubsRaw, authorizedScanners, program } = body;
         const clubs = Array.isArray(clubsRaw) ? clubsRaw.filter(Boolean) : (clubsRaw ? [clubsRaw] : []);
         const club = clubs[0] || null;
 
@@ -158,13 +127,11 @@ export async function PUT(req) {
 
         const updated = await Content.findByIdAndUpdate(
             id,
-            { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, club, clubs, program: cleanProgram },
+            { title, type, description, mediaUrl, date, endDate, time, photos, videoUrl, link, status, onHome, isBestOff, club, clubs, authorizedScanners: authorizedScanners || [], program: cleanProgram },
             { new: true }
         );
 
-        if (updated) {
-            await syncContentToAction(updated, user);
-        }
+
 
         return NextResponse.json(updated);
     } catch (error) {

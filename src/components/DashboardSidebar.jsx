@@ -177,6 +177,11 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                     <Link href="/dashboard/voice" className={`${styles.link} ${isActive('/dashboard/voice') ? styles.activeLink : ''}`} onClick={onClose}>
                         <Mic size={18} /> {t('memberVoice')}
                     </Link>
+                    {user.status === 'approved' && (user.role === 'membre' || user.role === 'admin' || user.role === 'national') && (
+                        <Link href="/dashboard/club-activities" className={`${styles.link} ${isActive('/dashboard/club-activities') ? styles.activeLink : ''}`} onClick={onClose}>
+                            <Calendar size={18} /> Activités de mon club
+                        </Link>
+                    )}
                     {canAccessMeetingTA && (
                         <Link href="/dashboard/meetings" className={`${styles.link} ${isActive('/dashboard/meetings') ? styles.activeLink : ''}`} onClick={onClose}>
                             <Video size={18} /> {t('meetingTA')}

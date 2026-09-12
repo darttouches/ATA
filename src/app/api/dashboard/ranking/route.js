@@ -38,7 +38,7 @@ export async function GET(req) {
                         ];
                     }
 
-                    const approvedActions = await Action.find(actionQuery, 'title startDate endDate description contentRef createdAt').lean();
+                    const approvedActions = await Action.find(actionQuery, 'title startDate endDate description contentRef createdAt attendees').lean();
 
                     // Also query Content model for all shared content types (events, formations, photos, videos, news)
                     const contentQuery = { club: club._id, status: 'approved' };
@@ -78,10 +78,12 @@ export async function GET(req) {
                         }
                     });
 
-                    const allApprovedItems = Array.from(itemsMap.values()).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
-                    const approvedEventsCount = allApprovedItems.length;
-                    const clubScore = approvedEventsCount + 5;
+                    // Fetch attendees from approvedActions if we didn't already
+                    // Wait, we need to make sure the first query included attendees
+                    // We will update the action query in the same patch below.
 
+                    const allApprovedItems = Array.from(itemsMap.values()).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+                    
                     // Build member query for this club
                     const memberQuery = {
                         $or: [{ club: club._id }, { preferredClub: club._id }],
@@ -100,8 +102,24 @@ export async function GET(req) {
                     }
 
                     const members = await User.find(memberQuery, 'bonusPoints isActive').lean();
-
                     const totalMembers = members.length;
+                    
+                    // Calculate eligible actions ( > 50% presence )
+                    let eligibleActionsCount = 0;
+                    approvedActions.forEach(a => {
+                        const presentCount = a.attendees ? a.attendees.filter(att => att.present).length : 0;
+                        if (totalMembers > 0 && presentCount > (totalMembers / 2)) {
+                            eligibleActionsCount++;
+                        }
+                    });
+                    
+                    // Score = Base(5) + 1 point for every 5 eligible actions + the number of generic content (news/events) shared.
+                    // Actually, if actions aren't "events", let's ensure regular events/news still count properly if needed.
+                    // For now, we add the action points rule.
+                    const approvedEventsCount = allApprovedItems.length;
+                    const clubActionBonus = Math.floor(eligibleActionsCount / 5);
+                    const clubScore = 5 + clubActionBonus + approvedContents.length;
+
                     const activeMembersCount = members.filter(m => (m.bonusPoints || 0) > 0 && m.isActive !== false).length;
                     const activeMembersPercent = totalMembers > 0 ? Math.round((activeMembersCount / totalMembers) * 100) : 0;
 

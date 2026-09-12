@@ -44,7 +44,7 @@ export async function POST(req) {
         }
 
         const body = await req.json();
-        const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, program } = body;
+        const { title, type, description, mediaUrl, date, time, photos, videoUrl, link, program, authorizedScanners } = body;
 
         // Clean program data
         const cleanProgram = program ? {
@@ -80,7 +80,8 @@ export async function POST(req) {
             club: club._id,
             author: user.userId,
             status: 'pending',
-            program: cleanProgram
+            program: cleanProgram,
+            authorizedScanners: authorizedScanners || []
         });
 
         // Notify Admins
@@ -111,7 +112,7 @@ export async function PUT(req) {
         }
 
         const body = await req.json();
-        const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, program } = body;
+        const { id, title, type, description, mediaUrl, date, time, photos, videoUrl, link, program, authorizedScanners } = body;
 
         // Clean program data
         const cleanProgram = program ? {
@@ -140,7 +141,7 @@ export async function PUT(req) {
 
         const updated = await Content.findByIdAndUpdate(
             id,
-            { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status: 'pending', program: cleanProgram },
+            { title, type, description, mediaUrl, date, time, photos, videoUrl, link, status: 'pending', program: cleanProgram, authorizedScanners: authorizedScanners || [] },
             { new: true }
         );
 

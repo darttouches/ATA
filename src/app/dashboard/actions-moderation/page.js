@@ -47,7 +47,23 @@ export default function ActionsModeration() {
         }
     };
 
+    const getAcademicYear = (dateStr) => {
+        const d = new Date(dateStr);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        return month >= 8 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
+    };
+
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}><Loader2 className="animate-spin" /> {t('loading')}</div>;
+
+    const groupedActions = actions.reduce((acc, action) => {
+        const year = getAcademicYear(action.startDate);
+        if (!acc[year]) acc[year] = [];
+        acc[year].push(action);
+        return acc;
+    }, {});
+
+    const sortedYears = Object.keys(groupedActions).sort((a, b) => b.localeCompare(a));
 
     return (
         <div>
@@ -60,19 +76,29 @@ export default function ActionsModeration() {
                 </div>
             </div>
 
-            <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-                    <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                            <th style={{ padding: '1.2rem' }}>{t('actionTitle')}</th>
-                            <th style={{ padding: '1.2rem' }}>{t('clubLabel')}</th>
-                            <th style={{ padding: '1.2rem' }}>{t('date')} & {t('time')}</th>
-                            <th style={{ padding: '1.2rem' }}>{t('status')}</th>
-                            <th style={{ padding: '1.2rem' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {actions.map(action => (
+            {actions.length === 0 ? (
+                <div className="card" style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
+                    {t('noActionsToModerate')}
+                </div>
+            ) : (
+                sortedYears.map((year) => (
+                    <div key={year} style={{ marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                            Saison {year}
+                        </h2>
+                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
+                                        <th style={{ padding: '1.2rem' }}>{t('actionTitle')}</th>
+                                        <th style={{ padding: '1.2rem' }}>{t('clubLabel')}</th>
+                                        <th style={{ padding: '1.2rem' }}>{t('date')} & {t('time')}</th>
+                                        <th style={{ padding: '1.2rem' }}>{t('status')}</th>
+                                        <th style={{ padding: '1.2rem' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {groupedActions[year].map(action => (
                             <tr key={action._id} style={{ borderBottom: '1px solid var(--card-border)', transition: 'background 0.2s' }}>
                                 <td style={{ padding: '1.2rem' }}>
                                     <Link href={`/dashboard/my-club/actions/${action._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -176,17 +202,13 @@ export default function ActionsModeration() {
                                     </div>
                                 </td>
                             </tr>
-                        ))}
-                        {actions.length === 0 && (
-                            <tr>
-                                <td colSpan="5" style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
-                                    {t('noActionsToModerate')}
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ))
+            )}
         </div>
     );
 }

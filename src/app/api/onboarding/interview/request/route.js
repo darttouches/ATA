@@ -20,10 +20,10 @@ export async function POST(req) {
     try {
         await dbConnect();
         const body = await req.json();
-        const { firstName, lastName, email, phone, interviewDate } = body;
+        const { firstName, lastName, email, phone, interviewDate, rulesConfirmed } = body;
         
-        if (!firstName || !lastName || !email || !phone || !interviewDate) {
-            return NextResponse.json({ success: false, error: 'Tous les champs sont requis' }, { status: 400 });
+        if (!firstName || !lastName || !email || !phone || !interviewDate || (!rulesConfirmed && rulesConfirmed !== true)) {
+            return NextResponse.json({ success: false, error: 'Tous les champs sont requis, y compris l\'acceptation des règles.' }, { status: 400 });
         }
 
         // Check recruitment settings & date window
@@ -144,7 +144,8 @@ export async function POST(req) {
             phone,
             interviewDate,
             questions: initialQuestions,
-            remarks: initialRemarks
+            remarks: initialRemarks,
+            rulesConfirmed: true
         });
 
         // Send trilingual confirmation email to candidate
