@@ -17,6 +17,8 @@ export default function InterviewsManagement() {
     
     // Modals & Forms
     const [selectedCandidate, setSelectedCandidate] = useState(null);
+    const [editingDate, setEditingDate] = useState('');
+    const [savingDate, setSavingDate] = useState(false);
     const [contentForm, setContentForm] = useState({ text: { fr: '', ar: '', en: '' }, isDefault: true });
     
     // Specific assigning
@@ -91,6 +93,14 @@ export default function InterviewsManagement() {
 
     const openCandidateModal = (cand) => {
         setSelectedCandidate(cand);
+        // Pre-fill editable date field (convert UTC to local datetime-local input format)
+        if (cand.interviewDate) {
+            const d = new Date(cand.interviewDate);
+            const tzOffset = d.getTimezoneOffset() * 60000;
+            setEditingDate(new Date(d.getTime() - tzOffset).toISOString().slice(0, 16));
+        } else {
+            setEditingDate('');
+        }
         // If candidate has no questions/remarks yet, prefill from active defaults
         let q = cand.questions || [];
         let r = cand.remarks || [];
@@ -104,6 +114,32 @@ export default function InterviewsManagement() {
 
         setAssignedQ(q);
         setAssignedR(r);
+    };
+
+    const handleSaveDate = async () => {
+        if (!editingDate || !selectedCandidate) return;
+        setSavingDate(true);
+        try {
+            // Convert local datetime-local value back to UTC ISO for storage
+            const utcIso = new Date(editingDate).toISOString();
+            const res = await fetch(`/api/admin/interviews/${selectedCandidate._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ interviewDate: utcIso })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setSelectedCandidate(data.data);
+                fetchData();
+                alert('✅ Date corrigée avec succès !');
+            } else {
+                alert(data.error || 'Erreur lors de la mise à jour');
+            }
+        } catch (err) {
+            alert('Erreur : ' + err.message);
+        } finally {
+            setSavingDate(false);
+        }
     };
     
     const loadDefaultsIntoCandidate = () => {
@@ -418,9 +454,34 @@ export default function InterviewsManagement() {
                                 <div className={styles.infoGrid} style={{ marginTop: '1rem' }}>
                                     <p><Phone size={16}/> {selectedCandidate.phone}</p>
                                     <p><Mail size={16}/> {selectedCandidate.email}</p>
-                                    <p><Calendar size={16}/> {new Date(selectedCandidate.interviewDate).toLocaleString('fr-FR')}</p>
                                     <p><FileText size={16}/> Code Salle: <strong>{selectedCandidate.code}</strong></p>
                                     <p><Check size={16}/> Règles conformées: {selectedCandidate.rulesConfirmed ? <span style={{color:'#10b981', fontWeight: 600}}>Oui</span> : <span style={{color:'#f43f5e', fontWeight: 600}}>Non</span>}</p>
+                                </div>
+                                {/* Date correction field */}
+                                <div style={{ marginTop: '1rem', padding: '0.85rem', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '10px' }}>
+                                    <label style={{ fontSize: '0.82rem', color: '#f59e0b', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>
+                                        <Calendar size={14} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+                                        📅 Date &amp; heure de l'entretien (modifiable en cas d'erreur de fuseau horaire)
+                                    </label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <input
+                                            type="datetime-local"
+                                            value={editingDate}
+                                            onChange={e => setEditingDate(e.target.value)}
+                                            className={styles.input}
+                                            style={{ flex: 1, minWidth: '200px', padding: '0.45rem 0.75rem', fontSize: '0.9rem' }}
+                                        />
+                                        <button
+                                            onClick={handleSaveDate}
+                                            disabled={savingDate}
+                                            style={{ padding: '0.45rem 1rem', borderRadius: '8px', border: '1px solid #f59e0b', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                                        >
+                                            {savingDate ? '⏳ Sauvegarde...' : '💾 Corriger la date'}
+                                        </button>
+                                    </div>
+                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem', marginBottom: 0 }}>
+                                        Date actuelle en base : <strong style={{ color: '#e2e8f0' }}>{new Date(selectedCandidate.interviewDate).toLocaleString('fr-FR')}</strong> (UTC)
+                                    </p>
                                 </div>
                             </div>
 

@@ -617,12 +617,18 @@ export default function JoinPage() {
             }
         }
 
+        const payload = {
+            ...interviewForm,
+            // Conversion de la date locale de l'input en date absolue UTC pour éviter le décalage horaire sur le serveur
+            interviewDate: reqDate.toISOString()
+        };
+
         setLoadingInterview(true);
         try {
             const res = await fetch('/api/onboarding/interview/request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(interviewForm)
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || "Erreur serveur");
