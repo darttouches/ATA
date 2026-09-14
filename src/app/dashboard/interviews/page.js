@@ -394,7 +394,7 @@ export default function InterviewsManagement() {
                                         </div>
                                     </div>
                                     <div className={styles.candDetails}>
-                                        <p><Calendar size={14}/> {new Date(cand.interviewDate).toLocaleString('fr-FR')}</p>
+                                        <p><Calendar size={14}/> {new Date(cand.interviewDate).toLocaleString('fr-FR', { timeZone: 'Africa/Tunis', weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
                                         <p><FileText size={14}/> Code: <strong>{cand.code}</strong></p>
                                         
                                         {/* DECISION BADGE */}
@@ -480,7 +480,7 @@ export default function InterviewsManagement() {
                                         </button>
                                     </div>
                                     <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.4rem', marginBottom: 0 }}>
-                                        Date actuelle en base : <strong style={{ color: '#e2e8f0' }}>{new Date(selectedCandidate.interviewDate).toLocaleString('fr-FR')}</strong> (UTC)
+                                        Date enregistrée : <strong style={{ color: '#e2e8f0' }}>{new Date(selectedCandidate.interviewDate).toLocaleString('fr-FR', { timeZone: 'Africa/Tunis', weekday: 'long', year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</strong> <span style={{ color: '#f59e0b', fontSize: '0.7rem' }}>(heure Tunisie UTC+1)</span>
                                     </p>
                                 </div>
                             </div>

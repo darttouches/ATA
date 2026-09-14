@@ -39,9 +39,10 @@ export const sendEmail = async ({ to, subject, html, attachments = [] }) => {
 export const sendInterviewCodeEmail = async ({ to, firstName, lastName, code, interviewDate }) => {
     const dateObj = new Date(interviewDate);
 
-    const formattedDateFR = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' à ' + dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const formattedDateAR = dateObj.toLocaleDateString('ar-TN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' الساعة ' + dateObj.toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' });
-    const formattedDateEN = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' at ' + dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const TZ = 'Africa/Tunis';
+    const formattedDateFR = dateObj.toLocaleDateString('fr-FR', { timeZone: TZ, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' à ' + dateObj.toLocaleTimeString('fr-FR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+    const formattedDateAR = dateObj.toLocaleDateString('ar-TN', { timeZone: TZ, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' الساعة ' + dateObj.toLocaleTimeString('ar-TN', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+    const formattedDateEN = dateObj.toLocaleDateString('en-US', { timeZone: TZ, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' at ' + dateObj.toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
 
     const html = `
 <!DOCTYPE html>
@@ -134,10 +135,11 @@ export const sendInterviewCodeEmail = async ({ to, firstName, lastName, code, in
 export const sendInterviewReminderEmail = async ({ to, firstName, lastName, code, interviewDate }) => {
     const dateObj = new Date(interviewDate);
     
+    const TZ = 'Africa/Tunis';
     // Formatting times
-    const timeFR = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const timeAR = dateObj.toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' });
-    const timeEN = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const timeFR = dateObj.toLocaleTimeString('fr-FR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+    const timeAR = dateObj.toLocaleTimeString('ar-TN', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+    const timeEN = dateObj.toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
 
     const html = `
 <!DOCTYPE html>

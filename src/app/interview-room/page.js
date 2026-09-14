@@ -564,8 +564,13 @@ function InterviewRoomContent() {
 
     const qLen = candidateData?.questions?.length || 0;
     const formattedDate = candidateData?.interviewDate ? new Date(candidateData.interviewDate).toLocaleString('fr-FR', {
-        dateStyle: 'medium',
-        timeStyle: 'short'
+        timeZone: 'Africa/Tunis',
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     }) : null;
 
     return (

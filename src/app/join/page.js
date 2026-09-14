@@ -1007,10 +1007,28 @@ export default function JoinPage() {
                 return (
                     <div className={styles.messageBubble} style={{ textAlign: 'center' }}>
                         <h2 style={{ color: '#10b981', marginBottom: '0.5rem' }}>✅ Demande confirmée !</h2>
-                        <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                        <p style={{ color: '#cbd5e1', marginBottom: '1rem', fontSize: '0.9rem' }}>
                             Votre rendez-vous d'entretien est enregistré.<br />
                             <strong>Conservez précieusement ce code.</strong> Il vous permettra d'accéder à votre salle d'entretien à la date choisie.
                         </p>
+
+                        {/* Date/heure choisie — récapitulatif visible pour le candidat */}
+                        {interviewForm.interviewDate && (
+                            <div style={{ background: 'rgba(124, 58, 237, 0.12)', border: '1px solid rgba(124, 58, 237, 0.4)', borderRadius: '10px', padding: '0.85rem 1rem', marginBottom: '1rem', textAlign: 'left' }}>
+                                <p style={{ color: '#a78bfa', fontWeight: 700, marginBottom: '0.3rem', fontSize: '0.85rem' }}>📅 Date & Heure de votre entretien :</p>
+                                <p style={{ color: '#e2e8f0', fontSize: '1rem', fontWeight: 600, margin: 0 }}>
+                                    {new Date(interviewForm.interviewDate).toLocaleString('fr-FR', {
+                                        timeZone: 'Africa/Tunis',
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </p>
+                            </div>
+                        )}
 
                         <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '10px', padding: '0.85rem', marginBottom: '1rem', color: '#7dd3fc', fontSize: '0.85rem', textAlign: 'left' }}>
                             📧 <strong>Email envoyé !</strong> Un message de confirmation trilingue contenant votre code, rappel du rendez-vous et avertissement sur le retard a été envoyé à votre adresse email.

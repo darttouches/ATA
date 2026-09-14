@@ -170,14 +170,19 @@ export async function POST(req) {
 
             if (notifRecipients.length > 0) {
                 const formattedDate = new Date(interviewDate).toLocaleDateString('fr-FR', {
+                    timeZone: 'Africa/Tunis',
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                const formattedTime = new Date(interviewDate).toLocaleTimeString('fr-FR', {
+                    timeZone: 'Africa/Tunis',
+                    hour: '2-digit', minute: '2-digit'
                 });
 
                 const notifDocs = notifRecipients.map(u => ({
                     recipient: u._id,
                     type: 'new_candidate',
                     title: '🎓 Nouvelle demande d\'entretien',
-                    message: `${firstName} ${lastName} a soumis une demande d'entretien pour le ${formattedDate}. Code : ${candidate.code}`,
+                    message: `${firstName} ${lastName} a soumis une demande d'entretien pour le ${formattedDate} à ${formattedTime}. Code : ${candidate.code}`,
                     link: '/dashboard/interviews'
                 }));
 
