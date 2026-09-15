@@ -122,6 +122,7 @@ export async function GET(req) {
 
                     const activeMembersCount = members.filter(m => (m.bonusPoints || 0) > 0 && m.isActive !== false).length;
                     const activeMembersPercent = totalMembers > 0 ? Math.round((activeMembersCount / totalMembers) * 100) : 0;
+                    const totalMembersScore = members.reduce((sum, m) => sum + (m.bonusPoints || 0), 0);
 
                     return {
                         _id: club._id,
@@ -130,6 +131,7 @@ export async function GET(req) {
                         coverImage: club.coverImage,
                         approvedEventsCount,
                         clubScore,
+                        totalMembersScore,
                         approvedEvents: allApprovedItems,
                         activeMembersCount,
                         totalMembers,

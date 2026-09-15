@@ -301,8 +301,9 @@ export default function RankingModal({ isOpen, onClose }) {
                                     <th style={{ padding: '12px 16px', width: '60px', textAlign: 'center' }}>Rang</th>
                                     <th style={{ padding: '12px 16px' }}>Club</th>
                                     <th style={{ padding: '12px 16px', textAlign: 'center' }}>Contenus Approuvés</th>
-                                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>% Membres Actifs (Score &gt; 0)</th>
-                                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Score Club</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>Pourcentage d'Activité</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Score des Membres</th>
+                                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Score Club (Bureau)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -346,6 +347,9 @@ export default function RankingModal({ isOpen, onClose }) {
                                                 <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
                                                     {club.activeMembersPercent}% ({club.activeMembersCount}/{club.totalMembers})
                                                 </div>
+                                            </td>
+                                            <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#10b981', fontSize: '0.95rem' }}>
+                                                {club.totalMembersScore} pts
                                             </td>
                                             <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: '#f59e0b', fontSize: '1rem' }}>
                                                 {club.clubScore} pts
