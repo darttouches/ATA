@@ -255,27 +255,46 @@ export default function DashboardSidebar({ user, isOpen, onClose }) {
                     {user.role === 'national' && (
                         <>
                             <div className={styles.sectionLabel}>{t('nationalBoard')}</div>
-                            <Link href="/dashboard/users" className={`${styles.link} ${isActive('/dashboard/users') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <Users size={18} /> {t('users')}
-                            </Link>
-                            <Link href="/dashboard/clubs" className={`${styles.link} ${isActive('/dashboard/clubs') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <Shield size={18} /> {t('clubsManagement')}
-                            </Link>
-                            <Link href="/dashboard/members" className={`${styles.link} ${isActive('/dashboard/members') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <Users size={18} /> {t('membersManagement')}
-                            </Link>
-                            <Link href="/dashboard/content" className={`${styles.link} ${isActive('/dashboard/content') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <FileText size={18} /> {t('contents')}
-                            </Link>
-                            <Link href="/dashboard/actions-moderation" className={`${styles.link} ${isActive('/dashboard/actions-moderation') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <Calendar size={18} /> {t('actionsModeration')}
-                            </Link>
-                            <Link href="/dashboard/polls-moderation" className={`${styles.link} ${isActive('/dashboard/polls-moderation') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <BarChart3 size={18} /> {t('pollsModeration')}
-                            </Link>
-                            <Link href="/dashboard/reclamations" className={`${styles.link} ${isActive('/dashboard/reclamations') ? styles.activeLink : ''}`} onClick={onClose}>
-                                <AlertCircle size={18} /> {t('demandsReclamations')}
-                            </Link>
+                            {(!user.nationalPermissions || user.nationalPermissions.length === 0) && (
+                                <div style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                                    Aucune permission assignée.
+                                </div>
+                            )}
+                            {user.nationalPermissions?.includes('users') && (
+                                <Link href="/dashboard/users" className={`${styles.link} ${isActive('/dashboard/users') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <Users size={18} /> Gestion des Utilisateurs
+                                </Link>
+                            )}
+                            {user.nationalPermissions?.includes('reclamations') && (
+                                <Link href="/dashboard/reclamations" className={`${styles.link} ${isActive('/dashboard/reclamations') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <AlertCircle size={18} /> Demandes & Réclamations
+                                </Link>
+                            )}
+                            {user.nationalPermissions?.includes('points') && (
+                                <Link href="/dashboard/members" className={`${styles.link} ${isActive('/dashboard/members') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <Users size={18} /> Gestion des Points
+                                </Link>
+                            )}
+                            {user.nationalPermissions?.includes('content') && (
+                                <Link href="/dashboard/content" className={`${styles.link} ${isActive('/dashboard/content') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <FileText size={18} /> Contenus
+                                </Link>
+                            )}
+                            {user.nationalPermissions?.includes('actions_moderation') && (
+                                <Link href="/dashboard/actions-moderation" className={`${styles.link} ${isActive('/dashboard/actions-moderation') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <Calendar size={18} /> Modération (Actions & News)
+                                </Link>
+                            )}
+                            {user.nationalPermissions?.includes('actions_attendance') && (
+                                <Link href="/dashboard/my-club/actions" className={`${styles.link} ${isActive('/dashboard/my-club/actions') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <Calendar size={18} /> Actions & Présences
+                                </Link>
+                            )}
+                            {user.nationalPermissions?.includes('interviews') && (
+                                <Link href="/dashboard/interviews" className={`${styles.link} ${isActive('/dashboard/interviews') ? styles.activeLink : ''}`} onClick={onClose}>
+                                    <MessageSquare size={18} /> Gestion des Entretiens
+                                </Link>
+                            )}
                         </>
                     )}
 

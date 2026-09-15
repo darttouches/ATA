@@ -114,6 +114,10 @@ const UserSchema = new mongoose.Schema({
         addedBy: String,
         date: { type: Date, default: Date.now }
     }],
+    nationalPermissions: {
+        type: [String],
+        default: []
+    }
 });
 
 UserSchema.index({ email: 1, season: 1 }, { unique: true });

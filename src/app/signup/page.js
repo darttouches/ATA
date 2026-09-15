@@ -217,6 +217,11 @@ export default function Signup() {
             return;
         }
 
+        if (!formData.profileImage) {
+            setError("Veuillez importer une photo de profil (obligatoire).");
+            return;
+        }
+
         setLoading(true);
 
         if (formData.password !== formData.confirmPassword) {

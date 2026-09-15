@@ -669,7 +669,8 @@ export default function UsersManagement() {
                                                         officialRole: user.officialRole || '',
                                                         season: user.season || '2025/2026',
                                                         memberNumberDigits: user.memberNumber ? (user.memberNumber.match(/\d+$/) || [])[0] || '' : '',
-                                                        clubId: user.club?._id || user.preferredClub?._id || ''
+                                                        clubId: user.club?._id || user.preferredClub?._id || '',
+                                                        nationalPermissions: user.nationalPermissions || []
                                                     });
                                                 }}
                                                 style={{
@@ -899,12 +900,20 @@ export default function UsersManagement() {
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
-                    justify: 'center', zIndex: 3000, padding: '1rem'
+                    justifyContent: 'center', zIndex: 3000, padding: '1rem'
                 }} onClick={() => setSelectedEditUser(null)}>
-                    <div className="card" style={{ width: '100%', maxWidth: '500px', position: 'relative' }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <UserCog size={24} color="var(--primary)" /> {t('userDetails') || 'Détails du membre'}
-                        </h2>
+                    <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ position: 'sticky', top: '-1rem', zIndex: 10, background: 'var(--card-bg, #1a1a2e)', paddingBottom: '10px', paddingTop: '10px', margin: '-1rem -1rem 1rem -1rem', paddingLeft: '1rem', paddingRight: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <UserCog size={24} color="var(--primary)" /> {t('userDetails') || 'Détails du membre'}
+                            </h2>
+                            <button 
+                                onClick={() => setSelectedEditUser(null)}
+                                style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
@@ -1018,6 +1027,42 @@ export default function UsersManagement() {
                                 </select>
                             </div>
 
+                            {selectedEditUser.role === 'national' && currentUser?.role === 'admin' && (
+                                <div style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, fontSize: '0.95rem', color: 'var(--primary)' }}>
+                                        Accès aux Interfaces (Bureau National)
+                                    </label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                                        {[
+                                            { id: 'users', label: 'Gestion des Utilisateurs' },
+                                            { id: 'reclamations', label: 'Demandes & Réclamations (Visiteurs)' },
+                                            { id: 'points', label: 'Gestion des Points' },
+                                            { id: 'content', label: 'Contenus' },
+                                            { id: 'actions_moderation', label: 'Modération des Actions & News' },
+                                            { id: 'actions_attendance', label: 'Actions & Présences' },
+                                            { id: 'interviews', label: 'Gestion des Entretiens' }
+                                        ].map(perm => (
+                                            <label key={perm.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', cursor: 'pointer', color: '#e2e8f0' }}>
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={editFormData.nationalPermissions?.includes(perm.id)}
+                                                    onChange={(e) => {
+                                                        const current = editFormData.nationalPermissions || [];
+                                                        if (e.target.checked) {
+                                                            setEditFormData({ ...editFormData, nationalPermissions: [...current, perm.id] });
+                                                        } else {
+                                                            setEditFormData({ ...editFormData, nationalPermissions: current.filter(p => p !== perm.id) });
+                                                        }
+                                                    }}
+                                                    style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--primary)' }}
+                                                />
+                                                {perm.label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div style={{ marginBottom: '2rem' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
                                     {t('adminNewPassword') || t('newPassword')}
@@ -1064,6 +1109,10 @@ export default function UsersManagement() {
                                         const fL = (selectedEditUser.firstName || 'A').charAt(0).toUpperCase();
                                         const lL = (selectedEditUser.lastName || 'A').charAt(0).toUpperCase();
                                         updatePayload.memberNumber = `${fL}${lL}${editFormData.memberNumberDigits}`;
+                                    }
+
+                                    if (selectedEditUser.role === 'national') {
+                                        updatePayload.nationalPermissions = editFormData.nationalPermissions || [];
                                     }
 
                                     await updateUser(selectedEditUser._id, updatePayload);

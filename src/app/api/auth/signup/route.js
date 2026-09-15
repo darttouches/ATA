@@ -44,9 +44,9 @@ export async function POST(req) {
 
         const { name, email, password, firstName, lastName, phone, birthDate, profileImage, preferredClub, interviewCode } = await req.json();
 
-        if (!email || !password || !firstName || !lastName) {
+        if (!email || !password || !firstName || !lastName || !profileImage) {
             return NextResponse.json(
-                { error: 'Veuillez remplir tous les champs obligatoires (Nom, Prénom, Email, Mot de passe)' },
+                { error: 'Veuillez remplir tous les champs obligatoires y compris la photo de profil.' },
                 { status: 400 }
             );
         }

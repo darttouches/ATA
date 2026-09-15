@@ -34,7 +34,7 @@ export async function PATCH(req) {
             return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
         }
 
-        const { id, role, club, preferredClub, status, isPaid, memberNumber, phone, password, officialRole, season, isActive, addScore } = await req.json();
+        const { id, role, club, preferredClub, status, isPaid, memberNumber, phone, password, officialRole, season, isActive, addScore, nationalPermissions } = await req.json();
 
         // Security: National members cannot change roles
         if (user.role === 'national' && role) {
@@ -56,6 +56,9 @@ export async function PATCH(req) {
         if (isActive !== undefined) {
             updateData.isActive = isActive;
             updateData.deactivatedByAdmin = (isActive === false);
+        }
+        if (nationalPermissions !== undefined && user.role === 'admin') {
+            updateData.nationalPermissions = nationalPermissions;
         }
         
         if (password) {
