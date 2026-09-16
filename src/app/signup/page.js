@@ -186,21 +186,32 @@ export default function Signup() {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Client-side size check (5 MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            setError('La photo est trop lourde. Taille maximale : 5 Mo.');
+            return;
+        }
+
         setUploading(true);
+        setError('');
         const reader = new FileReader();
         reader.onloadend = async () => {
             try {
-                const res = await fetch('/api/upload', {
+                // Use the public (unauthenticated) upload endpoint for signup
+                const res = await fetch('/api/upload/public', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileName: file.name, fileData: reader.result, folder: 'profiles' }),
+                    body: JSON.stringify({ fileName: file.name, fileData: reader.result }),
                 });
                 const data = await res.json();
-                if (data.success) {
+                if (res.ok && data.success) {
                     setFormData(prev => ({ ...prev, profileImage: data.url }));
+                } else {
+                    setError(data.error || "Échec de l'upload de la photo. Réessayez.");
                 }
-            } catch (error) {
-                console.error('Upload failed:', error);
+            } catch (err) {
+                console.error('Upload failed:', err);
+                setError("Erreur réseau lors de l'upload de la photo.");
             } finally {
                 setUploading(false);
             }
