@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './interviews.module.css';
 import { useLanguage } from '@/context/LanguageContext';
-import { Users, HelpCircle, MessageSquareWarning, Calendar, Phone, Mail, FileText, Download, Check, X, Plus, Trash2, Star, RefreshCw, CheckCircle2, XCircle, Clock, ShieldCheck } from 'lucide-react';
+import { Users, HelpCircle, MessageSquareWarning, Calendar, Phone, Mail, FileText, Download, Check, X, Plus, Trash2, Star, RefreshCw, CheckCircle2, XCircle, Clock, ShieldCheck, MessageCircle } from 'lucide-react';
 
 export default function InterviewsManagement() {
     const { t } = useLanguage();
@@ -183,6 +183,14 @@ export default function InterviewsManagement() {
             const data = await res.json();
             if (res.ok && data.success) {
                 alert(`Décision enregistrée avec succès : Candidat ${newDecision === 'accepted' ? 'ACCEPTÉ (Code activé pour inscription)' : 'REFUSÉ'}`);
+                
+                if (newDecision === 'accepted') {
+                    const waUrl = getWhatsAppLink(selectedCandidate.phone, selectedCandidate.code, data.data.decisionDate);
+                    if (waUrl !== '#') {
+                        window.open(waUrl, '_blank');
+                    }
+                }
+
                 setSelectedCandidate(data.data);
                 fetchData();
             } else {
@@ -232,6 +240,42 @@ export default function InterviewsManagement() {
 
     const exportPDF = () => {
         window.print();
+    };
+
+    const getWhatsAppLink = (phone, code, decisionDate) => {
+        if (!phone) return '#';
+        let formattedPhone = phone.replace(/\D/g, '');
+        if (formattedPhone.length === 8) {
+            formattedPhone = '216' + formattedPhone;
+        }
+        
+        let remainingDays = 3; // Total jours par défaut
+        if (decisionDate) {
+            const passedTimeMs = Date.now() - new Date(decisionDate).getTime();
+            const passedDays = Math.floor(passedTimeMs / (1000 * 60 * 60 * 24));
+            remainingDays = Math.max(0, 3 - passedDays);
+        }
+        
+        const messageFR = `🇫🇷 Félicitations ! 
+Vous avez été accepté à Touches D'Art. 
+Vous pouvez finaliser votre inscription sur notre site et votre paiement chez responsables au club. 
+Votre code d'entretien est : *${code}*. ⚠️ Vous avez ${remainingDays} jours restants pour finaliser votre inscription et paiement. 
+Rendez-vous sur le site au page inscription pour terminer !`;
+        
+        const messageEN = `🇬🇧 Congratulations ! 
+You have been accepted to Touches D'Art. 
+You can finalize your registration on our website and your payment with the club managers. 
+Your interview code is : *${code}*. ⚠️ You have ${remainingDays} days left to finalize your registration and payment. 
+Visit the registration page on the website to finish !`;
+        
+        const messageAR = `🇹🇳 تهانينا !
+لقد تم قبولك في Touches D'Art.
+يمكنك إتمام تسجيلك على موقعنا والدفع لدى مسؤولي النادي. رمز المقابلة الخاص بك هو : *${code}*.
+⚠️ لديك ${remainingDays} أيام متبقية لإتمام تسجيلك والدفع. 
+تفضل بزيارة صفحة التسجيل على الموقع للانتهاء !`;
+        
+        const message = `${messageFR}\n\n\n${messageEN}\n\n\n${messageAR}`;
+        return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
     };
 
     if (loading) return <div className={styles.container}><h3>Chargement des entretiens...</h3></div>;
@@ -400,9 +444,20 @@ export default function InterviewsManagement() {
                                         {/* DECISION BADGE */}
                                         <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             {cand.decision === 'accepted' ? (
-                                                <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <CheckCircle2 size={14} /> Accepté (Code Validé)
-                                                </span>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                    <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <CheckCircle2 size={14} /> Accepté (Code Validé)
+                                                    </span>
+                                                    <a 
+                                                        href={getWhatsAppLink(cand.phone, cand.code, cand.decisionDate)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{ background: '#25D366', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', width: 'fit-content', marginTop: '4px' }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MessageCircle size={12} /> Notifier WhatsApp
+                                                    </a>
+                                                </div>
                                             ) : cand.decision === 'rejected' ? (
                                                 <span style={{ color: '#f43f5e', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                     <XCircle size={14} /> Refusé
@@ -437,9 +492,19 @@ export default function InterviewsManagement() {
                                     <h2>{selectedCandidate.firstName} {selectedCandidate.lastName}</h2>
                                     <div>
                                         {selectedCandidate.decision === 'accepted' ? (
-                                            <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                                <CheckCircle2 size={16} /> Candidat Accepté (Code Validé pour Inscription)
-                                            </span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                                                <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                    <CheckCircle2 size={16} /> Candidat Accepté (Code Validé pour Inscription)
+                                                </span>
+                                                <a 
+                                                    href={getWhatsAppLink(selectedCandidate.phone, selectedCandidate.code, selectedCandidate.decisionDate)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ background: '#25D366', color: 'white', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                                                >
+                                                    <MessageCircle size={16} /> Envoyer Message WhatsApp
+                                                </a>
+                                            </div>
                                         ) : selectedCandidate.decision === 'rejected' ? (
                                             <span style={{ background: 'rgba(244, 63, 94, 0.2)', border: '1px solid #f43f5e', color: '#f43f5e', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                                                 <XCircle size={16} /> Candidature Refusée
