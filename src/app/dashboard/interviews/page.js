@@ -14,6 +14,7 @@ export default function InterviewsManagement() {
     const [candidates, setCandidates] = useState([]);
     const [globalQuestions, setGlobalQuestions] = useState([]);
     const [globalRemarks, setGlobalRemarks] = useState([]);
+    const [recruitmentSettings, setRecruitmentSettings] = useState(null);
     
     // Modals & Forms
     const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -39,18 +40,23 @@ export default function InterviewsManagement() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [candRes, contRes] = await Promise.all([
+            const [candRes, contRes, settingsRes] = await Promise.all([
                 fetch('/api/admin/interviews'),
-                fetch('/api/admin/interviews/content')
+                fetch('/api/admin/interviews/content'),
+                fetch('/api/admin/settings')
             ]);
-            const [candData, contData] = await Promise.all([
+            const [candData, contData, settingsData] = await Promise.all([
                 candRes.ok ? candRes.json() : null,
-                contRes.ok ? contRes.json() : null
+                contRes.ok ? contRes.json() : null,
+                settingsRes.ok ? settingsRes.json() : null
             ]);
             if (candData?.success) setCandidates(candData.data);
             if (contData?.success) {
                 setGlobalQuestions(contData.data.filter(c => c.type === 'question'));
                 setGlobalRemarks(contData.data.filter(c => c.type === 'remark'));
+            }
+            if (settingsData?.recruitment) {
+                setRecruitmentSettings(settingsData.recruitment);
             }
         } catch (err) {
             console.error(err);
@@ -185,7 +191,7 @@ export default function InterviewsManagement() {
                 alert(`Décision enregistrée avec succès : Candidat ${newDecision === 'accepted' ? 'ACCEPTÉ (Code activé pour inscription)' : 'REFUSÉ'}`);
                 
                 if (newDecision === 'accepted') {
-                    const waUrl = getWhatsAppLink(selectedCandidate.phone, selectedCandidate.code, data.data.decisionDate);
+                    const waUrl = getWhatsAppLink(selectedCandidate.phone, selectedCandidate.code);
                     if (waUrl !== '#') {
                         window.open(waUrl, '_blank');
                     }
@@ -242,18 +248,20 @@ export default function InterviewsManagement() {
         window.print();
     };
 
-    const getWhatsAppLink = (phone, code, decisionDate) => {
+    const getWhatsAppLink = (phone, code) => {
         if (!phone) return '#';
         let formattedPhone = phone.replace(/\D/g, '');
         if (formattedPhone.length === 8) {
             formattedPhone = '216' + formattedPhone;
         }
         
-        let remainingDays = 3; // Total jours par défaut
-        if (decisionDate) {
-            const passedTimeMs = Date.now() - new Date(decisionDate).getTime();
-            const passedDays = Math.floor(passedTimeMs / (1000 * 60 * 60 * 24));
-            remainingDays = Math.max(0, 3 - passedDays);
+        let remainingDays = 0; 
+        if (recruitmentSettings?.endDate) {
+            const endDateMs = new Date(recruitmentSettings.endDate).getTime();
+            const nowMs = Date.now();
+            remainingDays = Math.max(0, Math.ceil((endDateMs - nowMs) / (1000 * 60 * 60 * 24)));
+        } else {
+            remainingDays = 3; // Par défaut si la date de clôture n'est pas configurée
         }
         
         const messageFR = `🇫🇷 Félicitations ! 
@@ -449,7 +457,7 @@ Visit the registration page on the website to finish !`;
                                                         <CheckCircle2 size={14} /> Accepté (Code Validé)
                                                     </span>
                                                     <a 
-                                                        href={getWhatsAppLink(cand.phone, cand.code, cand.decisionDate)}
+                                                        href={getWhatsAppLink(cand.phone, cand.code)}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         style={{ background: '#25D366', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', width: 'fit-content', marginTop: '4px' }}
@@ -497,7 +505,7 @@ Visit the registration page on the website to finish !`;
                                                     <CheckCircle2 size={16} /> Candidat Accepté (Code Validé pour Inscription)
                                                 </span>
                                                 <a 
-                                                    href={getWhatsAppLink(selectedCandidate.phone, selectedCandidate.code, selectedCandidate.decisionDate)}
+                                                    href={getWhatsAppLink(selectedCandidate.phone, selectedCandidate.code)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     style={{ background: '#25D366', color: 'white', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
