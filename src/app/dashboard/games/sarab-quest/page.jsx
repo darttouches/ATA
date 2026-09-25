@@ -105,8 +105,8 @@ export default function PhygitalGamesDashboard() {
             )}
 
             {showModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, direction: language === 'ar' ? 'rtl' : 'ltr' }}>
-                    <div className={styles.card} style={{ width: '100%', maxWidth: '500px' }}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, direction: language === 'ar' ? 'rtl' : 'ltr', padding: '15px' }}>
+                    <div className={styles.card} style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 className={styles.cardHeader}>{t('setupNewMission')}</h2>
                         <form onSubmit={handleCreateGame}>
                             <div style={{ marginBottom: '15px' }}>
@@ -146,7 +146,7 @@ export default function PhygitalGamesDashboard() {
                                 </div>
 
                                 {/* Thumbnails selector */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                <div className={styles.mapGrid}>
                                     {[
                                         { id: 'map_general', name: t('mapOptionGeneral'), img: '/images/maps_photos/map_general.jfif' },
                                         { id: 'map_desert', name: t('mapOptionDesert'), img: '/images/maps_photos/map_desert.jfif' },
@@ -185,9 +185,9 @@ export default function PhygitalGamesDashboard() {
                                 <label style={{ display: 'block', color: '#a67c52', marginBottom: '5px', fontSize: '0.9rem', fontFamily: 'Orbitron' }}>{t('descOrInstructions')}</label>
                                 <textarea value={description} onChange={e => setDescription(e.target.value)} className={styles.input} style={{ minHeight: '80px', textAlign: language === 'ar' ? 'right' : 'left' }}></textarea>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className={styles.btnSecondary}>{t('cancelBtn')}</button>
-                                <button type="submit" className={styles.btnPrimary}>{t('createTourBtn')}</button>
+                            <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', marginTop: '10px' }}>
+                                <button type="button" onClick={() => setShowModal(false)} className={styles.btnSecondary} style={{ flex: 1 }}>{t('cancelBtn')}</button>
+                                <button type="submit" className={styles.btnPrimary} style={{ flex: 1 }}>{t('createTourBtn')}</button>
                             </div>
                         </form>
                     </div>
