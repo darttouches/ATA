@@ -89,6 +89,12 @@ export default function AdminSettings() {
             modes: 'both', // 'presence', 'online', 'both'
             authorizedRoles: ['admin', 'national', 'president', 'bureau', 'membre'],
             authorizedUsers: []
+        },
+        phygitalQuest: {
+            isPublished: true,
+            modes: 'presence', // primarily physical/presence
+            authorizedCreators: ['admin', 'national', 'president', 'bureau', 'membre'],
+            authorizedPlayers: ['admin', 'national', 'president', 'bureau', 'membre', 'visiteur']
         }
     });
 
@@ -113,6 +119,7 @@ export default function AdminSettings() {
                 if (data.games.xo) newData.xo = { ...prev.xo, ...data.games.xo };
                 if (data.games.barbechni) newData.barbechni = { ...prev.barbechni, ...data.games.barbechni };
                 if (data.games.wasaaa3) newData.wasaaa3 = { ...prev.wasaaa3, ...data.games.wasaaa3 };
+                if (data.games.phygitalQuest) newData.phygitalQuest = { ...prev.phygitalQuest, ...data.games.phygitalQuest };
                 return newData;
             });
         }
@@ -1041,6 +1048,69 @@ export default function AdminSettings() {
                                     <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '5px', textAlign: 'center' }}>
                                         Ceci supprimera tous les scores enregistrés pour le mode présentiel.
                                     </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ padding: '1rem', background: 'rgba(166, 124, 82, 0.05)', borderRadius: '8px', border: '1px solid rgba(166, 124, 82, 0.2)', marginTop: '1rem' }}>
+                        <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <MapPin size={18} style={{ color: '#a67c52' }} /> Paramètres Sarab Quest
+                        </h4>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '0.5rem' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={gamesData.phygitalQuest?.isPublished || false}
+                                onChange={(e) => setGamesData({...gamesData, phygitalQuest: {...(gamesData.phygitalQuest || {}), isPublished: e.target.checked}})}
+                            />
+                            <span style={{ fontWeight: 600 }}>Activer le jeu Sarab Quest</span>
+                        </label>
+                        <p style={{ fontSize: '0.75rem', opacity: 0.6, marginLeft: '28px', marginBottom: '1rem' }}>Ce jeu est exclusif au monde physique (Présentiel) en mode équipe.</p>
+                        
+                        {(gamesData.phygitalQuest?.isPublished || false) && (
+                            <div style={{ marginLeft: '25px', fontSize: '0.9rem' }}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Qui peut créer une mission ? (Game Masters)</div>
+                                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '6px', marginBottom: '1rem' }}>
+                                        {['admin', 'national', 'president', 'bureau', 'membre'].map(role => (
+                                            <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={gamesData.phygitalQuest?.authorizedCreators?.includes(role)}
+                                                    onChange={(e) => {
+                                                        const currentRoles = gamesData.phygitalQuest?.authorizedCreators || [];
+                                                        const newRoles = e.target.checked 
+                                                            ? [...currentRoles, role]
+                                                            : currentRoles.filter(r => r !== role);
+                                                        setGamesData({...gamesData, phygitalQuest: {...gamesData.phygitalQuest, authorizedCreators: newRoles}});
+                                                    }}
+                                                />
+                                                <span>{t(role) || role}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <div style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Qui peut accéder au jeu pour jouer ? (Joueurs)</div>
+                                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '6px', marginBottom: '1rem' }}>
+                                        {['admin', 'national', 'president', 'bureau', 'membre', 'visiteur'].map(role => (
+                                            <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={gamesData.phygitalQuest?.authorizedPlayers?.includes(role)}
+                                                    onChange={(e) => {
+                                                        const currentRoles = gamesData.phygitalQuest?.authorizedPlayers || [];
+                                                        const newRoles = e.target.checked 
+                                                            ? [...currentRoles, role]
+                                                            : currentRoles.filter(r => r !== role);
+                                                        setGamesData({...gamesData, phygitalQuest: {...gamesData.phygitalQuest, authorizedPlayers: newRoles}});
+                                                    }}
+                                                />
+                                                <span>{t(role) || role}</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

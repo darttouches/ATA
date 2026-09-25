@@ -57,6 +57,14 @@ export default function GamesHub() {
       path: '/games/wasaaa3'
     },
     {
+      id: 'sarab-quest',
+      name: 'Sarab Quest',
+      description: 'Chasse aux trésors interactive ! Fusionnez le terrain physique et le monde digital pour résoudre des énigmes palpitantes.',
+      icon: <div style={{ width: '144px', height: '144px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><img src="/images/logo_games5-.png" alt="Sarab Quest" style={{ width: '100%', height: '100%', objectFit: 'contain', clipPath: 'circle(46% at 50% 50%)' }} /></div>,
+      modes: ['Présentiel'],
+      path: '/games/sarab-quest'
+    },
+    {
       id: 'soon-1',
       name: 'Bientôt...',
       description: 'D\'autres jeux passionnants arrivent bientôt pour pimenter vos rencontres artistiques.',
@@ -75,7 +83,8 @@ export default function GamesHub() {
       'loup-garou': 'loupGarou',
       'xo': 'xo',
       'barbechni': 'barbechni',
-      'wasaaa3': 'wasaaa3'
+      'wasaaa3': 'wasaaa3',
+      'sarab-quest': 'phygitalQuest'
     };
     const key = keyMap[gameId] || gameId;
     return gamesConfig?.[key] || { isPublished: true, modes: 'both' };

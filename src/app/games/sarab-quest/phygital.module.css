@@ -1,0 +1,608 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;700&display=swap');
+
+.container {
+  min-height: 100vh;
+  /* Stone background emulation */
+  background-color: #1a2028;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(35, 45, 55, 0.9) 0%, rgba(15, 20, 25, 1) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+  color: #e2e8f0;
+  font-family: 'Rajdhani', sans-serif;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.contentWrapper {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* --- HUD TOP BAR --- */
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: linear-gradient(to bottom, #111a22 0%, rgba(20,28,38,0.9) 100%);
+  border-bottom: 4px solid #334354;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.6), inset 0 -2px 0 rgba(73, 208, 226, 0.1);
+  position: relative;
+}
+
+/* The copper top edges in the image */
+.hud::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #6c4b31, #b5835a, #6c4b31);
+}
+
+/* Center Logo Panel */
+.logoPanel {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.engineTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #00e5ff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+  letter-spacing: 1px;
+}
+
+.engineSub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.teamName {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  letter-spacing: 1px;
+}
+
+.scoreValue {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #e2e8f0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Main Area */
+.mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 20px;
+  max-width: 650px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 120px; 
+  overflow-y: auto;
+}
+
+/* --- CLUE CARD (Parchment inside Antique Frame) --- */
+.clueCard {
+  background: linear-gradient(135deg, #1b2431 0%, #11161d 100%);
+  border: 4px solid;
+  border-image: linear-gradient(to bottom right, #a67c52, #e5b887, #664121) 1;
+  border-radius: 4px; 
+  padding: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.6);
+  position: relative;
+}
+
+/* Outer ornate corners */
+.clueCard::before, .clueCard::after {
+  content: ''; position: absolute;
+  width: 15px; height: 15px;
+  border: 2px solid #00e5ff;
+  box-shadow: 0 0 8px #00e5ff;
+}
+.clueCard::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.clueCard::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+.clueTitleWrap {
+  background: linear-gradient(90deg, transparent, rgba(50, 65, 85, 0.6), transparent);
+  text-align: center;
+  padding: 5px 0;
+  margin-bottom: 15px;
+}
+
+.clueTitle {
+  font-family: 'Cinzel Decorative', serif;
+  color: #ffb74d;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.clueCardInner {
+  /* Parchment Texture */
+  background-color: #dfcdad;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.25'/%3E%3C/svg%3E");
+  border: 1px solid #9c7b56;
+  padding: 20px 25px;
+  border-radius: 2px;
+  min-height: 120px;
+  box-shadow: inset 0 0 25px rgba(100, 70, 40, 0.4);
+}
+
+.clueText {
+  font-size: 1.35rem;
+  line-height: 1.6;
+  color: #2b1f15;
+  font-family: 'Times New Roman', serif;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* --- ACTION PANEL --- */
+.actionPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Bronze/Copper Scan Button */
+.scanBtn {
+  background: linear-gradient(180deg, #c49060 0%, #8c5830 50%, #4a2c15 100%);
+  border: 2px solid #ffcc99;
+  color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.4);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.scanBtn:active {
+  transform: translateY(4px);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.6), inset 0 4px 8px rgba(0,0,0,0.6);
+}
+
+.scanIcon {
+  font-size: 1.8rem;
+  color: #fff;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.8));
+}
+
+.separator {
+  text-align: center;
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.separator::before, .separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+}
+
+/* Input Area */
+.inputGroup {
+  display: flex;
+  border: 3px solid #334354;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #090c10;
+  box-shadow: inset 0 5px 15px rgba(0,0,0,0.8);
+}
+
+.inputGroup input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 18px;
+  color: #00e5ff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.inputGroup input::placeholder {
+  color: rgba(0, 229, 255, 0.2);
+}
+
+.submitBtn {
+  background: linear-gradient(180deg, #2b394a 0%, #151e27 100%);
+  border: none;
+  border-left: 2px solid #334354;
+  padding: 0 25px;
+  color: #a0aec0;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: inset 0 2px 2px rgba(255,255,255,0.1);
+}
+
+.submitBtn:active {
+  background: #0f151b;
+  box-shadow: inset 0 5px 10px rgba(0,0,0,0.8);
+}
+
+/* --- BOTTOM DOCK (Pill Shaped Bronze Icons) --- */
+.dock {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, #0f151c 0%, rgba(15,21,28,0.9) 100%);
+  border-top: 3px solid #334354;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 15px 10px 20px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+.dockItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 75px; 
+  height: 75px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #324050 0%, #151e27 100%);
+  border: 2px solid #4a5c70;
+  color: #a0aec0;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+}
+
+.dockItem.active {
+  background: linear-gradient(135deg, #c49060 0%, #8c5830 100%);
+  border-color: #ffcc99;
+  color: #fff;
+  transform: translateY(-8px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.3);
+}
+
+.dockItem.active .dockLabel {
+  color: #ffb74d;
+}
+
+.dockIcon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+}
+
+.dockLabel {
+  font-size: 0.7rem;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #e2e8f0;
+}
+
+/* LOGIN SCREEN UPGRADE */
+.loginCard {
+  background: linear-gradient(135deg, #1b2431 0%, #11161d 100%);
+  border: 3px solid;
+  border-image: linear-gradient(to bottom right, #a67c52, #e5b887, #664121) 1;
+  border-radius: 8px;
+  padding: 40px 30px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.8);
+  position: relative;
+}
+
+.loginTitle {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 3rem;
+  color: #ffb74d;
+  margin-bottom: 5px;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* Custom Complex Map UI */
+.complexMapWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 10px;
+}
+
+.mapCircleContainer {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1; /* Make it a square for a perfect circle */
+    max-width: 450px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 6px solid #8b5a2b; /* Steampunk bronze */
+    box-shadow: 0 0 30px rgba(139, 90, 43, 0.4), inset 0 0 30px rgba(0,0,0,0.8);
+    background: radial-gradient(circle, rgba(30,40,40,1) 0%, rgba(10,15,15,1) 100%);
+    overflow: hidden;
+}
+
+.mapBackgroundOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.15;
+    background-image: 
+        radial-gradient(circle at center, transparent 0%, #000 100%),
+        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);
+}
+
+.mapCircuitLines {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 80%; height: 80%;
+    transform: translate(-50%, -50%);
+    border: 2px dashed rgba(0, 240, 255, 0.3);
+    border-radius: 50%;
+}
+
+.mapNodeWrapper {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.mapNodeIcon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #131922;
+    border: 2px solid #a67c52;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    z-index: 2;
+    position: relative;
+}
+
+.mapNodeIcon[data-status="completed"] {
+    border-color: #00e599;
+    box-shadow: 0 0 15px rgba(0, 229, 153, 0.5);
+    color: #00e599;
+}
+
+.mapNodeIcon[data-status="active"] {
+    border-color: #00f0ff;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.8), inset 0 0 10px rgba(0, 240, 255, 0.3);
+    color: #00f0ff;
+    animation: mapPulse 2s infinite;
+}
+
+.mapNodeIcon[data-status="locked"] {
+    opacity: 0.5;
+}
+
+.mapNodeLabel {
+    background: rgba(0,0,0,0.7);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: #fff;
+    white-space: nowrap;
+    border: 1px solid rgba(166,124,82,0.4);
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.mapNodeLabel[data-status="active"] {
+    color: #00f0ff;
+    border-color: #00f0ff;
+}
+
+@keyframes mapPulse {
+    0% { transform: scale(1); box-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
+    50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(0, 240, 255, 1); }
+    100% { transform: scale(1); box-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
+}
+
+/* Mission List Panel */
+.missionListPanel {
+    background: rgba(19, 25, 34, 0.8);
+    border: 1px solid #a67c52;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.missionListTitle {
+    color: #ffb74d;
+    font-family: 'Orbitron', sans-serif;
+    text-align: center;
+    border-bottom: 1px solid rgba(166, 124, 82, 0.4);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.missionCard {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.missionCard[data-status="completed"] {
+    border-right: 3px solid #00e599;
+    border-left: 1px solid #00e599;
+}
+.missionCard[data-status="active"] {
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.1) 0%, rgba(0, 0, 0, 0.5) 100%);
+    border: 1px solid #00f0ff;
+}
+.missionCard[data-status="locked"] {
+    opacity: 0.5;
+}
+
+.loginSubtitle {
+  font-family: 'Orbitron', sans-serif;
+  color: #00e5ff;
+  margin-bottom: 35px;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.codeInput {
+  width: 100%;
+  background: #090c10;
+  border: 2px solid #00e5ff;
+  border-radius: 4px;
+  padding: 20px;
+  font-size: 2.5rem;
+  text-align: center;
+  color: #00e5ff;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-bottom: 25px;
+  box-shadow: inset 0 5px 15px rgba(0,0,0,0.8), 0 0 10px rgba(0,229,255,0.2);
+  outline: none;
+}
+
+.joinBtn {
+  width: 100%;
+  background: linear-gradient(180deg, #c49060 0%, #8c5830 50%, #4a2c15 100%);
+  border: 2px solid #ffcc99;
+  color: #fff;
+  padding: 18px;
+  font-size: 1.3rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 2px 5px rgba(255,255,255,0.3);
+  transition: transform 0.1s;
+}
+
+.joinBtn:active {
+  transform: scale(0.98);
+}
+
+.choiceGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+}
+
+.choiceBtn {
+  background: linear-gradient(135deg, #1b2431 0%, #11161d 100%);
+  border: 2px solid #334354;
+  color: #a0aec0;
+  padding: 15px;
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.choiceBtn:active, .choiceBtn.selected {
+  background: linear-gradient(135deg, rgba(0,229,255,0.1) 0%, rgba(0,229,255,0.05) 100%);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 15px rgba(0,229,255,0.3), inset 0 0 10px rgba(0,229,255,0.2);
+  transform: translateY(-2px);
+}
+
+.nfcZone {
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.1) 0%, transparent 70%);
+  border: 2px dashed #00e5ff;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.nfcZone:active {
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.3) 0%, transparent 70%);
+  box-shadow: 0 0 20px rgba(0,229,255,0.5);
+}
+
+.nfcWaves {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 2px solid #00e5ff;
+  animation: ripple 1.5s linear infinite;
+  opacity: 0;
+}
+
+@keyframes ripple {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+/* Utility Animations */
+.typing {
+  overflow: hidden;
+  position: relative;
+}
+.typing::after {
+  content: '|';
+  position: absolute;
+  right: 0;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }

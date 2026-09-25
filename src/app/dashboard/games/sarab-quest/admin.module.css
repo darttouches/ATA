@@ -1,0 +1,162 @@
+.adminContainer {
+  min-height: calc(100vh - 80px);
+  background-color: #1a222d;
+  color: #e2e8f0;
+  font-family: 'Rajdhani', sans-serif;
+  padding: 30px;
+  border-radius: 15px;
+  border: 1px solid #a67c52;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+}
+
+.title {
+  font-family: 'Orbitron', sans-serif;
+  color: #00f0ff;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.card {
+  background: #1e2633;
+  border: 2px solid #a67c52;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+.cardHeader {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  color: #d49a6a;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.3);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+
+.input {
+  width: 100%;
+  background: #0f131a;
+  border: 1px solid rgba(166, 124, 82, 0.5);
+  padding: 12px 15px;
+  color: #00f0ff;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, rgba(0, 119, 128, 0.8) 0%, rgba(0, 240, 255, 0.6) 100%);
+  color: #fff;
+  border: 1px solid #00f0ff;
+  padding: 10px 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btnPrimary:hover {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.btnSecondary {
+  background: transparent;
+  color: #d49a6a;
+  border: 1px solid #a67c52;
+  padding: 8px 15px;
+  font-family: 'Orbitron', sans-serif;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btnSecondary:hover {
+  background: rgba(166, 124, 82, 0.2);
+  color: #ff9900;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.gameItem {
+  background: #131922;
+  border: 1px solid rgba(166, 124, 82, 0.5);
+  border-radius: 6px;
+  padding: 15px;
+  transition: all 0.2s;
+}
+
+.gameItem:hover {
+  border-color: #00f0ff;
+  box-shadow: 0 0 15px rgba(0,240,255,0.2);
+}
+
+.statusBar {
+  display: flex;
+  gap: 10px;
+  background: #0f131a;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(166,124,82,0.3);
+  margin-bottom: 25px;
+  align-items: center;
+}
+
+.badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px;
+  color: #a67c52;
+  font-family: 'Orbitron', sans-serif;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.3);
+}
+
+.table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.codeBox {
+  background: #000;
+  color: #00e599;
+  padding: 3px 8px;
+  font-family: monospace;
+  font-size: 1.1rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 153, 0.5);
+}
