@@ -105,7 +105,7 @@ export default function PhygitalGamesDashboard() {
             )}
 
             {showModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, direction: language === 'ar' ? 'rtl' : 'ltr', padding: '15px' }}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, direction: language === 'ar' ? 'rtl' : 'ltr', padding: '15px' }}>
                     <div className={styles.card} style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 className={styles.cardHeader}>{t('setupNewMission')}</h2>
                         <form onSubmit={handleCreateGame}>

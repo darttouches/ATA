@@ -89,6 +89,67 @@ export default function PhygitalGuestPlayerPage() {
         }
     }, [activeTab, gameStateData]);
 
+    // Handle incoming NFC payloads from URL
+    useEffect(() => {
+        if (gameStateData && gameStateData.stage && teamSession && gameState === 'playing') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const nfcPayload = urlParams.get('nfc_payload');
+            
+            if (nfcPayload) {
+                // Prevent duplicate processing
+                if (window.isProcessingNfc) return;
+                window.isProcessingNfc = true;
+                
+                const processNfc = async () => {
+                    setIsChecking(true);
+                    setMessage({ text: t('loadingData'), type: 'success' });
+                    
+                    try {
+                        const res = await fetch('/api/games/sarab-quest/player/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                teamId: teamSession.teamId,
+                                stageId: gameStateData.stage._id,
+                                answer: nfcPayload
+                            })
+                        });
+                        const data = await res.json();
+                        
+                        // clear URL parameter
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        window.isProcessingNfc = false;
+
+                        if (data.success) {
+                            setMessage({ text: data.message || t('successSubmissionStage'), type: 'success' });
+                            setGameStateData(prev => ({
+                                ...prev,
+                                team: { ...prev.team, score: prev.team.score + (gameStateData.stage.basePoints || 100) }
+                            }));
+                            setTimeout(() => {
+                                setMessage({ text: '', type: '' });
+                                fetchGameState(teamSession.teamId);
+                                setIsChecking(false);
+                            }, 1500);
+                        } else {
+                            setMessage({ text: data.error || data.message || t('invalidActionCode'), type: 'error' });
+                            setTimeout(() => {
+                                setIsChecking(false);
+                                setMessage({ text: '', type: '' });
+                            }, 3000);
+                        }
+                    } catch (error) {
+                        setMessage({ text: 'Erreur', type: 'error' });
+                        window.isProcessingNfc = false;
+                        setIsChecking(false);
+                    }
+                };
+                
+                processNfc();
+            }
+        }
+    }, [gameStateData, teamSession, gameState]);
+
     const handleMouseDown = (e) => {
         setIsDragging(true);
         setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
