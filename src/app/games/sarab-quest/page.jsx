@@ -163,12 +163,14 @@ export default function PhygitalGuestPlayerPage() {
                         try {
                             const decoder = new TextDecoder();
                             const ndefData = decoder.decode(record.data);
-                            // Le tag contient soit un lien, soit la clé brute
-                            if (ndefData.includes('nfc_payload=')) {
-                                const urlObj = new URL(ndefData);
-                                submitNfcAnswer(urlObj.searchParams.get('nfc_payload'));
+                            // Le tag contient soit un lien, soit la clé brute. On utilise Regex pour éviter les erreurs d'encodage URI (les bytes de préfixe).
+                            const match = ndefData.match(/nfc_payload=([^&]+)/);
+                            if (match && match[1]) {
+                                submitNfcAnswer(match[1]);
                             } else {
-                                submitNfcAnswer(ndefData);
+                                // Si c'est juste du texte sans URL
+                                // on enlève les caractères invisibles (bytes de contrôle NFC potentiel)
+                                submitNfcAnswer(ndefData.replace(/[\x00-\x1F\x7F-\x9F]/g, ''));
                             }
                             break; // submit first valid record
                         } catch (err) {
@@ -452,11 +454,7 @@ export default function PhygitalGuestPlayerPage() {
                                 </div>
                             )}
 
-                            {gameStateData.stage.validationType !== 'text' && gameStateData.stage.validationType !== 'choice' && (
-                                <div className={styles.separator}>{t('orEnterManually')}</div>
-                            )}
-
-                            {(gameStateData.stage.validationType === 'text' || gameStateData.stage.validationType === 'qr' || gameStateData.stage.validationType === 'nfc' || gameStateData.stage.validationType === 'choice') && (
+                            {(gameStateData.stage.validationType === 'text' || gameStateData.stage.validationType === 'choice') && (
                                 <form onSubmit={handleSubmitAnswer} className={styles.inputGroup} style={{ flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
                                     <button type="submit" className={styles.submitBtn} disabled={isChecking} style={{ 
                                         borderLeft: language === 'ar' ? 'none' : '2px solid #334354', 
