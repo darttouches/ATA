@@ -89,66 +89,100 @@ export default function PhygitalGuestPlayerPage() {
         }
     }, [activeTab, gameStateData]);
 
-    // Handle incoming NFC payloads from URL
+    const submitNfcAnswer = async (payload) => {
+        if (isChecking) return;
+        setIsChecking(true);
+        setMessage({ text: t('loadingData'), type: 'success' });
+        
+        try {
+            const res = await fetch('/api/games/sarab-quest/player/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    teamId: teamSession.teamId,
+                    stageId: gameStateData.stage._id,
+                    answer: payload
+                })
+            });
+            const data = await res.json();
+            
+            // Si on utilise l'URL, on le nettoie
+            if (window.location.search.includes('nfc_payload')) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            window.isProcessingNfc = false;
+
+            if (data.success) {
+                setMessage({ text: data.message || t('successSubmissionStage'), type: 'success' });
+                setGameStateData(prev => ({
+                    ...prev,
+                    team: { ...prev.team, score: prev.team.score + (gameStateData.stage.basePoints || 100) }
+                }));
+                setTimeout(() => {
+                    setMessage({ text: '', type: '' });
+                    fetchGameState(teamSession.teamId);
+                    setIsChecking(false);
+                }, 1500);
+            } else {
+                setMessage({ text: data.error || data.message || t('invalidActionCode'), type: 'error' });
+                setTimeout(() => {
+                    setIsChecking(false);
+                    setMessage({ text: '', type: '' });
+                }, 3000);
+            }
+        } catch (error) {
+            setMessage({ text: 'Erreur Serveur', type: 'error' });
+            window.isProcessingNfc = false;
+            setIsChecking(false);
+        }
+    };
+
+    // Handle incoming NFC payloads from URL (lorsque le tél ouvre un nouvel onglet)
     useEffect(() => {
         if (gameStateData && gameStateData.stage && teamSession && gameState === 'playing') {
             const urlParams = new URLSearchParams(window.location.search);
             const nfcPayload = urlParams.get('nfc_payload');
             
             if (nfcPayload) {
-                // Prevent duplicate processing
                 if (window.isProcessingNfc) return;
                 window.isProcessingNfc = true;
-                
-                const processNfc = async () => {
-                    setIsChecking(true);
-                    setMessage({ text: t('loadingData'), type: 'success' });
-                    
-                    try {
-                        const res = await fetch('/api/games/sarab-quest/player/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                teamId: teamSession.teamId,
-                                stageId: gameStateData.stage._id,
-                                answer: nfcPayload
-                            })
-                        });
-                        const data = await res.json();
-                        
-                        // clear URL parameter
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        window.isProcessingNfc = false;
-
-                        if (data.success) {
-                            setMessage({ text: data.message || t('successSubmissionStage'), type: 'success' });
-                            setGameStateData(prev => ({
-                                ...prev,
-                                team: { ...prev.team, score: prev.team.score + (gameStateData.stage.basePoints || 100) }
-                            }));
-                            setTimeout(() => {
-                                setMessage({ text: '', type: '' });
-                                fetchGameState(teamSession.teamId);
-                                setIsChecking(false);
-                            }, 1500);
-                        } else {
-                            setMessage({ text: data.error || data.message || t('invalidActionCode'), type: 'error' });
-                            setTimeout(() => {
-                                setIsChecking(false);
-                                setMessage({ text: '', type: '' });
-                            }, 3000);
-                        }
-                    } catch (error) {
-                        setMessage({ text: 'Erreur', type: 'error' });
-                        window.isProcessingNfc = false;
-                        setIsChecking(false);
-                    }
-                };
-                
-                processNfc();
+                submitNfcAnswer(nfcPayload);
             }
         }
     }, [gameStateData, teamSession, gameState]);
+
+    const handleNfcReadLive = async () => {
+        if ('NDEFReader' in window) {
+            try {
+                const ndef = new window.NDEFReader();
+                await ndef.scan();
+                setMessage({ text: t('nfcReadyToScan') || 'Approchez le tag NFC...', type: 'success' });
+                
+                ndef.addEventListener("reading", ({ message, serialNumber }) => {
+                    for (const record of message.records) {
+                        try {
+                            const decoder = new TextDecoder();
+                            const ndefData = decoder.decode(record.data);
+                            // Le tag contient soit un lien, soit la clé brute
+                            if (ndefData.includes('nfc_payload=')) {
+                                const urlObj = new URL(ndefData);
+                                submitNfcAnswer(urlObj.searchParams.get('nfc_payload'));
+                            } else {
+                                submitNfcAnswer(ndefData);
+                            }
+                            break; // submit first valid record
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    }
+                });
+            } catch (error) {
+                setMessage({ text: t('nfcReadingError') || 'Veuillez activer le NFC sur votre appareil.', type: 'error' });
+            }
+        } else {
+            setMessage({ text: t('nfcNotSupported') || 'Le lecteur NFC n\'est pas supporté par votre navigateur actuel (utilisez Chrome sur Android).', type: 'error' });
+        }
+    };
 
     const handleMouseDown = (e) => {
         setIsDragging(true);
@@ -410,10 +444,11 @@ export default function PhygitalGuestPlayerPage() {
                             )}
 
                             {gameStateData.stage.validationType === 'nfc' && (
-                                <div className={styles.nfcZone} onClick={() => alert(t('nfcSearchAlert'))}>
+                                <div className={styles.nfcZone} onClick={handleNfcReadLive} style={{ cursor: 'pointer' }}>
                                     <div className={styles.nfcWaves}></div>
                                     <Wifi size={50} color="#00e5ff" style={{ margin: '0 auto 10px' }} />
-                                    <div style={{ fontFamily: 'Rajdhani', fontSize: '1.2rem', fontWeight: 'bold', color: '#00e5ff' }}>{t('nfcWave')}</div>
+                                    <div style={{ fontFamily: 'Rajdhani', fontSize: '1.2rem', fontWeight: 'bold', color: '#00e5ff' }}>{t('startNfcBtn') || 'Lancer la lecture Live NFC'}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '10px' }}>Appuyez ici, puis approchez le Tag !</div>
                                 </div>
                             )}
 
