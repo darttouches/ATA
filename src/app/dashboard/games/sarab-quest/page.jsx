@@ -1,15 +1,18 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Activity, Plus, Clock, Target, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Activity, Plus, Clock, Target, ArrowRight, Trash2, Edit3 } from 'lucide-react';
 import styles from './admin.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function PhygitalGamesDashboard() {
     const { t, language } = useLanguage();
+    const router = useRouter();
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [editingGameId, setEditingGameId] = useState(null);
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -35,11 +38,13 @@ export default function PhygitalGamesDashboard() {
         }
     };
 
-    const handleCreateGame = async (e) => {
+    const handleSaveGame = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/games/sarab-quest/admin/games', {
-                method: 'POST',
+            const url = editingGameId ? `/api/games/sarab-quest/admin/games/${editingGameId}` : '/api/games/sarab-quest/admin/games';
+            const method = editingGameId ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, description, startTime, location, mapTexture })
             });
@@ -48,22 +53,64 @@ export default function PhygitalGamesDashboard() {
                 setShowModal(false);
                 fetchGames();
                 setName(''); setDescription(''); setStartTime(''); setLocation(''); setMapTexture('map_general');
+                setEditingGameId(null);
             } else {
                 alert('Erreur: ' + data.error);
             }
         } catch (error) {
-            console.error('Error creating game:', error);
+            console.error('Error saving game:', error);
+        }
+    };
+
+    const handleEditClick = (game) => {
+        setEditingGameId(game._id);
+        setName(game.name || '');
+        setDescription(game.description || '');
+        if (game.startTime) {
+            const d = new Date(game.startTime);
+            const offset = d.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(d - offset)).toISOString().slice(0, 16);
+            setStartTime(localISOTime);
+        } else {
+            setStartTime('');
+        }
+        setLocation(game.location || '');
+        setMapTexture(game.mapTexture || 'map_general');
+        setShowModal(true);
+    };
+
+    const handleDeleteClick = async (gameId) => {
+        if (!confirm(t('confirmDeleteMission') || 'Êtes-vous sûr de vouloir supprimer cette mission ?')) return;
+        try {
+            const res = await fetch(`/api/games/sarab-quest/admin/games/${gameId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                fetchGames();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error deleting game:', error);
         }
     };
 
     return (
         <div className={styles.adminContainer} style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+            <button onClick={() => router.back()} className={styles.btnSecondary} style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '5px', width: 'fit-content'}}>
+                {language !== 'ar' && <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} />}
+                {t('mainDashboardBtn')}
+                {language === 'ar' && <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} />}
+            </button>
             <div className={styles.title} style={{ flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
                 <Activity color="#00f0ff" size={32} />
                 <span style={{ flex: 1, textAlign: language === 'ar' ? 'right' : 'left' }}>{t('sarabQuestConsole')}</span>
 
                 <button
-                    onClick={() => setShowModal(true)}
+                    onClick={() => {
+                        setEditingGameId(null);
+                        setName(''); setDescription(''); setStartTime(''); setLocation(''); setMapTexture('map_general');
+                        setShowModal(true);
+                    }}
                     className={styles.btnPrimary}
                     style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}
                 >
@@ -76,7 +123,11 @@ export default function PhygitalGamesDashboard() {
             ) : (
                 <div className={styles.grid} style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
                     {games.map(game => (
-                        <div key={game._id} className={styles.gameItem}>
+                        <div key={game._id} className={styles.gameItem} style={{ position: 'relative' }}>
+                            <div style={{ position: 'absolute', top: '15px', right: language === 'ar' ? 'auto' : '15px', left: language === 'ar' ? '15px' : 'auto', display: 'flex', gap: '5px', zIndex: 10 }}>
+                                <button type="button" onClick={() => handleEditClick(game)} style={{background: 'transparent', border: 'none', color: '#ff9900', cursor: 'pointer', padding: '5px'}}><Edit3 size={16} /></button>
+                                <button type="button" onClick={() => handleDeleteClick(game._id)} style={{background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '5px'}}><Trash2 size={16} /></button>
+                            </div>
                             <h2 style={{ fontSize: '1.4rem', fontFamily: 'Rajdhani', color: '#fff', marginBottom: '10px' }}>{game.name}</h2>
                             <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '15px', display: 'flex', gap: '5px', alignItems: 'center' }}>
                                 <Clock size={14} color="#a67c52" />
@@ -107,8 +158,8 @@ export default function PhygitalGamesDashboard() {
             {showModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, direction: language === 'ar' ? 'rtl' : 'ltr', padding: '15px' }}>
                     <div className={styles.card} style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <h2 className={styles.cardHeader}>{t('setupNewMission')}</h2>
-                        <form onSubmit={handleCreateGame}>
+                        <h2 className={styles.cardHeader}>{editingGameId ? (t('editMissionBtn') || 'Modifier la mission') : t('setupNewMission')}</h2>
+                        <form onSubmit={handleSaveGame}>
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={{ display: 'block', color: '#a67c52', marginBottom: '5px', fontSize: '0.9rem', fontFamily: 'Orbitron' }}>{t('missionName')}</label>
                                 <input type="text" required value={name} onChange={e => setName(e.target.value)} className={styles.input} style={{ textAlign: language === 'ar' ? 'right' : 'left' }} />
@@ -187,7 +238,7 @@ export default function PhygitalGamesDashboard() {
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', marginTop: '10px' }}>
                                 <button type="button" onClick={() => setShowModal(false)} className={styles.btnSecondary} style={{ flex: 1 }}>{t('cancelBtn')}</button>
-                                <button type="submit" className={styles.btnPrimary} style={{ flex: 1 }}>{t('createTourBtn')}</button>
+                                <button type="submit" className={styles.btnPrimary} style={{ flex: 1 }}>{editingGameId ? (t('saveEditsBtn') || 'Sauvegarder') : t('createTourBtn')}</button>
                             </div>
                         </form>
                     </div>

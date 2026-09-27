@@ -76,6 +76,8 @@ export async function GET(request) {
             clueText: currentStage.clueText,
             validationType: currentStage.validationType,
             choices: currentStage.validationType === 'choice' ? currentStage.choices : undefined,
+            puzzleImage: currentStage.validationType === 'puzzle' ? currentStage.puzzleImage : undefined,
+            puzzleGridSize: currentStage.validationType === 'puzzle' ? currentStage.puzzleGridSize : undefined,
             order: currentStage.order,
             totalStages: game.stages.length,
         };

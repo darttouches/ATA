@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Shield, ShieldAlert, Cpu, Users, Eye, Zap, Crosshair, ArrowRight, CheckCircle2, Download, Link as LinkIcon, Trash2, Edit3, X } from 'lucide-react';
+import { Shield, ShieldAlert, Cpu, Users, Eye, Zap, Crosshair, ArrowRight, CheckCircle2, Download, Link as LinkIcon, Trash2, Edit3, X, Copy } from 'lucide-react';
 import styles from '../admin.module.css';
 import QRCode from 'qrcode';
 import { useLanguage } from '@/context/LanguageContext';
@@ -23,6 +23,10 @@ export default function PhygitalGameDetails() {
     const [correctChoiceIndices, setCorrectChoiceIndices] = useState([0]);
     const [editingStageId, setEditingStageId] = useState(null);
     const [teamName, setTeamName] = useState('');
+    
+    // Puzzle states
+    const [puzzleImage, setPuzzleImage] = useState('');
+    const [puzzleGridSize, setPuzzleGridSize] = useState(3);
 
     useEffect(() => {
         if (params.id) {
@@ -54,6 +58,8 @@ export default function PhygitalGameDetails() {
         let finalCorrectAnswer = correctAnswer;
         if (validationType === 'choice') {
             finalCorrectAnswer = choicesArray.filter((_, i) => correctChoiceIndices.includes(i)).sort().join(',');
+        } else if (validationType === 'puzzle' || validationType === 'taquin') {
+            finalCorrectAnswer = validationType.toUpperCase() + '_SOLVED';
         } else if ((validationType === 'qr' || validationType === 'nfc') && !editingStageId) {
             // Only auto-generate if it's a new stage, don't overwrite if editing unless needed
             finalCorrectAnswer = `PHYGITAL-CODE-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random()*1000)}`;
@@ -65,7 +71,9 @@ export default function PhygitalGameDetails() {
             correctAnswer: finalCorrectAnswer,
             basePoints: points,
             validationType: validationType,
-            choices: validationType === 'choice' ? choicesArray.filter(s=>s.trim() !== '') : []
+            choices: validationType === 'choice' ? choicesArray.filter(s=>s.trim() !== '') : [],
+            puzzleImage: validationType === 'puzzle' ? puzzleImage : undefined,
+            puzzleGridSize: (validationType === 'puzzle' || validationType === 'taquin') ? puzzleGridSize : undefined
         };
         
         let url = '/api/games/sarab-quest/admin/stages';
@@ -91,6 +99,7 @@ export default function PhygitalGameDetails() {
     const resetStageForm = () => {
         setEditingStageId(null);
         setClueText(''); setCorrectAnswer(''); setChoiceCount(3); setChoicesArray(['', '', '']); setCorrectChoiceIndices([0]); setPoints(100); setValidationType('text');
+        setPuzzleImage(''); setPuzzleGridSize(3);
     };
 
     const handleEditStageClick = (stage) => {
@@ -98,6 +107,9 @@ export default function PhygitalGameDetails() {
         setClueText(stage.clueText || '');
         setPoints(stage.basePoints || 100);
         setValidationType(stage.validationType || 'text');
+        
+        setPuzzleImage(stage.puzzleImage || '');
+        setPuzzleGridSize(stage.puzzleGridSize || 3);
         
         if (stage.validationType === 'choice') {
             setChoiceCount(stage.choices?.length || 2);
@@ -251,14 +263,22 @@ export default function PhygitalGameDetails() {
                                 <button type="button" onClick={resetStageForm} style={{background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer'}}><X size={16}/></button>
                             )}
                         </div>
-                        <input className={styles.input} placeholder={t('clueTextPlaceholder')} required value={clueText} onChange={e=>setClueText(e.target.value)} style={{ textAlign: language === 'ar' ? 'right' : 'left' }} />
                         
-                        <div style={{display: 'flex', gap: '10px', marginBottom: '15px', background: '#090c10', padding: '5px', borderRadius: '8px', flexWrap: 'wrap'}}>
+                        {validationType !== 'puzzle' && (
+                            <>
+                                <label style={{display: 'block', color: '#00f0ff', marginBottom: '5px', fontSize: '0.9rem', fontFamily: 'Rajdhani'}}>{t('clueTextPlaceholder')}</label>
+                                <textarea className={styles.input} required value={clueText} onChange={e=>setClueText(e.target.value)} style={{ textAlign: language === 'ar' ? 'right' : 'left', minHeight: '60px', resize: 'vertical' }} />
+                            </>
+                        )}
+                        
+                        <div style={{display: 'flex', gap: '10px', marginBottom: '15px', marginTop: '10px', background: '#090c10', padding: '5px', borderRadius: '8px', flexWrap: 'wrap'}}>
                             {[
                                 { id: 'text', label: t('textBtn') },
                                 { id: 'choice', label: t('choiceBtn') },
                                 { id: 'qr', label: t('qrBtn') },
-                                { id: 'nfc', label: t('nfcBtn') }
+                                { id: 'nfc', label: t('nfcBtn') },
+                                { id: 'puzzle', label: t('puzzleBtn') },
+                                { id: 'taquin', label: t('taquinBtn') }
                             ].map(type => (
                                 <button 
                                     key={type.id}
@@ -354,6 +374,84 @@ export default function PhygitalGameDetails() {
                            <input className={styles.input} placeholder={t('correctAnswerSecret')} required value={correctAnswer} onChange={e=>setCorrectAnswer(e.target.value)} style={{marginBottom: '10px', textAlign: language === 'ar' ? 'right' : 'left'}} />
                         )}
                         
+                        {validationType === 'puzzle' && (
+                            <div style={{background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '15px'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', flexWrap: 'wrap'}}>
+                                    <span style={{color: '#94a3b8', fontSize: '0.9rem', fontFamily: 'Orbitron'}}>{t('puzzleGridLabel')}</span>
+                                    <input 
+                                        type="number" 
+                                        min="2" max="6"
+                                        className={styles.input} 
+                                        value={puzzleGridSize} 
+                                        onChange={e => setPuzzleGridSize(parseInt(e.target.value) || 3)}
+                                        style={{width: '80px', padding: '5px', textAlign: 'center', marginBottom: 0}}
+                                    />
+                                </div>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                                    <span style={{color: '#94a3b8', fontSize: '0.9rem', fontFamily: 'Orbitron'}}>{t('puzzleImageLabel')}</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => setPuzzleImage(reader.result);
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                        style={{color: '#fff'}}
+                                    />
+                                    {puzzleImage && <img src={puzzleImage} alt="Puzzle Preview" style={{maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', marginTop: '10px', borderRadius: '8px', border: '1px solid #a67c52'}} />}
+                                </div>
+                                
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px'}}>
+                                    <span style={{color: '#94a3b8', fontSize: '0.9rem', fontFamily: 'Orbitron'}}>Texte à afficher une fois validé :</span>
+                                    <textarea 
+                                        className={styles.input} 
+                                        placeholder="Ex: Allez au bureau B4 pour la prochaine étape !"
+                                        required 
+                                        value={clueText} 
+                                        onChange={e=>setClueText(e.target.value)} 
+                                        style={{ textAlign: language === 'ar' ? 'right' : 'left', minHeight: '60px', resize: 'vertical', border: '1px solid #00e599' }} 
+                                    />
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#00e599', marginTop: '10px', textAlign: 'center' }}>
+                                    💡 Note : Ce texte s'affichera automatiquement aux joueurs dès qu'ils auront réussi ce mécanisme.
+                                </div>
+                            </div>
+                        )}
+                        
+                        {validationType === 'taquin' && (
+                            <div style={{background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '15px'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', flexWrap: 'wrap'}}>
+                                    <span style={{color: '#94a3b8', fontSize: '0.9rem', fontFamily: 'Orbitron'}}>{t('taquinGridLabel') || 'Taille (ex: 4 pour 4x4)'}</span>
+                                    <input 
+                                        type="number" 
+                                        min="3" max="5"
+                                        className={styles.input} 
+                                        value={puzzleGridSize} 
+                                        onChange={e => setPuzzleGridSize(parseInt(e.target.value) || 4)}
+                                        style={{width: '80px', padding: '5px', textAlign: 'center', marginBottom: 0}}
+                                    />
+                                </div>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px'}}>
+                                    <span style={{color: '#94a3b8', fontSize: '0.9rem', fontFamily: 'Orbitron'}}>Texte à afficher une fois le mécanisme déverrouillé :</span>
+                                    <textarea 
+                                        className={styles.input} 
+                                        placeholder="Ex: Le code du coffre est 5489"
+                                        required 
+                                        value={clueText} 
+                                        onChange={e=>setClueText(e.target.value)} 
+                                        style={{ textAlign: language === 'ar' ? 'right' : 'left', minHeight: '60px', resize: 'vertical', border: '1px solid #00e599' }} 
+                                    />
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#00e599', marginTop: '10px', textAlign: 'center' }}>
+                                    💡 Note : L'interface du taquin avec ses blocs de pierre se générera automatiquement. Aucun besoin d'image d'arrière-plan.
+                                </div>
+                            </div>
+                        )}
+                        
                         <button className={styles.btnSecondary} style={{width: '100%', borderColor: editingStageId ? '#ff9900' : '#00f0ff', color: editingStageId ? '#ff9900' : '#00f0ff'}}>
                             {editingStageId ? t('saveEditsBtn') : t('addStageBtn')}
                         </button>
@@ -365,6 +463,8 @@ export default function PhygitalGameDetails() {
                             if(stage.validationType === 'choice') typeLabel = t('qcmChoices');
                             if(stage.validationType === 'qr') typeLabel = t('scanQr');
                             if(stage.validationType === 'nfc') typeLabel = t('scanNfc');
+                            if(stage.validationType === 'puzzle') typeLabel = t('puzzleBtn');
+                            if(stage.validationType === 'taquin') typeLabel = t('taquinBtn');
                             
                             return (
                                 <div key={idx} style={{background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '6px', borderRight: '3px solid #d49a6a', borderLeft: 'none', position: 'relative'}}>
@@ -437,7 +537,23 @@ export default function PhygitalGameDetails() {
                                         {idx === 0 && team.score > 0 && '👑 '}
                                         {team.teamName}
                                     </td>
-                                    <td><span className={styles.codeBox}>{team.accessCode}</span></td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span className={styles.codeBox}>{team.accessCode}</span>
+                                            <button 
+                                                type="button"
+                                                title="Copier"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(team.accessCode).then(() => {
+                                                        alert((t('nfcCopySuccessTitle') || 'Code copié avec succès !') + '\\n' + team.accessCode);
+                                                    });
+                                                }}
+                                                style={{ background: 'transparent', border: 'none', color: '#00f0ff', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
                                     <td style={{color: '#a67c52', direction: 'ltr', textAlign: language === 'ar' ? 'right' : 'left'}}>{team.currentStageIndex} / {game.stages?.length}</td>
                                     <td style={{color: '#00f0ff', fontFamily: 'Orbitron', fontWeight: 'bold'}}>{team.score}</td>
                                 </tr>

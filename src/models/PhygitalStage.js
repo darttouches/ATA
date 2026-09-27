@@ -19,8 +19,15 @@ const PhygitalStageSchema = new mongoose.Schema({
     },
     validationType: {
         type: String,
-        enum: ['text', 'choice', 'qr', 'nfc'],
+        enum: ['text', 'choice', 'qr', 'nfc', 'puzzle', 'taquin'],
         default: 'text',
+    },
+    puzzleImage: {
+        type: String,
+    },
+    puzzleGridSize: {
+        type: Number,
+        default: 3,
     },
     correctAnswer: {
         type: String,

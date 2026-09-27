@@ -27,6 +27,8 @@ export async function POST(request) {
             title: body.title,
             clueText: body.clueText,
             validationType: body.validationType || 'text',
+            puzzleImage: body.puzzleImage,
+            puzzleGridSize: body.puzzleGridSize,
             correctAnswer: body.correctAnswer,
             choices: body.choices || [],
             hints: body.hints || [],

@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ScanLine, Map, Lightbulb, Trophy, LogOut, ArrowRight, AlertCircle, CheckCircle2, Navigation, Wifi, Fingerprint, Lock, MapPin, FileText } from 'lucide-react';
+import { ScanLine, Map, Lightbulb, Trophy, LogOut, ArrowRight, AlertCircle, CheckCircle2, Navigation, Wifi, Fingerprint, Lock, MapPin, FileText, Puzzle, LayoutGrid } from 'lucide-react';
 import styles from './phygital.module.css';
 import { useLanguage } from '@/context/LanguageContext';
+import SarabPuzzle from '@/components/SarabPuzzle';
+import SarabTaquin from '@/components/SarabTaquin';
 
 export default function PhygitalGuestPlayerPage() {
     const { t, language } = useLanguage();
@@ -403,16 +405,101 @@ export default function PhygitalGuestPlayerPage() {
 
                     {gameState === 'playing' && gameStateData.stage && activeTab === 'clues' && (
                         <div className={styles.actionPanel}>
-                            <div className={styles.clueCard}>
-                                <div className={styles.clueTitleWrap}>
-                                    <div className={styles.clueTitle}>{t('currentClue')}</div>
-                                </div>
-                                <div className={styles.clueCardInner}>
-                                    <div className={`${styles.clueText} ${styles.typing}`}>
-                                        {gameStateData.stage.clueText}
+                            {(gameStateData.stage.validationType !== 'puzzle' && gameStateData.stage.validationType !== 'taquin') && (
+                                <div className={styles.clueCard}>
+                                    <div className={styles.clueTitleWrap}>
+                                        <div className={styles.clueTitle}>{t('currentClue')}</div>
+                                    </div>
+                                    <div className={styles.clueCardInner}>
+                                        <div className={`${styles.clueText} ${styles.typing}`}>
+                                            {gameStateData.stage.clueText}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
+
+                            {gameStateData.stage.validationType === 'puzzle' && (
+                                <SarabPuzzle 
+                                    stage={gameStateData.stage} 
+                                    t={t}
+                                    onSolve={() => {
+                                        // Auto-submit validation exactly like NFC / Text
+                                        if (isChecking) return;
+                                        setAnswer('PUZZLE_SOLVED');
+                                        
+                                        // We simulate the event submission or call the API directly
+                                        setIsChecking(true);
+                                        fetch('/api/games/sarab-quest/player/verify', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                teamId: teamSession.teamId,
+                                                stageId: gameStateData.stage._id,
+                                                answer: 'PUZZLE_SOLVED'
+                                            })
+                                        }).then(res => res.json()).then(data => {
+                                            if (data.success) {
+                                                setMessage({ text: data.message || t('successAccess'), type: 'success' });
+                                                setGameStateData(prev => ({
+                                                    ...prev,
+                                                    team: { ...prev.team, score: prev.team.score + (gameStateData.stage.basePoints || 100) }
+                                                }));
+                                                setTimeout(() => {
+                                                    setMessage({ text: '', type: '' });
+                                                    fetchGameState(teamSession.teamId);
+                                                    setIsChecking(false);
+                                                }, 1500);
+                                            } else {
+                                                setMessage({ text: data.error || data.message || t('errorAccess'), type: 'error' });
+                                                setIsChecking(false);
+                                            }
+                                        }).catch(() => {
+                                            setMessage({ text: t('errorServer'), type: 'error' });
+                                            setIsChecking(false);
+                                        });
+                                    }} 
+                                />
+                            )}
+                            
+                            {gameStateData.stage.validationType === 'taquin' && (
+                                <SarabTaquin 
+                                    stage={gameStateData.stage} 
+                                    t={t}
+                                    onSolve={() => {
+                                        if (isChecking) return;
+                                        setAnswer('TAQUIN_SOLVED');
+                                        setIsChecking(true);
+                                        fetch('/api/games/sarab-quest/player/verify', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                teamId: teamSession.teamId,
+                                                stageId: gameStateData.stage._id,
+                                                answer: 'TAQUIN_SOLVED'
+                                            })
+                                        }).then(res => res.json()).then(data => {
+                                            if (data.success) {
+                                                setMessage({ text: data.message || t('successAccess'), type: 'success' });
+                                                setGameStateData(prev => ({
+                                                    ...prev,
+                                                    team: { ...prev.team, score: prev.team.score + (gameStateData.stage.basePoints || 100) }
+                                                }));
+                                                setTimeout(() => {
+                                                    setMessage({ text: '', type: '' });
+                                                    fetchGameState(teamSession.teamId);
+                                                    setIsChecking(false);
+                                                }, 1500);
+                                            } else {
+                                                setMessage({ text: data.error || data.message || t('errorAccess'), type: 'error' });
+                                                setIsChecking(false);
+                                            }
+                                        }).catch(() => {
+                                            setMessage({ text: t('errorServer'), type: 'error' });
+                                            setIsChecking(false);
+                                        });
+                                    }} 
+                                />
+                            )}
 
                             {/* Dynamic Action Panel based on validationType */}
 
@@ -643,6 +730,8 @@ export default function PhygitalGuestPlayerPage() {
                                         if (stage.validationType === 'qr') IconComponent = ScanLine;
                                         if (stage.validationType === 'nfc') IconComponent = Wifi;
                                         if (stage.validationType === 'choice') IconComponent = Lightbulb;
+                                        if (stage.validationType === 'puzzle') IconComponent = Puzzle;
+                                        if (stage.validationType === 'taquin') IconComponent = LayoutGrid;
 
                                         if (isLocked) IconComponent = Lock;
 
@@ -674,6 +763,8 @@ export default function PhygitalGuestPlayerPage() {
                                         if (stage.validationType === 'qr') IconComponent = ScanLine;
                                         if (stage.validationType === 'nfc') IconComponent = Wifi;
                                         if (stage.validationType === 'choice') IconComponent = Lightbulb;
+                                        if (stage.validationType === 'puzzle') IconComponent = Puzzle;
+                                        if (stage.validationType === 'taquin') IconComponent = LayoutGrid;
                                         if (status === 'locked') IconComponent = Lock;
 
                                         return (
