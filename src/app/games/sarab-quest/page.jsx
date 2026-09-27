@@ -6,6 +6,7 @@ import styles from './phygital.module.css';
 import { useLanguage } from '@/context/LanguageContext';
 import SarabPuzzle from '@/components/SarabPuzzle';
 import SarabTaquin from '@/components/SarabTaquin';
+import SarabQrReader from '@/components/SarabQrReader';
 
 export default function PhygitalGuestPlayerPage() {
     const { t, language } = useLanguage();
@@ -17,6 +18,7 @@ export default function PhygitalGuestPlayerPage() {
 
     // Play state
     const [answer, setAnswer] = useState('');
+    const [showQrReader, setShowQrReader] = useState(false);
     const [selectedChoices, setSelectedChoices] = useState([]);
     const [message, setMessage] = useState({ text: '', type: '' });
     const [isChecking, setIsChecking] = useState(false);
@@ -233,10 +235,10 @@ export default function PhygitalGuestPlayerPage() {
         setIsChecking(false);
     };
 
-    const handleSubmitAnswer = async (e) => {
-        e.preventDefault();
+    const handleSubmitAnswer = async (e, directAnswer = null) => {
+        if (e) e.preventDefault();
 
-        let finalAnswer = answer;
+        let finalAnswer = directAnswer !== null ? directAnswer : answer;
         if (gameStateData?.stage?.validationType === 'choice') {
             if (selectedChoices.length === 0) {
                 setMessage({ text: t('selectOneAnswer'), type: 'error' });
@@ -527,9 +529,23 @@ export default function PhygitalGuestPlayerPage() {
                             )}
 
                             {gameStateData.stage.validationType === 'qr' && (
-                                <button className={styles.scanBtn} onClick={() => alert(t('cameraUpdateAlert'))}>
-                                    <ScanLine className={styles.scanIcon} /> {t('scanQrBtn')}
-                                </button>
+                                <>
+                                    <button className={styles.scanBtn} onClick={() => setShowQrReader(true)}>
+                                        <ScanLine className={styles.scanIcon} /> {t('scanQrBtn')}
+                                    </button>
+                                    
+                                    {showQrReader && (
+                                        <SarabQrReader 
+                                            t={t}
+                                            onCancel={() => setShowQrReader(false)} 
+                                            onScanSuccess={(decodedText) => {
+                                                setShowQrReader(false);
+                                                setAnswer(decodedText);
+                                                handleSubmitAnswer(null, decodedText);
+                                            }} 
+                                        />
+                                    )}
+                                </>
                             )}
 
                             {gameStateData.stage.validationType === 'nfc' && (
