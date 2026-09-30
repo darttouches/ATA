@@ -48,6 +48,10 @@ export async function POST(req) {
         const candidate = await InterviewCandidate.findOne({ code: code.toUpperCase() });
         if (!candidate) return NextResponse.json({ success: false, error: 'Code invalide ou introuvable.' }, { status: 404 });
 
+        // Update the last access attempt time to resolve disputes with users who claim the site was down or they were on time
+        candidate.lastAccessAttempt = new Date();
+        await candidate.save();
+
         // Validate exact time window (max 16 minutes late, and max 5 minutes early)
         if (candidate.interviewDate) {
             const scheduledTime = new Date(candidate.interviewDate).getTime();

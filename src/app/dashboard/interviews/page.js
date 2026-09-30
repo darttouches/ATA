@@ -449,6 +449,13 @@ Visit the registration page on the website to finish !`;
                                         <p><Calendar size={14}/> {new Date(cand.interviewDate).toLocaleString('fr-FR', { timeZone: 'Africa/Tunis', weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
                                         <p><FileText size={14}/> Code: <strong>{cand.code}</strong></p>
                                         
+                                        {cand.lastAccessAttempt && (
+                                            <p style={{ color: '#f43f5e', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px', background: 'rgba(244, 63, 94, 0.1)', padding: '4px 8px', borderRadius: '4px', width: 'fit-content' }} title="Preuve de l'heure exacte où le candidat a essayé d'entrer">
+                                                <Clock size={14} /> Essai d'accès : {new Date(cand.lastAccessAttempt).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Tunis', hour: '2-digit', minute: '2-digit' })}
+                                                {new Date().toDateString() !== new Date(cand.lastAccessAttempt).toDateString() ? ` (${new Date(cand.lastAccessAttempt).toLocaleDateString('fr-FR')})` : ''}
+                                            </p>
+                                        )}
+
                                         {/* DECISION BADGE */}
                                         <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             {cand.decision === 'accepted' ? (
@@ -529,6 +536,13 @@ Visit the registration page on the website to finish !`;
                                     <p><Mail size={16}/> {selectedCandidate.email}</p>
                                     <p><FileText size={16}/> Code Salle: <strong>{selectedCandidate.code}</strong></p>
                                     <p><Check size={16}/> Règles conformées: {selectedCandidate.rulesConfirmed ? <span style={{color:'#10b981', fontWeight: 600}}>Oui</span> : <span style={{color:'#f43f5e', fontWeight: 600}}>Non</span>}</p>
+                                    
+                                    {selectedCandidate.lastAccessAttempt && (
+                                        <p style={{ gridColumn: '1 / -1', color: '#f43f5e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(244, 63, 94, 0.1)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(244,63,94,0.3)', width: 'fit-content', marginTop: '10px' }}>
+                                            <Clock size={16} /> Preuve d'essai d'accès : {new Date(selectedCandidate.lastAccessAttempt).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Tunis', hour: '2-digit', minute: '2-digit' })}
+                                            {new Date().toDateString() !== new Date(selectedCandidate.lastAccessAttempt).toDateString() ? ` le ${new Date(selectedCandidate.lastAccessAttempt).toLocaleDateString('fr-FR')}` : ''}
+                                        </p>
+                                    )}
                                 </div>
                                 {/* Date correction field */}
                                 <div style={{ marginTop: '1rem', padding: '0.85rem', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '10px' }}>

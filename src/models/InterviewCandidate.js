@@ -36,7 +36,10 @@ const InterviewCandidateSchema = new mongoose.Schema({
     accountCreatedAt: { type: Date },
 
     // Track if the 1-hour interview reminder has been sent
-    reminderSent: { type: Boolean, default: false }
+    reminderSent: { type: Boolean, default: false },
+
+    // Track the last time the candidate tried to access the interview to resolve disputes
+    lastAccessAttempt: { type: Date }
 }, { timestamps: true });
 
 if (process.env.NODE_ENV === 'development' && mongoose.models.InterviewCandidate) {
