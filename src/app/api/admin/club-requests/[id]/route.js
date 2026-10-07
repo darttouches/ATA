@@ -26,18 +26,27 @@ export async function PUT(req, { params }) {
             request.status = 'approved';
             await request.save();
 
-            // 1. Create Club Account (User)
+            // 1. Create or Find Club Account (User)
             const hashedPassword = await bcrypt.hash(request.password, 10);
-            const clubUser = new User({
-                name: request.clubName,
-                email: request.email,
-                password: hashedPassword,
-                role: 'club',
-                isActive: true
-            });
-            await clubUser.save();
+            let clubUser = await User.findOne({ email: request.email });
+            
+            if (clubUser) {
+                clubUser.password = hashedPassword;
+                clubUser.name = request.clubName;
+                clubUser.isActive = true;
+                await clubUser.save();
+            } else {
+                clubUser = new User({
+                    name: request.clubName,
+                    email: request.email,
+                    password: hashedPassword,
+                    role: 'club',
+                    isActive: true
+                });
+                await clubUser.save();
+            }
 
-            // 2. Create the Club
+            // 2. Create or Find the Club
             // Prepare activeMembers array based on board members passed in request
             // Note: In a real system, you'd fetch the user names before adding. We'll add IDs or fetch names.
             // For now, we store their IDs or let the club update it. We will fetch their names.
@@ -57,17 +66,29 @@ export async function PUT(req, { params }) {
                 { name: userMap[request.communication.toString()], role: "Responsable Média", month: "" }
             ];
 
-            const newClub = new Club({
-                name: request.clubName,
-                description: `Club d'activité situé à ${request.location}.`,
-                address: request.location,
-                chief: request.president,
-                clubAccountId: clubUser._id,
-                activeMembers: activeMembers,
-                isActive: true,
-                approvedEventsCount: 5, // 5 points de score offerts à la création
-            });
-            await newClub.save();
+            let newClub = await Club.findOne({ name: request.clubName });
+
+            if (newClub) {
+                newClub.description = `Club d'activité situé à ${request.location}.`;
+                newClub.address = request.location;
+                newClub.chief = request.president;
+                newClub.clubAccountId = clubUser._id;
+                newClub.activeMembers = activeMembers;
+                newClub.isActive = true;
+                await newClub.save();
+            } else {
+                newClub = new Club({
+                    name: request.clubName,
+                    description: `Club d'activité situé à ${request.location}.`,
+                    address: request.location,
+                    chief: request.president,
+                    clubAccountId: clubUser._id,
+                    activeMembers: activeMembers,
+                    isActive: true,
+                    approvedEventsCount: 5, // 5 points de score offerts à la création
+                });
+                await newClub.save();
+            }
 
             // 3. Update all board members to point to this club and set their clubRole
             const roleMap = {
