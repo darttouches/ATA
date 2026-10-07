@@ -21,8 +21,8 @@ export async function POST(req, { params }) {
 
         // Security check
         if (actor.role !== 'admin') {
-            // Must be chef
-            if (actor.role !== 'president') return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+            // Must be chef or club account
+            if (actor.role !== 'president' && actor.role !== 'club') return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
 
             // Must manage the target member's club
             let actorClubId = actor.club;
@@ -36,6 +36,11 @@ export async function POST(req, { params }) {
             if (actorClubId.toString() !== targetClubId) {
                 return NextResponse.json({ success: false, error: 'Cannot award points to members of other clubs' }, { status: 403 });
             }
+        }
+
+        // Validate amount for club accounts
+        if (actor.role === 'club' && amount > 0) {
+            return NextResponse.json({ success: false, error: 'Les comptes club ne peuvent que retirer des points' }, { status: 403 });
         }
 
         // Update points

@@ -15,6 +15,7 @@ export default function MembersPointsPage() {
     const [sortOrder, setSortOrder] = useState('desc');
     const [viewMode, setViewMode] = useState('members'); // 'members' | 'clubs'
     const [collapsedSeasons, setCollapsedSeasons] = useState(new Set()); // empty = all open
+    const [currentUser, setCurrentUser] = useState(null);
 
     const toggleSeason = (season) => {
         setCollapsedSeasons(prev => {
@@ -41,6 +42,13 @@ export default function MembersPointsPage() {
 
     useEffect(() => {
         fetchMembers();
+        const fetchUser = async () => {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) setCurrentUser(await res.json());
+            } catch (e) {}
+        };
+        fetchUser();
     }, [fetchMembers]);
 
     const handleUpdatePoints = useCallback(async (userId, amount) => {
@@ -351,22 +359,26 @@ export default function MembersPointsPage() {
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button
-                                        onClick={() => handleUpdatePoints(member._id, 1)}
-                                        disabled={updatingId === member._id}
-                                        className="btn btn-secondary"
-                                        style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
-                                    >
-                                        <Plus size={14} /> 1
-                                    </button>
-                                    <button
-                                        onClick={() => handleUpdatePoints(member._id, 2)}
-                                        disabled={updatingId === member._id}
-                                        className="btn btn-secondary"
-                                        style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
-                                    >
-                                        <Plus size={14} /> 2
-                                    </button>
+                                    {(!currentUser || currentUser.role !== 'club') && (
+                                        <>
+                                            <button
+                                                onClick={() => handleUpdatePoints(member._id, 1)}
+                                                disabled={updatingId === member._id}
+                                                className="btn btn-secondary"
+                                                style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
+                                            >
+                                                <Plus size={14} /> 1
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdatePoints(member._id, 2)}
+                                                disabled={updatingId === member._id}
+                                                className="btn btn-secondary"
+                                                style={{ flex: 1, gap: '4px', fontSize: '0.85rem' }}
+                                            >
+                                                <Plus size={14} /> 2
+                                            </button>
+                                        </>
+                                    )}
                                     <button
                                         onClick={() => handleUpdatePoints(member._id, -1)}
                                         disabled={updatingId === member._id}

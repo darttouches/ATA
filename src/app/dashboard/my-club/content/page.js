@@ -218,6 +218,7 @@ export default function ChefContentManagement() {
                     setFormData({
                         title: '', type: 'event', description: '', date: '', time: '',
                         photos: [], videoUrl: '', link: '', mediaUrl: '',
+                        authorizedScanners: [],
                         program: { items: [], globalDuration: '', partsCount: '' }
                     });
                     setShowModal(true);
