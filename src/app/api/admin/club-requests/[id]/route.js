@@ -5,6 +5,10 @@ import Club from '@/models/Club';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
+function escapeRegex(text) {
+    return text ? text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') : '';
+}
+
 export async function PUT(req, { params }) {
     try {
         await dbConnect();
@@ -23,99 +27,188 @@ export async function PUT(req, { params }) {
         }
 
         if (action === 'approve') {
-            request.status = 'approved';
-            await request.save();
+            const rawClubName = (request.clubName || '').trim();
+            const rawEmail = (request.email || '').trim().toLowerCase();
+            const rawLocation = (request.location || '').trim();
 
-            // 1. Create or Find Club Account (User)
+            const clubSlug = rawClubName
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^\w ]+/g, '')
+                .replace(/ +/g, '-')
+                .trim();
+
+            // 1. Find existing Club (by ID, exact name, case-insensitive name regex, or slug)
+            let targetClub = null;
+            if (request.clubId) {
+                targetClub = await Club.findById(request.clubId);
+            }
+            if (!targetClub && rawClubName) {
+                targetClub = await Club.findOne({
+                    $or: [
+                        { name: rawClubName },
+                        { name: { $regex: new RegExp(`^${escapeRegex(rawClubName)}$`, 'i') } },
+                        { slug: clubSlug }
+                    ]
+                });
+            }
+
+            // 2. Create or Update Club Account (User)
             const hashedPassword = await bcrypt.hash(request.password, 10);
-            let clubUser = await User.findOne({ email: request.email });
-            
+            let clubUser = null;
+
+            if (rawEmail) {
+                clubUser = await User.findOne({
+                    email: { $regex: new RegExp(`^${escapeRegex(rawEmail)}$`, 'i') }
+                });
+            }
+
+            if (!clubUser && targetClub?.clubAccountId) {
+                clubUser = await User.findById(targetClub.clubAccountId);
+            }
+
             if (clubUser) {
                 clubUser.password = hashedPassword;
-                clubUser.name = request.clubName;
+                clubUser.name = targetClub ? targetClub.name : rawClubName;
+                if (rawEmail) clubUser.email = rawEmail;
+                clubUser.role = 'club';
+                clubUser.status = 'approved';
                 clubUser.isActive = true;
+                if (targetClub) clubUser.club = targetClub._id;
                 await clubUser.save();
             } else {
                 clubUser = new User({
-                    name: request.clubName,
-                    email: request.email,
+                    name: rawClubName,
+                    email: rawEmail,
                     password: hashedPassword,
                     role: 'club',
-                    isActive: true
+                    status: 'approved',
+                    isActive: true,
+                    club: targetClub ? targetClub._id : undefined,
+                    season: '2025/2026'
                 });
                 await clubUser.save();
             }
 
-            // 2. Create or Find the Club
-            // Prepare activeMembers array based on board members passed in request
-            // Note: In a real system, you'd fetch the user names before adding. We'll add IDs or fetch names.
-            // For now, we store their IDs or let the club update it. We will fetch their names.
-            const boardDocs = await User.find({
-                _id: { $in: [request.president, request.vicePresident, request.secretary, request.hr, request.events, request.communication]}
+            // 3. Prepare board activeMembers
+            const boardUserIds = [
+                request.president,
+                request.vicePresident,
+                request.secretary,
+                request.hr,
+                request.events,
+                request.communication
+            ].filter(Boolean);
+
+            const boardDocs = await User.find({ _id: { $in: boardUserIds } });
+            const userMap = {};
+            boardDocs.forEach(u => {
+                userMap[u._id.toString()] = `${u.firstName || u.name} ${u.lastName || ''}`.trim();
             });
 
-            const userMap = {};
-            boardDocs.forEach(u => userMap[u._id.toString()] = `${u.firstName || u.name} ${u.lastName || ''}`);
-
             const activeMembers = [
-                { name: userMap[request.president.toString()], role: "Président", month: "" },
-                { name: userMap[request.vicePresident.toString()], role: "Vice-Président", month: "" },
-                { name: userMap[request.secretary.toString()], role: "Secrétaire Général", month: "" },
-                { name: userMap[request.hr.toString()], role: "Responsable RH", month: "" },
-                { name: userMap[request.events.toString()], role: "Responsable des Événements", month: "" },
-                { name: userMap[request.communication.toString()], role: "Responsable Média", month: "" }
-            ];
+                { name: userMap[request.president?.toString()] || '', role: "Président", month: "" },
+                { name: userMap[request.vicePresident?.toString()] || '', role: "Vice-Président", month: "" },
+                { name: userMap[request.secretary?.toString()] || '', role: "Secrétaire Général", month: "" },
+                { name: userMap[request.hr?.toString()] || '', role: "Responsable RH", month: "" },
+                { name: userMap[request.events?.toString()] || '', role: "Responsable des Événements", month: "" },
+                { name: userMap[request.communication?.toString()] || '', role: "Responsable Média", month: "" }
+            ].filter(m => m.name);
 
-            let newClub = await Club.findOne({ name: request.clubName });
+            // 4. Update existing club (Reactivation) OR Create new club
+            const isReactivation = !!targetClub;
 
-            if (newClub) {
-                newClub.description = `Club d'activité situé à ${request.location}.`;
-                newClub.address = request.location;
-                newClub.chief = request.president;
-                newClub.clubAccountId = clubUser._id;
-                newClub.activeMembers = activeMembers;
-                newClub.isActive = true;
-                await newClub.save();
+            if (targetClub) {
+                if (rawLocation) targetClub.address = rawLocation;
+                targetClub.chief = request.president;
+                targetClub.clubAccountId = clubUser._id;
+                if (activeMembers.length > 0) {
+                    targetClub.activeMembers = activeMembers;
+                }
+                targetClub.isActive = true;
+                targetClub.isVisible = true;
+                await targetClub.save();
+
+                if (!clubUser.club || clubUser.club.toString() !== targetClub._id.toString()) {
+                    clubUser.club = targetClub._id;
+                    await clubUser.save();
+                }
+
+                // Reactivate club members who were not individually deactivated by admin
+                await User.updateMany(
+                    {
+                        $or: [{ club: targetClub._id }, { preferredClub: targetClub._id }],
+                        role: { $ne: 'club' },
+                        deactivatedByAdmin: { $ne: true }
+                    },
+                    { $set: { isActive: true } }
+                );
             } else {
-                newClub = new Club({
-                    name: request.clubName,
-                    description: `Club d'activité situé à ${request.location}.`,
-                    address: request.location,
+                targetClub = new Club({
+                    name: rawClubName,
+                    slug: clubSlug,
+                    description: `Club d'activité situé à ${rawLocation}.`,
+                    address: rawLocation,
                     chief: request.president,
                     clubAccountId: clubUser._id,
                     activeMembers: activeMembers,
                     isActive: true,
-                    approvedEventsCount: 5, // 5 points de score offerts à la création
+                    isVisible: true,
+                    approvedEventsCount: 5,
                 });
-                await newClub.save();
+                await targetClub.save();
+
+                clubUser.club = targetClub._id;
+                await clubUser.save();
             }
 
-            // 3. Update all board members to point to this club and set their clubRole
+            // 5. Update board members roles & link them to this club
             const roleMap = {
-                [request.president.toString()]: "Président",
-                [request.vicePresident.toString()]: "Vice-Président",
-                [request.secretary.toString()]: "Secrétaire Général",
-                [request.hr.toString()]: "Responsable RH",
-                [request.events.toString()]: "Responsable des Événements",
-                [request.communication.toString()]: "Responsable Média",
+                [request.president?.toString()]: "Président",
+                [request.vicePresident?.toString()]: "Vice-Président",
+                [request.secretary?.toString()]: "Secrétaire Général",
+                [request.hr?.toString()]: "Responsable RH",
+                [request.events?.toString()]: "Responsable des Événements",
+                [request.communication?.toString()]: "Responsable Média",
             };
 
             for (const u of boardDocs) {
                 await User.findByIdAndUpdate(u._id, {
                     $set: {
-                        club: newClub._id,
-                        preferredClub: newClub._id,
-                        clubRole: roleMap[u._id.toString()] || ''
+                        club: targetClub._id,
+                        preferredClub: targetClub._id,
+                        clubRole: roleMap[u._id.toString()] || '',
+                        isActive: true
                     }
                 });
             }
 
-            return NextResponse.json({ success: true, message: 'Demande approuvée et club créé.' }, { status: 200 });
+            // 6. Mark request as approved
+            request.status = 'approved';
+            if (!request.clubId && targetClub) {
+                request.clubId = targetClub._id;
+            }
+            await request.save();
+
+            const message = isReactivation
+                ? `Le club "${targetClub.name}" a été réactivé avec succès et son bureau a été mis à jour.`
+                : `Demande approuvée et club "${targetClub.name}" créé avec succès.`;
+
+            return NextResponse.json({
+                success: true,
+                message,
+                isReactivation
+            }, { status: 200 });
         }
 
         return NextResponse.json({ error: 'Action invalide.' }, { status: 400 });
     } catch (error) {
         console.error('Club request processing error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        let userMessage = error.message;
+        if (error.code === 11000 || error.message?.includes('E11000')) {
+            userMessage = "Un club ou un compte avec ce nom ou cet email existe déjà. Le club a été mis à jour ou vérifiez les coordonnées.";
+        }
+        return NextResponse.json({ error: userMessage }, { status: 500 });
     }
 }

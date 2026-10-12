@@ -151,10 +151,13 @@ export default function ClubsManagement() {
     const handleRequestDecision = async (id, action) => {
         const clubReq = pendingRequests.find(r => r._id === id);
         const clubName = clubReq?.clubName || 'ce club';
+        const isReactivation = clubReq?.isReactivation || !!clubReq?.clubId;
 
         const confirmMsg = action === 'approve'
-            ? formatDynamicText(t('confirmApproveRequest') || `Accepter la demande pour "{clubName}" ?\n\n✅ Cela va :\n- Créer la page du club\n- Créer le compte avec le rôle "club"\n- Attribuer 5 points de score au club\n- Assigner les postes du bureau aux membres`, { clubName })
-            : formatDynamicText(t('confirmRejectRequest') || `Refuser la demande pour "{clubName}" ?\n\nLe club ne sera pas créé.`, { clubName });
+            ? (isReactivation
+                ? formatDynamicText(t('confirmApproveReactivation') || `Accepter la demande de réactivation pour "{clubName}" ?\n\n✅ Cela va :\n- Réactiver le club existant\n- Mettre à jour son bureau exécutif\n- Réactiver le compte officiel du club\n- Réactiver les membres du club`, { clubName })
+                : formatDynamicText(t('confirmApproveRequest') || `Accepter la demande pour "{clubName}" ?\n\n✅ Cela va :\n- Créer la page du club\n- Créer le compte avec le rôle "club"\n- Attribuer 5 points de score au club\n- Assigner les postes du bureau aux membres`, { clubName }))
+            : formatDynamicText(t('confirmRejectRequest') || `Refuser la demande pour "{clubName}" ?\n\nLe club ne sera pas ${isReactivation ? 'réactivé' : 'créé'}.`, { clubName });
 
         if (!confirm(confirmMsg)) return;
 
@@ -309,57 +312,75 @@ export default function ClubsManagement() {
                         {t('pendingActivityRequests') || "Demandes d'Activité en Attente"} ({pendingRequests.length})
                     </h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                        {pendingRequests.map(req => (
-                            <div key={req._id} className="card" style={{ borderLeft: '4px solid #f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{req.clubName}</h3>
-                                    <span style={{ fontSize: '0.7rem', background: '#f59e0b', color: 'white', padding: '2px 8px', borderRadius: '10px' }}>{t('waiting') || 'En attente'}</span>
-                                </div>
-                                <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '0.5rem' }}><MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} /> {req.location}</p>
-                                <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '0.5rem' }}><Mail size={14} style={{ display: 'inline', marginRight: '4px' }} /> {req.email}</p>
-                                
-                                <div style={{ flex: 1, marginTop: '1rem', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px' }}>
-                                    <h4 style={{ fontSize: '0.8rem', opacity: 0.7, margin: '0 0 0.5rem 0' }}>{t('proposedBureau') || 'Bureau proposé :'}</h4>
-                                    <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.8rem', opacity: 0.9 }}>
-                                        <li><strong>Président:</strong> {req.president?.firstName || req.president?.name}</li>
-                                        <li><strong>Vice-Pres:</strong> {req.vicePresident?.firstName || req.vicePresident?.name}</li>
-                                        <li><strong>Secrétaire:</strong> {req.secretary?.firstName || req.secretary?.name}</li>
-                                        <li><strong>RH:</strong> {req.hr?.firstName || req.hr?.name}</li>
-                                        <li><strong>Événements:</strong> {req.events?.firstName || req.events?.name}</li>
-                                        <li><strong>Média:</strong> {req.communication?.firstName || req.communication?.name}</li>
-                                    </ul>
-                                </div>
+                        {pendingRequests.map(req => {
+                            const isReactivation = req.isReactivation || !!req.clubId;
+                            return (
+                                <div key={req._id} className="card" style={{
+                                    borderLeft: `4px solid ${isReactivation ? '#3b82f6' : '#f59e0b'}`,
+                                    background: isReactivation ? 'rgba(59, 130, 246, 0.05)' : 'rgba(245, 158, 11, 0.05)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{req.clubName}</h3>
+                                        <span style={{
+                                            fontSize: '0.7rem',
+                                            background: isReactivation ? '#2563eb' : '#f59e0b',
+                                            color: 'white',
+                                            padding: '2px 8px',
+                                            borderRadius: '10px',
+                                            fontWeight: 600
+                                        }}>
+                                            {isReactivation ? (t('reactivationBadge') || '🔄 Réactivation') : (t('waiting') || 'En attente')}
+                                        </span>
+                                    </div>
+                                    <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '0.5rem' }}><MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} /> {req.location}</p>
+                                    <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '0.5rem' }}><Mail size={14} style={{ display: 'inline', marginRight: '4px' }} /> {req.email}</p>
+                                    
+                                    <div style={{ flex: 1, marginTop: '1rem', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px' }}>
+                                        <h4 style={{ fontSize: '0.8rem', opacity: 0.7, margin: '0 0 0.5rem 0' }}>{t('proposedBureau') || 'Bureau proposé :'}</h4>
+                                        <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.8rem', opacity: 0.9 }}>
+                                            <li><strong>Président:</strong> {req.president?.firstName || req.president?.name}</li>
+                                            <li><strong>Vice-Pres:</strong> {req.vicePresident?.firstName || req.vicePresident?.name}</li>
+                                            <li><strong>Secrétaire:</strong> {req.secretary?.firstName || req.secretary?.name}</li>
+                                            <li><strong>RH:</strong> {req.hr?.firstName || req.hr?.name}</li>
+                                            <li><strong>Événements:</strong> {req.events?.firstName || req.events?.name}</li>
+                                            <li><strong>Média:</strong> {req.communication?.firstName || req.communication?.name}</li>
+                                        </ul>
+                                    </div>
 
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <button
-                                        onClick={() => handleRequestDecision(req._id, 'approve')}
-                                        disabled={!!actionLoading}
-                                        style={{
-                                            flex: 1, background: actionLoading === req._id ? '#059669' : '#10b981',
-                                            color: 'white', border: 'none', padding: '8px', borderRadius: '8px',
-                                            fontWeight: 600, cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                            opacity: actionLoading && actionLoading !== req._id ? 0.5 : 1,
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {actionLoading === req._id ? (t('processing') || '⏳ Traitement...') : (t('acceptAndCreate') || '✅ Accepter & Créer')}
-                                    </button>
-                                    <button
-                                        onClick={() => handleRequestDecision(req._id, 'reject')}
-                                        disabled={!!actionLoading}
-                                        style={{
-                                            flex: 1, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444',
-                                            border: '1px solid #ef4444', padding: '8px', borderRadius: '8px',
-                                            fontWeight: 600, cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                            opacity: actionLoading && actionLoading !== req._id ? 0.5 : 1,
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {actionLoading === req._id ? (t('processingShort') || '⏳ ...') : (t('rejectBtn') || '❌ Refuser')}
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            onClick={() => handleRequestDecision(req._id, 'approve')}
+                                            disabled={!!actionLoading}
+                                            style={{
+                                                flex: 1,
+                                                background: actionLoading === req._id ? '#059669' : (isReactivation ? '#2563eb' : '#10b981'),
+                                                color: 'white', border: 'none', padding: '8px', borderRadius: '8px',
+                                                fontWeight: 600, cursor: actionLoading ? 'not-allowed' : 'pointer',
+                                                opacity: actionLoading && actionLoading !== req._id ? 0.5 : 1,
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {actionLoading === req._id
+                                                ? (t('processing') || '⏳ Traitement...')
+                                                : (isReactivation ? (t('acceptAndReactivate') || '✅ Accepter & Réactiver') : (t('acceptAndCreate') || '✅ Accepter & Créer'))}
+                                        </button>
+                                        <button
+                                            onClick={() => handleRequestDecision(req._id, 'reject')}
+                                            disabled={!!actionLoading}
+                                            style={{
+                                                flex: 1, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444',
+                                                border: '1px solid #ef4444', padding: '8px', borderRadius: '8px',
+                                                fontWeight: 600, cursor: actionLoading ? 'not-allowed' : 'pointer',
+                                                opacity: actionLoading && actionLoading !== req._id ? 0.5 : 1,
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {actionLoading === req._id ? (t('processingShort') || '⏳ ...') : (t('rejectBtn') || '❌ Refuser')}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}

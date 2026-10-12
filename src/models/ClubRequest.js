@@ -1,6 +1,15 @@
 import mongoose from 'mongoose';
 
 const ClubRequestSchema = new mongoose.Schema({
+    clubId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
+        required: false,
+    },
+    isReactivation: {
+        type: Boolean,
+        default: false,
+    },
     clubName: {
         type: String,
         required: true,

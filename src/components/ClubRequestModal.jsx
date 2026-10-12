@@ -15,6 +15,8 @@ export default function ClubRequestModal({ isOpen, onClose }) {
     const [existingClubs, setExistingClubs] = useState([]);
 
     const [formData, setFormData] = useState({
+        clubId: '',
+        isReactivation: false,
         clubName: "Touches D'Art ",
         email: '',
         password: '',
@@ -33,6 +35,8 @@ export default function ClubRequestModal({ isOpen, onClose }) {
             setError(null);
             setSuccess(false);
             setFormData({
+                clubId: '',
+                isReactivation: false,
                 clubName: "Touches D'Art ",
                 email: '',
                 password: '',
@@ -46,14 +50,13 @@ export default function ClubRequestModal({ isOpen, onClose }) {
             });
             setIsReactivation(false);
 
-            // Fetch all members. Assume we filter valid (active) members on the frontend or backend.
+            // Fetch members eligible for the bureau
             fetch('/api/users')
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        // Filter to only include active members if the schema uses isActive
-                        const activeMembers = data.data.filter(u => u.isActive === true);
-                        setUsers(activeMembers);
+                        const members = data.data.filter(u => u.role !== 'club' && !u.deactivatedByAdmin);
+                        setUsers(members);
                     }
                 })
                 .catch(err => {
@@ -106,7 +109,20 @@ export default function ClubRequestModal({ isOpen, onClose }) {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // Prevent removing the prefix "Touches D'Art " for clubName
+        if (name === 'clubName' && isReactivation) {
+            const found = existingClubs.find(c => c.name === value || c._id === value);
+            if (found) {
+                setFormData(prev => ({
+                    ...prev,
+                    clubName: found.name,
+                    clubId: found._id,
+                    location: found.address || prev.location,
+                    email: found.clubAccountId?.email || prev.email,
+                }));
+                return;
+            }
+        }
+        // Prevent removing the prefix "Touches D'Art " for clubName in creation mode
         if (name === 'clubName' && !isReactivation && !value.startsWith("Touches D'Art ")) {
             return;
         }
@@ -125,7 +141,8 @@ export default function ClubRequestModal({ isOpen, onClose }) {
             return;
         }
 
-        if (!formData.clubName || formData.clubName.trim() === "Touches D'Art" || !formData.email || !formData.password || !formData.location || !formData.president || !formData.vicePresident || !formData.secretary || !formData.hr || !formData.events || !formData.communication) {
+        const trimmedName = (formData.clubName || '').trim();
+        if (!trimmedName || (!isReactivation && trimmedName === "Touches D'Art") || !formData.email || !formData.password || !formData.location || !formData.president || !formData.vicePresident || !formData.secretary || !formData.hr || !formData.events || !formData.communication) {
             setError(t('errorCompleteFields') || "Veuillez remplir tous les champs et sélectionner un membre pour chaque poste.");
             return;
         }
@@ -134,10 +151,18 @@ export default function ClubRequestModal({ isOpen, onClose }) {
         setError(null);
 
         try {
+            const payload = {
+                ...formData,
+                clubName: trimmedName,
+                email: (formData.email || '').trim().toLowerCase(),
+                location: (formData.location || '').trim(),
+                isReactivation: isReactivation
+            };
+
             const response = await fetch('/api/clubs/requests', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
             const data = await response.json();
             
@@ -231,7 +256,12 @@ export default function ClubRequestModal({ isOpen, onClose }) {
                                         onClick={() => {
                                             const newIsReactivation = !isReactivation;
                                             setIsReactivation(newIsReactivation);
-                                            setFormData(prev => ({ ...prev, clubName: newIsReactivation ? '' : "Touches D'Art " }));
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                isReactivation: newIsReactivation,
+                                                clubId: '',
+                                                clubName: newIsReactivation ? '' : "Touches D'Art "
+                                            }));
                                         }}
                                         style={{ 
                                             background: isReactivation ? 'rgba(124, 58, 237, 0.2)' : 'rgba(255, 255, 255, 0.05)', 

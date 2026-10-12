@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import ClubRequest from '@/models/ClubRequest';
+import Club from '@/models/Club';
 import User from '@/models/User';
 
 export async function GET(req) {
     try {
         await dbConnect();
         const requests = await ClubRequest.find({ status: 'pending' })
+            .populate('clubId', 'name address isActive')
             .populate('president', 'name firstName lastName email')
             .populate('vicePresident', 'name firstName lastName email')
             .populate('secretary', 'name firstName lastName email')
